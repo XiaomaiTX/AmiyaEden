@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/model"
 	"reflect"
 	"testing"
@@ -8,7 +9,7 @@ import (
 
 // TestSDEConfigResponseJSONTags 测试 SDE 配置响应 JSON 标签
 func TestSDEConfigResponseJSONTags(t *testing.T) {
-	typ := reflect.TypeOf(SDEConfigResponse{})
+	typ := reflect.TypeOf(apicontract.SystemSDEConfig{})
 	fields := []struct {
 		name      string
 		jsonTag   string
@@ -35,7 +36,7 @@ func TestSDEConfigResponseJSONTags(t *testing.T) {
 
 // TestUpdateSDEConfigRequestJSONTags 测试 SDE 配置更新请求 JSON 标签
 func TestUpdateSDEConfigRequestJSONTags(t *testing.T) {
-	typ := reflect.TypeOf(UpdateSDEConfigRequest{})
+	typ := reflect.TypeOf(apicontract.SystemSDEConfigInput{})
 	fields := []struct {
 		name      string
 		jsonTag   string

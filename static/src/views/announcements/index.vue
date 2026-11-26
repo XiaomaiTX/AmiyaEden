@@ -162,21 +162,24 @@
   import {
     listAnnouncements,
     getAnnouncement,
-    saveAnnouncement,
-    readAnnouncement
-  } from '@/api/announcements'
-  import type { Announcement } from '@/types/announcement'
+    createAnnouncement,
+    updateAnnouncement,
+    readAnnouncement,
+    type Announcement
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useUserStore } from '@/store/modules/user'
   import { useBadgeStore } from '@/store/modules/badge'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   defineOptions({ name: 'Announcements' })
+  type AnnouncementRow = Announcement & { unread?: boolean }
   const MAX_IMAGES = 6
   const { t } = useI18n()
   const user = useUserStore()
   const manage = computed(() =>
     (user.info.roles ?? []).some((r) => ['admin', 'super_admin', 'senior_fc'].includes(r))
   )
-  const rows = ref<Announcement[]>([]),
+  const rows = ref<AnnouncementRow[]>([]),
     selected = ref<Announcement | null>(null)
   const page = ref(1),
     total = ref(0),
@@ -234,7 +237,7 @@
     const seq = ++listRequest
     error.value = false
     try {
-      const data = await listAnnouncements(page.value)
+      const data = await unwrapContract(listAnnouncements({ page: page.value }))
       if (seq !== listRequest) return
       rows.value = data.list
       total.value = data.total
@@ -245,14 +248,14 @@
       if (seq === listRequest) error.value = true
     }
   }
-  async function open(row: Announcement) {
+  async function open(row: AnnouncementRow) {
     const token = ++request
     busy.value = true
     error.value = false
     editing.value = false
     let data: Announcement
     try {
-      data = await getAnnouncement(row.id)
+      data = await unwrapContract(getAnnouncement(row.id))
     } catch {
       if (token === request) {
         error.value = true
@@ -269,7 +272,7 @@
     await nextTick()
     if (token !== request) return
     try {
-      await readAnnouncement(data.id, data.version)
+      await unwrapContract(readAnnouncement(data.id, { version: data.version }))
       row.unread = false
       row.version = data.version
       await useBadgeStore().fetchBadgeCounts()
@@ -295,13 +298,17 @@
     busy.value = true
     error.value = false
     try {
-      selected.value = await saveAnnouncement(selected.value?.id ?? null, {
+      const input = {
         title: title.value,
         body_html: body.value,
         hidden: hidden.value,
         remind: remind.value,
         revision: selected.value?.revision ?? 0
-      })
+      }
+      const id = selected.value?.id
+      selected.value = await unwrapContract(
+        id ? updateAnnouncement(id, input) : createAnnouncement(input)
+      )
       editing.value = false
       await reload()
     } catch {

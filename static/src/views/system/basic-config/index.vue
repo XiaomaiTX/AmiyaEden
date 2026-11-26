@@ -361,6 +361,13 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    SystemAlliancePAPConfig,
+    SystemAllowedCorporations,
+    SystemConfigCorporationPolicy,
+    SystemMumbleConfig,
+    SystemSDEConfig
+  } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import {
     ElCard,
@@ -379,20 +386,21 @@
     ElTag
   } from 'element-plus'
   import {
-    fetchSDEConfig,
+    getSDEConfig,
     updateSDEConfig,
-    fetchSDEStatus,
+    getSDEStatus,
     checkSDEVersion,
     triggerSDEUpdate,
-    fetchAlliancePAPConfig,
+    getAlliancePAPConfig,
     updateAlliancePAPConfig,
-    fetchMumbleConfig,
+    getMumbleConfig,
     updateMumbleConfig,
-    fetchAllowCorporations,
+    getAllowCorporations,
     updateAllowCorporations,
-    fetchCorporationAccessPolicies,
+    getCorporationAccessPolicies,
     updateCorporationAccessPolicies
-  } from '@/api/sys-config'
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { SYSTEM_IDENTITY, SYSTEM_IDENTITY_I18N } from '@/constants/system-identity'
   import { formatTime } from '@/utils/common'
   import { isHttpError } from '@/utils/http/error'
@@ -606,13 +614,13 @@
     'fuxi_hall.admin.manage': 'system.basicConfig.corpCapabilities.fuxiHallAdminManage'
   }
 
-  const sdeForm = reactive<Api.SysConfig.SDEConfig>({
+  const sdeForm = reactive<SystemSDEConfig>({
     api_key: '',
     proxy: '',
     download_url: ''
   })
-  const alliancePAPForm = reactive<Api.SysConfig.AlliancePAPConfig>({ base_url: '', api_key: '' })
-  const mumbleForm = reactive<Api.SysConfig.MumbleConfig>({
+  const alliancePAPForm = reactive<SystemAlliancePAPConfig>({ base_url: '', api_key: '' })
+  const mumbleForm = reactive<SystemMumbleConfig>({
     service_token: '',
     server_url: '',
     revalidate_token: '',
@@ -643,7 +651,7 @@
     update_stage: ''
   })
 
-  const allowCorpsForm = reactive<Api.SysConfig.AllowCorporationsConfig>({
+  const allowCorpsForm = reactive<SystemAllowedCorporations>({
     allow_corporations: [],
     corporations: []
   })
@@ -754,7 +762,7 @@
   const loadSDEConfig = async () => {
     loadingSDEConfig.value = true
     try {
-      const res = await fetchSDEConfig()
+      const res = await unwrapContract(getSDEConfig())
       sdeForm.api_key = res.api_key
       sdeForm.proxy = res.proxy
       sdeForm.download_url = res.download_url
@@ -784,7 +792,7 @@
 
   const loadSDEStatus = async () => {
     try {
-      const status = await fetchSDEStatus()
+      const status = await unwrapContract(getSDEStatus())
       syncSDEStatus(status)
     } catch {
       /* empty */
@@ -801,11 +809,13 @@
   const handleSaveSDE = async () => {
     savingSDE.value = true
     try {
-      await updateSDEConfig({
-        api_key: sdeForm.api_key,
-        proxy: sdeForm.proxy,
-        download_url: sdeForm.download_url
-      })
+      await unwrapContract(
+        updateSDEConfig({
+          api_key: sdeForm.api_key,
+          proxy: sdeForm.proxy,
+          download_url: sdeForm.download_url
+        })
+      )
       ElMessage.success(t('system.basicConfig.saveSuccess'))
     } catch {
       /* empty */
@@ -817,7 +827,7 @@
   const handleCheckSDE = async () => {
     checkingSDE.value = true
     try {
-      const status = await checkSDEVersion()
+      const status = await unwrapContract(checkSDEVersion())
       syncSDEStatus(status)
       ElMessage.success(t('system.basicConfig.sdeCheckSuccess'))
     } catch {
@@ -833,7 +843,9 @@
       void loadSDEStatus()
     }, 2000)
     try {
-      const status = await triggerSDEUpdate()
+      const status = await unwrapContract(
+        triggerSDEUpdate({ timeout: 10 * 60 * 1000, showErrorMessage: false })
+      )
       syncSDEStatus(status)
       ElMessage.success(t('system.basicConfig.sdeUpdateSuccess'))
     } catch (error) {
@@ -850,7 +862,7 @@
   const loadAlliancePAPConfig = async () => {
     loadingAlliancePAP.value = true
     try {
-      const config = await fetchAlliancePAPConfig()
+      const config = await unwrapContract(getAlliancePAPConfig())
       alliancePAPForm.base_url = config.base_url
       alliancePAPForm.api_key = config.api_key
     } finally {
@@ -861,7 +873,7 @@
   const handleSaveAlliancePAP = async () => {
     savingAlliancePAP.value = true
     try {
-      await updateAlliancePAPConfig({ ...alliancePAPForm })
+      await unwrapContract(updateAlliancePAPConfig({ ...alliancePAPForm }))
       ElMessage.success(t('system.basicConfig.saveSuccess'))
     } finally {
       savingAlliancePAP.value = false
@@ -871,7 +883,7 @@
   const loadMumbleConfig = async () => {
     loadingMumble.value = true
     try {
-      const loaded = await fetchMumbleConfig()
+      const loaded = await unwrapContract(getMumbleConfig())
       if (!Array.isArray(loaded.public_nodes)) loaded.public_nodes = []
       Object.assign(mumbleForm, loaded)
     } catch {
@@ -884,7 +896,7 @@
   const handleSaveMumble = async () => {
     savingMumble.value = true
     try {
-      await updateMumbleConfig({ ...mumbleForm })
+      await unwrapContract(updateMumbleConfig({ ...mumbleForm }))
       ElMessage.success(t('system.basicConfig.saveSuccess'))
     } catch {
       ElMessage.error(t('system.basicConfig.saveFailed'))
@@ -896,7 +908,7 @@
   const loadAllowCorpsConfig = async () => {
     loadingAllowCorpsConfig.value = true
     try {
-      const res = await fetchAllowCorporations()
+      const res = await unwrapContract(getAllowCorporations())
       const corporations = normalizeAllowCorporations(res.allow_corporations)
       allowCorpsForm.allow_corporations = corporations
       allowCorpsForm.corporations = Array.isArray(res.corporations)
@@ -924,7 +936,7 @@
       const corps = normalizeAllowCorporations(lines.map(parseCorporationId))
 
       savingAllowCorps.value = true
-      await updateAllowCorporations({ allow_corporations: corps })
+      await unwrapContract(updateAllowCorporations({ allow_corporations: corps }))
       allowCorpsForm.allow_corporations = corps
       allowCorpsInput.value = corps.join('\n')
       await loadAllowCorpsConfig()
@@ -982,7 +994,7 @@
   const loadCorpPolicies = async () => {
     loadingCorpPolicies.value = true
     try {
-      const res = await fetchCorporationAccessPolicies()
+      const res = await unwrapContract(getCorporationAccessPolicies())
       corpPoliciesVersion.value = res.version || 1
       enforcedCapabilitySet.value = new Set(
         (res.enforced_capabilities ?? []).length ? res.enforced_capabilities : corpCapabilityOptions
@@ -1037,8 +1049,8 @@
 
     savingCorpPolicies.value = true
     try {
-      const latestPoliciesConfig = await fetchCorporationAccessPolicies()
-      const mergedPolicyMap = new Map<number, Api.SysConfig.CorporationAccessPolicy>()
+      const latestPoliciesConfig = await unwrapContract(getCorporationAccessPolicies())
+      const mergedPolicyMap = new Map<number, SystemConfigCorporationPolicy>()
 
       for (const policy of latestPoliciesConfig.policies || []) {
         if (!Number.isSafeInteger(policy.corporation_id) || policy.corporation_id <= 0) {
@@ -1065,13 +1077,15 @@
         rules: normalizePolicyRules(undefined, selectedPolicy.value)
       })
 
-      await updateCorporationAccessPolicies({
-        version: latestPoliciesConfig.version || corpPoliciesVersion.value,
-        default_mode: 'allow',
-        policies: Array.from(mergedPolicyMap.values()).sort(
-          (left, right) => left.corporation_id - right.corporation_id
-        )
-      })
+      await unwrapContract(
+        updateCorporationAccessPolicies({
+          version: latestPoliciesConfig.version || corpPoliciesVersion.value,
+          default_mode: 'allow',
+          policies: Array.from(mergedPolicyMap.values()).sort(
+            (left, right) => left.corporation_id - right.corporation_id
+          )
+        })
+      )
       ElMessage.success(t('system.basicConfig.saveSuccess'))
       await loadCorpPolicies()
     } catch {

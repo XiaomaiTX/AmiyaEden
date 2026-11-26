@@ -1,0 +1,626 @@
+openapi: 3.0.3
+info:
+  title: AmiyaEden HTTP API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+  - queryToken: []
+paths:
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      x-gin-ignore-invalid-query: ["page"]
+      x-gin-access: ["jwt", "login"]
+      parameters:
+        - name: page
+          in: query
+          description: Missing, invalid or out-of-range values select page 1.
+          schema: { type: integer, default: 1 }
+      responses:
+        '200':
+          description: Announcement list or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AnnouncementListSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createAnnouncement
+      x-gin-access: ["jwt", "login", "role:admin,senior_fc"]
+      x-gin-body: { maxBytes: 75497472 }
+      requestBody: { $ref: '#/components/requestBodies/AnnouncementInput' }
+      responses:
+        '200': { $ref: '#/components/responses/AnnouncementResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /announcements/{id}:
+    parameters:
+      - $ref: '#/components/parameters/AnnouncementID'
+    get:
+      operationId: getAnnouncement
+      x-gin-access: ["jwt", "login"]
+      responses:
+        '200': { $ref: '#/components/responses/AnnouncementResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateAnnouncement
+      x-gin-access: ["jwt", "login", "role:admin,senior_fc"]
+      x-gin-body: { maxBytes: 75497472 }
+      requestBody: { $ref: '#/components/requestBodies/AnnouncementInput' }
+      responses:
+        '200': { $ref: '#/components/responses/AnnouncementResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /announcements/{id}/read:
+    parameters:
+      - $ref: '#/components/parameters/AnnouncementID'
+    post:
+      operationId: readAnnouncement
+      x-gin-access: ["jwt", "login"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AnnouncementReadInput' }
+      responses:
+        '200':
+          description: Read recorded, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /sde/version:
+    get:
+      operationId: getSdeVersion
+      x-gin-access: []
+      security: []
+      responses:
+        '200':
+          description: Imported version, no-import state, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SdeVersionSuccess'
+                  - $ref: '#/components/schemas/SdeNoVersionSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+  /sde/types:
+    post:
+      operationId: getSdeTypes
+      x-gin-access: []
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SdeTypesInput' }
+      responses:
+        '200':
+          description: Matching types or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SdeTypesSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+  /sde/names:
+    post:
+      operationId: getSdeNames
+      x-gin-access: []
+      description: Language precedence is body, Accept-Language header, language cookie, then en.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SdeNamesInput' }
+      responses:
+        '200':
+          description: Name maps or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SdeNamesSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+  /sde/search:
+    post:
+      operationId: searchSde
+      x-gin-access: []
+      description: Language precedence is body, Accept-Language header, language cookie, then en.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SdeSearchInput' }
+      responses:
+        '200':
+          description: Search results or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SdeSearchSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+  /me:
+    get:
+      operationId: getMe
+      x-gin-access: ["jwt"]
+      responses:
+        '200':
+          description: Current user, characters, and authorization context, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/MeSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      operationId: updateMe
+      x-gin-access: ["jwt"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MeUpdateInput' }
+      responses:
+        '200':
+          description: Updated profile, contact conflict, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/MeUpdateSuccess'
+                  - $ref: '#/components/schemas/ContactConflict'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      operationId: deleteMe
+      x-gin-access: ["jwt"]
+      responses:
+        '200':
+          description: Account deleted or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /mumble/credential:
+    get:
+      operationId: getMumbleCredential
+      x-gin-access: ["jwt"]
+      responses:
+        '200':
+          description: Credential status or business error. Does not disclose the password.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/MumbleCredentialStatusSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: issueMumbleCredential
+      x-gin-access: ["jwt"]
+      responses:
+        '200': { $ref: '#/components/responses/MumbleCredentialIssue' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      operationId: deleteMumbleCredential
+      x-gin-access: ["jwt"]
+      responses:
+        '200':
+          description: Credential revoked or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /mumble/credential/rotate:
+    post:
+      operationId: renewMumbleCredential
+      x-gin-access: ["jwt"]
+      responses:
+        '200': { $ref: '#/components/responses/MumbleCredentialIssue' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+    queryToken: { type: apiKey, in: query, name: token }
+  parameters:
+    AnnouncementID:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+  requestBodies:
+    AnnouncementInput:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/AnnouncementInput' }
+  responses:
+    MumbleCredentialIssue:
+      description: Issued credential and its one-time password, or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/MumbleCredentialResultSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    AnnouncementResult:
+      description: Announcement detail or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/AnnouncementSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    Unauthorized:
+      description: Missing or invalid authentication.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/AuthError' }
+    Forbidden:
+      description: Insufficient privileges.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/AuthError' }
+  schemas:
+    CurrentUser:
+      type: object
+      required: [id, created_at, updated_at, nickname, qq, discord_id, status, role, primary_character_id, last_login_at, last_login_ip]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        nickname: { type: string }
+        qq: { type: string }
+        discord_id: { type: string }
+        status: { type: integer, x-go-type: int8 }
+        role: { type: string }
+        primary_character_id: { type: integer, format: int64 }
+        last_login_at: { type: string, format: date-time, nullable: true }
+        last_login_ip: { type: string }
+    EveCharacter:
+      type: object
+      required: [id, created_at, updated_at, character_id, character_name, user_id, scopes, token_expiry, token_invalid, corporation_id]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        character_id: { type: integer, format: int64 }
+        character_name: { type: string }
+        user_id: { type: integer, x-go-type: uint }
+        scopes: { type: string }
+        token_expiry: { type: string, format: date-time }
+        token_invalid: { type: boolean }
+        birthday: { type: string, format: date-time }
+        fuxi_legion_tenure_days: { type: integer }
+        corporation_id: { type: integer, format: int64 }
+        alliance_id: { type: integer, format: int64 }
+        faction_id: { type: integer, format: int64 }
+    Me:
+      type: object
+      required: [user, characters, roles, profile_complete, primary_corporation_id, corp_capabilities, corp_rules, enforce_character_esi_restriction, is_currently_newbro, is_mentor_mentee_eligible]
+      properties:
+        user: { $ref: '#/components/schemas/CurrentUser' }
+        characters: { type: array, items: { $ref: '#/components/schemas/EveCharacter' } }
+        roles: { type: array, items: { type: string } }
+        profile_complete: { type: boolean }
+        primary_corporation_id: { type: integer, format: int64 }
+        corp_capabilities: { type: array, items: { type: string } }
+        corp_rules:
+          type: object
+          x-go-type: 'map[string]interface{}'
+          additionalProperties:
+            oneOf:
+              - { type: string }
+              - { type: number }
+              - { type: boolean }
+        enforce_character_esi_restriction: { type: boolean, x-go-name: EnforceCharacterESIRestriction }
+        is_currently_newbro: { type: boolean, nullable: true }
+        is_mentor_mentee_eligible: { type: boolean, nullable: true }
+    MeUpdateInput:
+      type: object
+      description: Omitted and null fields are left unchanged.
+      properties:
+        nickname: { type: string, nullable: true, x-omitempty: true }
+        qq: { type: string, nullable: true, x-omitempty: true }
+        discord_id: { type: string, nullable: true, x-omitempty: true }
+    MeUpdate:
+      type: object
+      required: [user, profile_complete]
+      properties:
+        user: { $ref: '#/components/schemas/CurrentUser' }
+        profile_complete: { type: boolean }
+    MeSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/Me' }
+    MeUpdateSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/MeUpdate' }
+    ContactConflict:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [409] }
+        msg: { type: string, enum: [contact_already_bound] }
+        data: { $ref: '#/components/schemas/ContactConflictDetail' }
+    ContactConflictDetail:
+      type: object
+      required: [contact, primary_character_id, primary_character_name]
+      properties:
+        contact: { type: string, enum: [qq, discord_id] }
+        primary_character_id: { type: integer, format: int64 }
+        primary_character_name: { type: string }
+    MumblePublicNode:
+      type: object
+      required: [name, description, address, port]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        address: { type: string }
+        port: { type: integer }
+    MumbleCredentialStatus:
+      type: object
+      required: [created, enabled]
+      properties:
+        created: { type: boolean }
+        enabled: { type: boolean }
+        servers:
+          type: array
+          items: { $ref: '#/components/schemas/MumblePublicNode' }
+          x-go-type-skip-optional-pointer: true
+        credential_version:
+          type: integer
+          x-go-type: uint
+          x-go-type-skip-optional-pointer: true
+        password_rotated_at: { type: string, format: date-time }
+    MumbleCredentialResult:
+      type: object
+      required: [credential, password]
+      properties:
+        credential: { $ref: '#/components/schemas/MumbleCredentialStatus' }
+        password: { type: string, description: Returned only when issuing or rotating a credential. }
+    MumbleCredentialStatusSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/MumbleCredentialStatus' }
+    MumbleCredentialResultSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/MumbleCredentialResult' }
+    SdeVersion:
+      type: object
+      required: [id, version, build_hash, note, created_at, updated_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        version: { type: string }
+        build_hash: { type: string }
+        note: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    SdeNoVersion:
+      type: object
+      required: [version, message]
+      properties:
+        version: { type: string, nullable: true, enum: [null] }
+        message: { type: string }
+    SdeTypesInput:
+      type: object
+      required: [type_ids]
+      properties:
+        type_ids: { type: array, minItems: 1, items: { type: integer } }
+        published: { type: boolean, nullable: true }
+        language_id: { type: string, default: en, x-go-type-skip-optional-pointer: true }
+    SdeType:
+      type: object
+      required: [type_id, type_name, group_id, group_name, market_group_id, market_group_name, category_id, category_name]
+      properties:
+        type_id: { type: integer }
+        type_name: { type: string }
+        group_id: { type: integer }
+        group_name: { type: string }
+        market_group_id: { type: integer }
+        market_group_name: { type: string }
+        category_id: { type: integer }
+        category_name: { type: string }
+    SdeNamesInput:
+      type: object
+      description: At least one of ids or esi must be nonempty.
+      properties:
+        language: { type: string, x-go-type-skip-optional-pointer: true }
+        ids:
+          type: object
+          x-go-type-skip-optional-pointer: true
+          additionalProperties: { type: array, items: { type: integer } }
+        esi: { type: array, items: { type: integer, format: int64 }, x-go-type-skip-optional-pointer: true }
+    SdeNames:
+      type: object
+      required: [flat, names]
+      properties:
+        flat:
+          type: object
+          x-go-type: 'map[int]string'
+          additionalProperties: { type: string }
+        names:
+          type: object
+          x-go-type: 'map[string]map[int]string'
+          additionalProperties:
+            type: object
+            additionalProperties: { type: string }
+        misses: { $ref: '#/components/schemas/SdeNameMisses' }
+    SdeNameMisses:
+      type: object
+      properties:
+        esi: { type: array, items: { type: integer }, x-go-type-skip-optional-pointer: true }
+    SdeSearchInput:
+      type: object
+      required: [keyword]
+      properties:
+        keyword: { type: string, minLength: 1, x-oapi-codegen-extra-tags: { binding: required } }
+        language: { type: string, x-go-type-skip-optional-pointer: true }
+        category_ids: { type: array, items: { type: integer }, x-go-type-skip-optional-pointer: true }
+        exclude_category_ids: { type: array, items: { type: integer }, x-go-type-skip-optional-pointer: true }
+        limit: { type: integer, default: 20, x-go-type-skip-optional-pointer: true }
+        search_member: { type: boolean, x-go-type-skip-optional-pointer: true }
+    SdeSearchItem:
+      type: object
+      required: [id, name, group_id, group_name, category]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        group_id: { type: integer }
+        group_name: { type: string }
+        category: { type: string, description: 'Result kind: type or character.' }
+    SdeVersionSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SdeVersion' }
+    SdeNoVersionSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SdeNoVersion' }
+    SdeTypesSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, nullable: true, items: { $ref: '#/components/schemas/SdeType' } }
+    SdeNamesSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SdeNames' }
+    SdeSearchSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, nullable: true, items: { $ref: '#/components/schemas/SdeSearchItem' } }
+    AnnouncementSummary:
+      type: object
+      required: [id, title, author_id, author_nickname, author_character_id, author_character_name, hidden, version, revision, created_at, updated_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        title: { type: string }
+        author_id: { type: integer, x-go-type: uint }
+        author_nickname: { type: string }
+        author_character_id: { type: integer, format: int64 }
+        author_character_name: { type: string }
+        hidden: { type: boolean }
+        version: { type: integer, x-go-type: uint }
+        revision: { type: integer, x-go-type: uint }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Announcement:
+      allOf:
+        - $ref: '#/components/schemas/AnnouncementSummary'
+        - type: object
+          properties:
+            body_html: { type: string }
+    AnnouncementRow:
+      allOf:
+        - $ref: '#/components/schemas/AnnouncementSummary'
+        - type: object
+          required: [unread]
+          properties:
+            unread: { type: boolean }
+    AnnouncementList:
+      type: object
+      required: [list, total]
+      properties:
+        list:
+          type: array
+          items: { $ref: '#/components/schemas/AnnouncementRow' }
+        total: { type: integer, format: int64 }
+    AnnouncementInput:
+      type: object
+      required: [title, body_html]
+      properties:
+        title: { type: string }
+        body_html: { type: string }
+        hidden: { type: boolean, x-go-type-skip-optional-pointer: true }
+        remind: { type: boolean, x-go-type-skip-optional-pointer: true }
+        revision: { type: integer, x-go-type: uint, x-go-type-skip-optional-pointer: true }
+    AnnouncementReadInput:
+      type: object
+      required: [version]
+      properties:
+        version: { type: integer, minimum: 1, x-go-type: uint }
+    AnnouncementListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AnnouncementList' }
+    AnnouncementSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/Announcement' }
+    NullSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: object, nullable: true, enum: [null] }
+    BusinessError:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [400, 404, 500] }
+        msg: { type: string }
+        data: { type: object, nullable: true, enum: [null] }
+    AuthError:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [401, 403] }
+        msg: { type: string }
+        data: { type: object, nullable: true, enum: [null] }

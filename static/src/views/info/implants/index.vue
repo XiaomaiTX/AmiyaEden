@@ -158,11 +158,13 @@
 </template>
 
 <script setup lang="ts">
+  import type { InfoImplantsResponse } from '@/api/generated/client'
   import { ref, computed, onMounted, h } from 'vue'
   import { Refresh, HomeFilled, Location, Connection } from '@element-plus/icons-vue'
   import { ElCard, ElSelect, ElOption, ElAvatar, ElButton, ElEmpty, ElTag } from 'element-plus'
-  import { fetchMyCharacters } from '@/api/auth'
-  import { fetchInfoImplants } from '@/api/eve-info'
+
+  import { listMyEveCharacters, getCharacterImplants } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { formatTime } from '@utils/common'
   import { useUserStore } from '@/store/modules/user'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
@@ -190,7 +192,7 @@
   // ---- 数据 ----
   const characters = ref<Api.Auth.EveCharacter[]>([])
   const selectedCharacterId = ref<number>()
-  const implantsData = ref<Api.EveInfo.ImplantsResponse | null>(null)
+  const implantsData = ref<InfoImplantsResponse | null>(null)
   const loading = ref(false)
 
   // ---- 计算属性 ----
@@ -215,7 +217,7 @@
   // ---- 交互 ----
   const loadCharacters = async () => {
     try {
-      characters.value = await fetchMyCharacters()
+      characters.value = await unwrapContract(listMyEveCharacters())
       if (characters.value.length > 0 && !selectedCharacterId.value) {
         selectedCharacterId.value = characters.value[0].character_id
         loadData()
@@ -229,10 +231,12 @@
     if (!selectedCharacterId.value) return
     loading.value = true
     try {
-      implantsData.value = await fetchInfoImplants({
-        character_id: selectedCharacterId.value,
-        language: userStore.language
-      })
+      implantsData.value = await unwrapContract(
+        getCharacterImplants({
+          character_id: selectedCharacterId.value,
+          language: userStore.language
+        })
+      )
     } catch {
       implantsData.value = null
     } finally {

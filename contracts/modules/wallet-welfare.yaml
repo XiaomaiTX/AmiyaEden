@@ -1,0 +1,869 @@
+paths:
+  /system/wallet/list:
+    post:
+      operationId: adminListSystemWallets
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.wallet.read"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SystemWalletListInput'}
+      responses:
+        '200': {$ref: '#/components/responses/SystemWalletListPageResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/wallet/detail:
+    post:
+      operationId: adminGetSystemWallet
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.wallet.read"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SystemWalletDetailInput'}
+      responses:
+        '200': {$ref: '#/components/responses/ShopWalletResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/wallet/adjust:
+    post:
+      operationId: adminAdjustSystemWallet
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.wallet.read", "cap:system.wallet.adjust"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SystemWalletAdjustInput'}
+      responses:
+        '200': {$ref: '#/components/responses/ShopWalletResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/wallet/transactions:
+    post:
+      operationId: adminListSystemWalletTransactions
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.wallet.read"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SystemWalletTransactionListInput'}
+      responses:
+        '200': {$ref: '#/components/responses/ShopWalletTransactionPageResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/wallet/logs:
+    post:
+      operationId: adminListSystemWalletLogs
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.wallet.read"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SystemWalletLogListInput'}
+      responses:
+        '200': {$ref: '#/components/responses/SystemWalletLogPageResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/wallet/analytics:
+    post:
+      operationId: adminGetSystemWalletAnalytics
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.wallet.read"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SystemWalletAnalyticsInput'}
+      responses:
+        '200': {$ref: '#/components/responses/SystemWalletAnalyticsResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/welfare/list:
+    post:
+      operationId: adminListWelfares
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "cap:welfare.user", "role:admin,welfare"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareListInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WelfarePageResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/welfare/add:
+    post:
+      operationId: adminCreateWelfare
+      x-gin-access: ["jwt", "login", "role:admin", "cap:welfare.settings"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareCreateInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WelfareItemResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/welfare/edit:
+    post:
+      operationId: adminUpdateWelfare
+      x-gin-access: ["jwt", "login", "role:admin", "cap:welfare.settings"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareUpdateInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WelfareItemResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/welfare/delete:
+    post:
+      operationId: adminDeleteWelfare
+      x-gin-access: ["jwt", "login", "role:admin", "cap:welfare.settings"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareIDInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WalletWelfareNullResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/welfare/reorder:
+    post:
+      operationId: adminReorderWelfares
+      x-gin-access: ["jwt", "login", "role:admin", "cap:welfare.settings"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareReorderInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WalletWelfareNullResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/welfare/settings:
+    get:
+      operationId: adminGetWelfareSettings
+      x-gin-access: ["jwt", "login", "role:admin"]
+      responses:
+        '200': {$ref: '#/components/responses/WelfareSettingsResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    put:
+      operationId: adminUpdateWelfareSettings
+      x-gin-access: ["jwt", "login", "role:admin", "cap:welfare.settings"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareSettingsInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WelfareSettingsResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/welfare/import:
+    post:
+      operationId: adminImportWelfareRecords
+      x-gin-access: ["jwt", "login", "role:admin", "cap:welfare.settings"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareImportInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WelfareImportResultResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/welfare/applications:
+    post:
+      operationId: adminListWelfareApplications
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "cap:welfare.approval", "role:admin,welfare"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareAdminApplicationListInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WelfareAdminApplicationPageResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/welfare/applications/delete:
+    post:
+      operationId: adminDeleteWelfareApplication
+      x-gin-access: ["jwt", "login", "role:admin", "cap:welfare.approval"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareIDInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WalletWelfareNullResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/welfare/review:
+    post:
+      operationId: adminReviewWelfareApplication
+      x-gin-access: ["jwt", "login", "cap:welfare.approval", "role:admin,welfare"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareReviewInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WelfareReviewResultResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /welfare/eligible:
+    post:
+      operationId: getEligibleWelfares
+      x-gin-access: ["jwt", "login", "cap:welfare.user"]
+      responses:
+        '200': {$ref: '#/components/responses/WelfareEligibleListResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /welfare/apply:
+    post:
+      operationId: applyForWelfare
+      x-gin-access: ["jwt", "login", "cap:welfare.user"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareApplyInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WelfareApplicationResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /welfare/my-applications:
+    post:
+      operationId: listMyWelfareApplications
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "cap:welfare.user"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WelfareMyApplicationListInput'}
+      responses:
+        '200': {$ref: '#/components/responses/WelfareMyApplicationPageResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+components:
+  responses:
+    SystemWalletListPageResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/SystemWalletListPageSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    SystemWalletLogPageResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/SystemWalletLogPageSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    SystemWalletAnalyticsResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/SystemWalletAnalyticsSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    WelfarePageResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/WelfarePageSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    WelfareItemResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/WelfareItemSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    WalletWelfareNullResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/NullSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    WelfareSettingsResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/WelfareSettingsSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    WelfareImportResultResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/WelfareImportResultSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    WelfareAdminApplicationPageResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/WelfareAdminApplicationPageSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    WelfareReviewResultResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/WelfareReviewResultSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    WelfareEligibleListResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/WelfareEligibleListSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    WelfareApplicationResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/WelfareApplicationSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    WelfareMyApplicationPageResponse:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/WelfareMyApplicationPageSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+  schemas:
+    SystemWalletListPageSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/SystemWalletListPage'}
+      required: [code, msg, data]
+    SystemWalletLogPageSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/SystemWalletLogPage'}
+      required: [code, msg, data]
+    SystemWalletAnalyticsSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/SystemWalletAnalytics'}
+      required: [code, msg, data]
+    WelfarePageSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/WelfarePage'}
+      required: [code, msg, data]
+    WelfareItemSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/WelfareItem'}
+      required: [code, msg, data]
+    WelfareSettingsSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/WelfareSettings'}
+      required: [code, msg, data]
+    WelfareImportResultSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/WelfareImportResult'}
+      required: [code, msg, data]
+    WelfareAdminApplicationPageSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/WelfareAdminApplicationPage'}
+      required: [code, msg, data]
+    WelfareReviewResultSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/WelfareReviewResult'}
+      required: [code, msg, data]
+    WelfareEligibleListSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/WelfareEligibleList'}
+      required: [code, msg, data]
+    WelfareApplicationSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/WelfareApplication'}
+      required: [code, msg, data]
+    WelfareMyApplicationPageSuccess:
+      type: object
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/WelfareMyApplicationPage'}
+      required: [code, msg, data]
+    SystemWalletListInput:
+      type: object
+      properties:
+        current: {type: integer, default: 1, x-go-type-skip-optional-pointer: true}
+        size: {type: integer, default: 200, description: Values below 1 use 200 and values above 1000 use 1000. A missing or malformed body uses
+            20., x-go-type-skip-optional-pointer: true}
+        user_keyword: {type: string, x-go-type-skip-optional-pointer: true}
+        sort_by: {type: string, x-go-type-skip-optional-pointer: true}
+        sort_order: {type: string, x-go-type-skip-optional-pointer: true}
+    SystemWalletDetailInput:
+      type: object
+      properties:
+        user_id: {type: integer, x-go-type: uint, x-go-name: UserID, x-oapi-codegen-extra-tags: {binding: required}, minimum: 1}
+      required: [user_id]
+    SystemWalletAdjustInput:
+      type: object
+      properties:
+        target_uid: {type: integer, x-go-type: uint, x-go-name: TargetUID, x-oapi-codegen-extra-tags: {binding: required}, minimum: 1}
+        action: {type: string, x-oapi-codegen-extra-tags: {binding: 'required,oneof=add deduct set'}, enum: [add, deduct, set], x-go-type: string}
+        amount: {type: number, format: double, x-oapi-codegen-extra-tags: {binding: 'required,gt=0'}, minimum: 0, exclusiveMinimum: true}
+        reason: {type: string, x-oapi-codegen-extra-tags: {binding: required}, minLength: 1}
+      required: [target_uid, action, amount, reason]
+    SystemWalletTransactionListInput:
+      type: object
+      properties:
+        current: {type: integer, default: 1, x-go-type-skip-optional-pointer: true}
+        size: {type: integer, default: 200, description: Values below 1 use 200 and values above 1000 use 1000. A missing or malformed body uses
+            20., x-go-type-skip-optional-pointer: true}
+        user_id: {type: integer, x-go-type: uint, nullable: true, x-go-name: UserID}
+        user_keyword: {type: string, x-go-type-skip-optional-pointer: true}
+        ref_type: {type: string, x-go-type-skip-optional-pointer: true}
+        sort_by: {type: string, x-go-type-skip-optional-pointer: true}
+        sort_order: {type: string, x-go-type-skip-optional-pointer: true}
+    SystemWalletLogListInput:
+      type: object
+      properties:
+        current: {type: integer, default: 1, x-go-type-skip-optional-pointer: true}
+        size: {type: integer, default: 200, description: Values below 1 use 200 and values above 1000 use 1000. A missing or malformed body uses
+            20., x-go-type-skip-optional-pointer: true}
+        operator_id: {type: integer, x-go-type: uint, nullable: true, x-go-name: OperatorID}
+        target_uid: {type: integer, x-go-type: uint, nullable: true, x-go-name: TargetUID}
+        action: {type: string, x-go-type-skip-optional-pointer: true}
+        sort_by: {type: string, x-go-type-skip-optional-pointer: true}
+        sort_order: {type: string, x-go-type-skip-optional-pointer: true}
+    SystemWalletAnalyticsInput:
+      type: object
+      properties:
+        start_date: {type: string, description: Use YYYY-MM-DD and supply both dates or neither., x-go-type-skip-optional-pointer: true}
+        end_date: {type: string, description: Use YYYY-MM-DD and supply both dates or neither., x-go-type-skip-optional-pointer: true}
+        ref_types: {type: array, items: {type: string}, x-go-type-skip-optional-pointer: true}
+        user_keyword: {type: string, x-go-type-skip-optional-pointer: true}
+        top_n: {type: integer, description: Use 1–50. Omitted and zero select 10., default: 10, x-go-type-skip-optional-pointer: true}
+    WelfareListInput:
+      type: object
+      properties:
+        current: {type: integer, default: 1, x-go-type-skip-optional-pointer: true}
+        size: {type: integer, default: 20, description: Values outside 1–100 use 20., x-go-type-skip-optional-pointer: true}
+        status: {type: integer, minimum: -128, maximum: 127, x-go-type: int8, nullable: true}
+        name: {type: string, x-go-type-skip-optional-pointer: true}
+    WelfareCreateInput:
+      type: object
+      properties:
+        name: {type: string, x-oapi-codegen-extra-tags: {binding: required}, minLength: 1}
+        description: {type: string, x-go-type-skip-optional-pointer: true}
+        dist_mode: {type: string, x-oapi-codegen-extra-tags: {binding: 'required,oneof=per_user per_character'}, enum: [per_user, per_character],
+          x-go-type: string}
+        pay_by_fuxi_coin: {type: integer, nullable: true}
+        require_skill_plan: {type: boolean, x-go-type-skip-optional-pointer: true}
+        skill_plan_ids: {type: array, items: {type: integer, x-go-type: uint}, x-go-name: SkillPlanIDs, x-go-type-skip-optional-pointer: true}
+        max_char_age_months: {type: integer, nullable: true}
+        minimum_pap: {type: integer, nullable: true}
+        minimum_fuxi_legion_years: {type: integer, nullable: true}
+        require_evidence: {type: boolean, x-go-type-skip-optional-pointer: true}
+        example_evidence: {type: string, x-go-type-skip-optional-pointer: true}
+        status: {type: integer, minimum: -128, maximum: 127, x-go-type: int8, x-go-type-skip-optional-pointer: true}
+        sort_order: {type: integer, x-go-type-skip-optional-pointer: true}
+      required: [name, dist_mode]
+    WelfareIDInput:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID, x-oapi-codegen-extra-tags: {binding: required}, minimum: 1}
+      required: [id]
+    WelfareReorderInput:
+      type: object
+      properties:
+        ids: {type: array, items: {type: integer, x-go-type: uint}, x-go-name: IDs, x-oapi-codegen-extra-tags: {binding: required}}
+      required: [ids]
+    WelfareSettingsInput:
+      type: object
+      properties:
+        auto_approve_fuxi_coin_threshold: {type: integer, minimum: 0, x-go-type: '*int', x-oapi-codegen-extra-tags: {binding: 'required,gte=0'}}
+      required: [auto_approve_fuxi_coin_threshold]
+    WelfareImportInput:
+      type: object
+      properties:
+        welfare_id: {type: integer, x-go-type: uint, x-go-name: WelfareID, x-oapi-codegen-extra-tags: {binding: required}, minimum: 1}
+        csv: {type: string, x-go-name: CSV, x-oapi-codegen-extra-tags: {binding: required}, minLength: 1}
+      required: [welfare_id, csv]
+    WelfareAdminApplicationListInput:
+      type: object
+      properties:
+        current: {type: integer, default: 1, x-go-type-skip-optional-pointer: true}
+        size: {type: integer, default: 200, description: Values below 1 use 200 and values above 1000 use 1000. A missing or malformed body uses
+            50., x-go-type-skip-optional-pointer: true}
+        status: {type: string, x-go-type-skip-optional-pointer: true}
+        keyword: {type: string, x-go-type-skip-optional-pointer: true}
+    WelfareReviewInput:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID, x-oapi-codegen-extra-tags: {binding: required}, minimum: 1}
+        action: {type: string, x-oapi-codegen-extra-tags: {binding: 'required,oneof=deliver reject'}, enum: [deliver, reject], x-go-type: string}
+      required: [id, action]
+    WelfareApplyInput:
+      type: object
+      properties:
+        welfare_id: {type: integer, x-go-type: uint, x-go-name: WelfareID, x-oapi-codegen-extra-tags: {binding: required}, minimum: 1}
+        character_id: {type: integer, format: int64, x-go-name: CharacterID, x-go-type-skip-optional-pointer: true}
+        evidence_image: {type: string, x-go-type-skip-optional-pointer: true}
+      required: [welfare_id]
+    WelfareMyApplicationListInput:
+      type: object
+      properties:
+        current: {type: integer, default: 1, x-go-type-skip-optional-pointer: true}
+        size: {type: integer, default: 10, description: Values outside 1–100 use 10., x-go-type-skip-optional-pointer: true}
+        status: {type: string, x-go-type-skip-optional-pointer: true}
+    WelfareUpdateInput:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID, x-oapi-codegen-extra-tags: {binding: required}, minimum: 1}
+        name: {type: string}
+        description: {type: string, x-go-type-skip-optional-pointer: true}
+        dist_mode: {type: string, enum: [per_user, per_character], x-go-type: string}
+        pay_by_fuxi_coin: {type: integer, nullable: true}
+        require_skill_plan: {type: boolean, x-go-type-skip-optional-pointer: true}
+        skill_plan_ids: {type: array, items: {type: integer, x-go-type: uint}, x-go-name: SkillPlanIDs, x-go-type-skip-optional-pointer: true}
+        max_char_age_months: {type: integer, nullable: true}
+        minimum_pap: {type: integer, nullable: true}
+        minimum_fuxi_legion_years: {type: integer, nullable: true}
+        require_evidence: {type: boolean, x-go-type-skip-optional-pointer: true}
+        example_evidence: {type: string, x-go-type-skip-optional-pointer: true}
+        status: {type: integer, minimum: -128, maximum: 127, x-go-type: int8, x-go-type-skip-optional-pointer: true}
+        sort_order: {type: integer, nullable: true}
+      required: [id, name, dist_mode]
+    SystemWalletListPage:
+      type: object
+      properties:
+        list: {type: array, items: {$ref: '#/components/schemas/SystemWalletListItem'}, nullable: true}
+        total: {type: integer, format: int64}
+        page: {type: integer}
+        pageSize: {type: integer}
+      required: [list, total, page, pageSize]
+    SystemWalletLogPage:
+      type: object
+      properties:
+        list: {type: array, items: {$ref: '#/components/schemas/SystemWalletLog'}, nullable: true}
+        total: {type: integer, format: int64}
+        page: {type: integer}
+        pageSize: {type: integer}
+      required: [list, total, page, pageSize]
+    WelfarePage:
+      type: object
+      properties:
+        list: {type: array, items: {$ref: '#/components/schemas/WelfareItem'}, nullable: true}
+        total: {type: integer, format: int64}
+        page: {type: integer}
+        pageSize: {type: integer}
+      required: [list, total, page, pageSize]
+    WelfareAdminApplicationPage:
+      type: object
+      properties:
+        list: {type: array, items: {$ref: '#/components/schemas/WelfareAdminApplication'}}
+        total: {type: integer, format: int64}
+        page: {type: integer}
+        pageSize: {type: integer}
+      required: [list, total, page, pageSize]
+    WelfareMyApplicationPage:
+      type: object
+      properties:
+        list: {type: array, items: {$ref: '#/components/schemas/WelfareMyApplication'}}
+        total: {type: integer, format: int64}
+        page: {type: integer}
+        pageSize: {type: integer}
+      required: [list, total, page, pageSize]
+    SystemWalletListItem:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        user_id: {type: integer, x-go-type: uint, x-go-name: UserID}
+        balance: {type: number, format: double}
+        updated_at: {type: string, format: date-time}
+        character_name: {type: string}
+      required: [id, user_id, balance, updated_at, character_name]
+    SystemWalletLog:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        operator_id: {type: integer, x-go-type: uint, x-go-name: OperatorID}
+        target_uid: {type: integer, x-go-type: uint, x-go-name: TargetUID}
+        action: {type: string, enum: [add, deduct, set], x-go-type: string}
+        amount: {type: number, format: double}
+        before: {type: number, format: double}
+        after: {type: number, format: double}
+        reason: {type: string}
+        created_at: {type: string, format: date-time}
+        target_character_name: {type: string}
+        operator_character_name: {type: string}
+      required: [id, operator_id, target_uid, action, amount, before, after, reason, created_at, target_character_name, operator_character_name]
+    SystemWalletAnalyticsSummary:
+      type: object
+      properties:
+        wallet_count: {type: integer, format: int64}
+        active_wallet_count: {type: integer, format: int64}
+        total_balance: {type: number, format: double}
+        income_total: {type: number, format: double}
+        expense_total: {type: number, format: double}
+        net_flow: {type: number, format: double}
+      required: [wallet_count, active_wallet_count, total_balance, income_total, expense_total, net_flow]
+    SystemWalletAnalyticsDailyPoint:
+      type: object
+      properties:
+        date: {type: string}
+        income: {type: number, format: double}
+        expense: {type: number, format: double}
+        net_flow: {type: number, format: double}
+      required: [date, income, expense, net_flow]
+    SystemWalletAnalyticsRefTypeItem:
+      type: object
+      properties:
+        ref_type: {type: string}
+        income: {type: number, format: double}
+        expense: {type: number, format: double}
+        count: {type: integer, format: int64}
+      required: [ref_type, income, expense, count]
+    SystemWalletAnalyticsTopUser:
+      type: object
+      properties:
+        user_id: {type: integer, x-go-type: uint, x-go-name: UserID}
+        character_name: {type: string}
+        amount: {type: number, format: double}
+      required: [user_id, character_name, amount]
+    SystemWalletAnalyticsOperatorItem:
+      type: object
+      properties:
+        operator_id: {type: integer, x-go-type: uint, x-go-name: OperatorID}
+        operator_name: {type: string}
+        count: {type: integer, format: int64}
+        amount_total: {type: number, format: double}
+      required: [operator_id, operator_name, count, amount_total]
+    SystemWalletAnalyticsAdminAdjustStats:
+      type: object
+      properties:
+        count: {type: integer, format: int64}
+        amount_total: {type: number, format: double}
+        by_operator: {type: array, items: {$ref: '#/components/schemas/SystemWalletAnalyticsOperatorItem'}}
+      required: [count, amount_total, by_operator]
+    SystemWalletAnalyticsLargeTransaction:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        user_id: {type: integer, x-go-type: uint, x-go-name: UserID}
+        character_name: {type: string}
+        amount: {type: number, format: double}
+        ref_type: {type: string}
+        created_at: {type: string}
+      required: [id, user_id, character_name, amount, ref_type, created_at]
+    SystemWalletAnalyticsFrequentAdjustment:
+      type: object
+      properties:
+        target_uid: {type: integer, x-go-type: uint, x-go-name: TargetUID}
+        character_name: {type: string}
+        adjust_count: {type: integer, format: int64}
+        amount_total: {type: number, format: double}
+        last_adjustment_time: {type: string}
+      required: [target_uid, character_name, adjust_count, amount_total, last_adjustment_time]
+    SystemWalletAnalyticsOperatorConcentration:
+      type: object
+      properties:
+        operator_id: {type: integer, x-go-type: uint, x-go-name: OperatorID}
+        operator_name: {type: string}
+        count: {type: integer, format: int64}
+        amount_total: {type: number, format: double}
+        ratio: {type: number, format: double}
+      required: [operator_id, operator_name, count, amount_total, ratio]
+    SystemWalletAnalyticsAnomalies:
+      type: object
+      properties:
+        large_transactions: {type: array, items: {$ref: '#/components/schemas/SystemWalletAnalyticsLargeTransaction'}}
+        frequent_adjustments: {type: array, items: {$ref: '#/components/schemas/SystemWalletAnalyticsFrequentAdjustment'}}
+        operator_concentration: {type: array, items: {$ref: '#/components/schemas/SystemWalletAnalyticsOperatorConcentration'}}
+      required: [large_transactions, frequent_adjustments, operator_concentration]
+    SystemWalletAnalytics:
+      type: object
+      properties:
+        summary: {$ref: '#/components/schemas/SystemWalletAnalyticsSummary'}
+        daily_series: {type: array, items: {$ref: '#/components/schemas/SystemWalletAnalyticsDailyPoint'}}
+        ref_type_breakdown: {type: array, items: {$ref: '#/components/schemas/SystemWalletAnalyticsRefTypeItem'}}
+        top_inflow_users: {type: array, items: {$ref: '#/components/schemas/SystemWalletAnalyticsTopUser'}}
+        top_outflow_users: {type: array, items: {$ref: '#/components/schemas/SystemWalletAnalyticsTopUser'}}
+        admin_adjust_stats: {$ref: '#/components/schemas/SystemWalletAnalyticsAdminAdjustStats'}
+        anomalies: {$ref: '#/components/schemas/SystemWalletAnalyticsAnomalies'}
+      required: [summary, daily_series, ref_type_breakdown, top_inflow_users, top_outflow_users, admin_adjust_stats, anomalies]
+    WelfareItem:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        name: {type: string}
+        description: {type: string}
+        dist_mode: {type: string, enum: [per_user, per_character], x-go-type: string}
+        pay_by_fuxi_coin: {type: integer, nullable: true}
+        require_skill_plan: {type: boolean}
+        max_char_age_months: {type: integer, nullable: true}
+        minimum_pap: {type: integer, nullable: true}
+        minimum_fuxi_legion_years: {type: integer, nullable: true}
+        require_evidence: {type: boolean}
+        example_evidence: {type: string}
+        status: {type: integer, minimum: -128, maximum: 127, x-go-type: int8}
+        sort_order: {type: integer}
+        created_by: {type: integer, x-go-type: uint}
+        skill_plan_ids: {type: array, items: {type: integer, x-go-type: uint}, nullable: true, x-go-name: SkillPlanIDs}
+        skill_plan_names: {type: array, items: {type: string}, nullable: true}
+      required: [id, created_at, updated_at, name, description, dist_mode, pay_by_fuxi_coin, require_skill_plan, max_char_age_months, minimum_pap,
+        minimum_fuxi_legion_years, require_evidence, example_evidence, status, sort_order, created_by, skill_plan_ids, skill_plan_names]
+    WelfareApplication:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        welfare_id: {type: integer, x-go-type: uint, x-go-name: WelfareID}
+        user_id: {type: integer, x-go-type: uint, nullable: true, x-go-name: UserID}
+        character_id: {type: integer, format: int64, x-go-name: CharacterID}
+        character_name: {type: string}
+        qq: {type: string, x-go-name: QQ}
+        discord_id: {type: string, x-go-name: DiscordID}
+        evidence_image: {type: string}
+        status: {type: string, enum: [requested, delivered, rejected], x-go-type: string}
+        reviewed_by: {type: integer, x-go-type: uint}
+        reviewed_at: {type: string, format: date-time, nullable: true}
+      required: [id, created_at, updated_at, welfare_id, user_id, character_id, character_name, qq, discord_id, evidence_image, status, reviewed_by,
+        reviewed_at]
+    WelfareAdminApplication:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        welfare_id: {type: integer, x-go-type: uint, x-go-name: WelfareID}
+        welfare_name: {type: string}
+        welfare_description: {type: string, x-go-name: WelfareDesc}
+        user_id: {type: integer, x-go-type: uint, nullable: true, x-go-name: UserID}
+        applicant_nickname: {type: string}
+        character_name: {type: string}
+        qq: {type: string, x-go-name: QQ}
+        discord_id: {type: string, x-go-name: DiscordID}
+        evidence_image: {type: string}
+        status: {type: string, enum: [requested, delivered, rejected], x-go-type: string}
+        reviewed_by: {type: integer, x-go-type: uint}
+        reviewer_name: {type: string}
+        created_at: {type: string, format: date-time}
+        reviewed_at: {type: string, format: date-time, nullable: true}
+      required: [id, welfare_id, welfare_name, welfare_description, user_id, applicant_nickname, character_name, qq, discord_id, evidence_image,
+        status, reviewed_by, reviewer_name, created_at, reviewed_at]
+    WelfareMyApplication:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        welfare_id: {type: integer, x-go-type: uint, x-go-name: WelfareID}
+        welfare_name: {type: string}
+        character_name: {type: string}
+        status: {type: string, enum: [requested, delivered, rejected], x-go-type: string}
+        reviewer_name: {type: string}
+        created_at: {type: string, format: date-time}
+        reviewed_at: {type: string, format: date-time, nullable: true}
+      required: [id, welfare_id, welfare_name, character_name, status, reviewer_name, created_at, reviewed_at]
+    WelfareEligibleCharacter:
+      type: object
+      properties:
+        character_id: {type: integer, format: int64, x-go-name: CharacterID}
+        character_name: {type: string}
+        can_apply_now: {type: boolean}
+        ineligible_reason: {type: string, enum: [pap, skill, pap_skill, legion_years, pap_legion_years, skill_legion_years, pap_skill_legion_years],
+          x-go-type: string}
+      required: [character_id, character_name, can_apply_now]
+    WelfareEligibleItem:
+      type: object
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        name: {type: string}
+        description: {type: string}
+        dist_mode: {type: string, enum: [per_user, per_character], x-go-type: string}
+        skill_plan_names: {type: array, items: {type: string}}
+        require_evidence: {type: boolean}
+        example_evidence: {type: string}
+        can_apply_now: {type: boolean}
+        ineligible_reason: {type: string, enum: [pap, skill, pap_skill, legion_years, pap_legion_years, skill_legion_years, pap_skill_legion_years],
+          x-go-type: string}
+        eligible_characters: {type: array, items: {$ref: '#/components/schemas/WelfareEligibleCharacter'}, nullable: true}
+      required: [id, name, description, dist_mode, skill_plan_names, require_evidence, example_evidence, can_apply_now, eligible_characters]
+    WelfareEligibleList: {type: array, items: {$ref: '#/components/schemas/WelfareEligibleItem'}}
+    WelfareReviewResult:
+      type: object
+      properties:
+        outcome: {type: string, enum: [delivered, rejected, auto_rejected], x-go-type: string}
+        eligibility_reason: {type: string, x-go-type: string, enum: [welfare_disabled, user_missing, contact_missing, character_not_owned, age_limit,
+            minimum_pap, minimum_fuxi_legion_years, evidence_missing, skill_plan]}
+        mail_error: {type: string}
+        mail_id: {type: integer, format: int64, x-go-name: MailID}
+        mail_sender_character_id: {type: integer, format: int64, x-go-name: MailSenderCharacterID}
+        mail_sender_character_name: {type: string}
+        mail_recipient_character_id: {type: integer, format: int64, x-go-name: MailRecipientCharacterID}
+        mail_recipient_character_name: {type: string}
+      required: [outcome]
+    WelfareSettings:
+      type: object
+      properties:
+        auto_approve_fuxi_coin_threshold: {type: integer}
+      required: [auto_approve_fuxi_coin_threshold]
+    WelfareImportResult:
+      type: object
+      properties:
+        count: {type: integer}
+      required: [count]

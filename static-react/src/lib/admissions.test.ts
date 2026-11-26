@@ -1,5 +1,5 @@
 import { canAccessAdmission, compressAdmissionImage } from './admissions'
-import type { AdmissionContext } from '@/types/api/admissions'
+import type { AdmissionContext } from '@/api/generated/client'
 test('eligibility is fail closed and follows refreshed user context', () => {
   expect(canAccessAdmission(null, 'new_member')).toBe(false)
   expect(canAccessAdmission(null, 'alt')).toBe(false)

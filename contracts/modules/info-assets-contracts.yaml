@@ -1,0 +1,350 @@
+paths:
+  /info/assets:
+    post:
+      operationId: getAssets
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.assets.read"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoAssetsInput"}
+      responses:
+        '200':
+          description: Query result or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoAssetsSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/assets/locations:
+    post:
+      operationId: getAssetLocations
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.assets.read"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoAssetLocationsInput"}
+      responses:
+        '200':
+          description: Query result or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoAssetLocationsSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/assets/location-items:
+    post:
+      operationId: getAssetLocationItems
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.assets.read"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoAssetLocationItemsInput"}
+      responses:
+        '200':
+          description: Query result or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoAssetLocationItemsSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/assets/children:
+    post:
+      operationId: getAssetChildren
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.assets.read"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoAssetChildrenInput"}
+      responses:
+        '200':
+          description: Query result or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoAssetChildrenSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/contracts:
+    post:
+      operationId: getContracts
+      x-gin-body: { allowEmpty: true, allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.contracts.read"]
+      requestBody:
+        description: >-
+          An empty object or JSON null uses page 1 with size 200. A missing body
+          or a JSON binding error falls back to page 1 with size 20; successfully
+          decoded filters may still apply when a field fails to bind.
+        required: false
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoContractsInput"}
+      responses:
+        '200':
+          description: Query result or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoContractsSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/contracts/detail:
+    post:
+      operationId: getContractDetail
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.contracts.read"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoContractDetailInput"}
+      responses:
+        '200':
+          description: Query result or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoContractDetailSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    InfoAssetsInput:
+      type: object
+      properties:
+        language: {"type": "string", "x-go-name": "Language", "x-order": 1, "x-go-type-skip-optional-pointer": true, "description": "Defaults to zh when empty.", "default": "zh"}
+    InfoAssetTreeItem:
+      type: object
+      required: ["item_id", "type_id", "type_name", "group_name", "category_id", "quantity", "location_flag", "is_singleton", "character_id", "character_name"]
+      properties:
+        item_id: {"type": "integer", "format": "int64", "x-go-name": "ItemID", "x-order": 1}
+        type_id: {"type": "integer", "x-go-name": "TypeID", "x-order": 2}
+        type_name: {"type": "string", "x-go-name": "TypeName", "x-order": 3}
+        group_name: {"type": "string", "x-go-name": "GroupName", "x-order": 4}
+        category_id: {"type": "integer", "x-go-name": "CategoryID", "x-order": 5}
+        quantity: {"type": "integer", "x-go-name": "Quantity", "x-order": 6}
+        location_flag: {"type": "string", "x-go-name": "LocationFlag", "x-order": 7}
+        is_singleton: {"type": "boolean", "x-go-name": "IsSingleton", "x-order": 8}
+        is_blueprint_copy: {"type": "boolean", "x-go-name": "IsBlueprintCopy", "x-order": 9}
+        asset_name: {"type": "string", "x-go-name": "AssetName", "x-order": 10, "x-go-type-skip-optional-pointer": true}
+        character_id: {"type": "integer", "format": "int64", "x-go-name": "CharacterID", "x-order": 11}
+        character_name: {"type": "string", "x-go-name": "CharacterName", "x-order": 12}
+        children: {"type": "array", "items": {"$ref": "#/components/schemas/InfoAssetTreeItem"}, "x-go-name": "Children", "x-order": 13, "x-go-type-skip-optional-pointer": true}
+    InfoAssetTreeLocation:
+      type: object
+      required: ["location_id", "location_type", "location_name", "items"]
+      properties:
+        location_id: {"type": "integer", "format": "int64", "x-go-name": "LocationID", "x-order": 1}
+        location_type: {"type": "string", "x-go-name": "LocationType", "x-order": 2}
+        location_name: {"type": "string", "x-go-name": "LocationName", "x-order": 3}
+        items: {"type": "array", "items": {"$ref": "#/components/schemas/InfoAssetTreeItem"}, "x-go-name": "Items", "x-order": 4}
+    InfoAssets:
+      type: object
+      required: ["total_items", "locations"]
+      properties:
+        total_items: {"type": "integer", "x-go-name": "TotalItems", "x-order": 1}
+        locations: {"type": "array", "items": {"$ref": "#/components/schemas/InfoAssetTreeLocation"}, "x-go-name": "Locations", "x-order": 2}
+    InfoAssetLocationsInput:
+      type: object
+      properties:
+        language: {"type": "string", "x-go-name": "Language", "x-order": 1, "x-go-type-skip-optional-pointer": true}
+        page: {"type": "integer", "x-go-name": "Page", "x-order": 2, "x-go-type-skip-optional-pointer": true, "description": "Nonpositive values default to 1.", "default": 1}
+        page_size: {"type": "integer", "x-go-name": "PageSize", "x-order": 3, "x-go-type-skip-optional-pointer": true, "description": "Nonpositive values and values over 100 default to 20.", "default": 20}
+        keyword: {"type": "string", "x-go-name": "Keyword", "x-order": 4, "x-go-type-skip-optional-pointer": true}
+    InfoAssetLocationSummary:
+      type: object
+      required: ["location_id", "location_type", "location_name", "top_level_count", "root_item_count", "character_count"]
+      properties:
+        location_id: {"type": "integer", "format": "int64", "x-go-name": "LocationID", "x-order": 1}
+        location_type: {"type": "string", "x-go-name": "LocationType", "x-order": 2}
+        location_name: {"type": "string", "x-go-name": "LocationName", "x-order": 3}
+        top_level_count: {"type": "integer", "x-go-name": "TopLevelCount", "x-order": 4}
+        root_item_count: {"type": "integer", "x-go-name": "RootItemCount", "x-order": 5}
+        character_count: {"type": "integer", "x-go-name": "CharacterCount", "x-order": 6}
+    InfoAssetLocations:
+      type: object
+      required: ["total_locations", "total_items", "locations"]
+      properties:
+        total_locations: {"type": "integer", "x-go-name": "TotalLocations", "x-order": 1}
+        total_items: {"type": "integer", "x-go-name": "TotalItems", "x-order": 2}
+        locations: {"type": "array", "items": {"$ref": "#/components/schemas/InfoAssetLocationSummary"}, "x-go-name": "Locations", "x-order": 3}
+    InfoAssetLocationItemsInput:
+      type: object
+      properties:
+        language: {"type": "string", "x-go-name": "Language", "x-order": 1, "x-go-type-skip-optional-pointer": true}
+        location_id: {"type": "integer", "format": "int64", "x-go-name": "LocationID", "x-order": 2, "x-go-type-skip-optional-pointer": true}
+        page: {"type": "integer", "x-go-name": "Page", "x-order": 3, "x-go-type-skip-optional-pointer": true, "description": "Nonpositive values default to 1.", "default": 1}
+        page_size: {"type": "integer", "x-go-name": "PageSize", "x-order": 4, "x-go-type-skip-optional-pointer": true, "description": "Nonpositive values and values over 100 default to 50.", "default": 50}
+        keyword: {"type": "string", "x-go-name": "Keyword", "x-order": 5, "x-go-type-skip-optional-pointer": true}
+    InfoAssetListItem:
+      type: object
+      required: ["item_id", "type_id", "type_name", "group_name", "category_id", "quantity", "location_flag", "is_singleton", "character_id", "character_name", "has_children", "child_count"]
+      properties:
+        item_id: {"type": "integer", "format": "int64", "x-go-name": "ItemID", "x-order": 1}
+        type_id: {"type": "integer", "x-go-name": "TypeID", "x-order": 2}
+        type_name: {"type": "string", "x-go-name": "TypeName", "x-order": 3}
+        group_name: {"type": "string", "x-go-name": "GroupName", "x-order": 4}
+        category_id: {"type": "integer", "x-go-name": "CategoryID", "x-order": 5}
+        quantity: {"type": "integer", "x-go-name": "Quantity", "x-order": 6}
+        location_flag: {"type": "string", "x-go-name": "LocationFlag", "x-order": 7}
+        is_singleton: {"type": "boolean", "x-go-name": "IsSingleton", "x-order": 8}
+        is_blueprint_copy: {"type": "boolean", "x-go-name": "IsBlueprintCopy", "x-order": 9}
+        asset_name: {"type": "string", "x-go-name": "AssetName", "x-order": 10, "x-go-type-skip-optional-pointer": true}
+        character_id: {"type": "integer", "format": "int64", "x-go-name": "CharacterID", "x-order": 11}
+        character_name: {"type": "string", "x-go-name": "CharacterName", "x-order": 12}
+        has_children: {"type": "boolean", "x-go-name": "HasChildren", "x-order": 13}
+        child_count: {"type": "integer", "x-go-name": "ChildCount", "x-order": 14}
+    InfoAssetLocationItems:
+      type: object
+      required: ["location_id", "location_name", "total_root_items", "items"]
+      properties:
+        location_id: {"type": "integer", "format": "int64", "x-go-name": "LocationID", "x-order": 1}
+        location_name: {"type": "string", "x-go-name": "LocationName", "x-order": 2}
+        total_root_items: {"type": "integer", "x-go-name": "TotalRootItems", "x-order": 3}
+        items: {"type": "array", "items": {"$ref": "#/components/schemas/InfoAssetListItem"}, "x-go-name": "Items", "x-order": 4}
+    InfoAssetChildrenInput:
+      type: object
+      properties:
+        language: {"type": "string", "x-go-name": "Language", "x-order": 1, "x-go-type-skip-optional-pointer": true}
+        parent_item_id: {"type": "integer", "format": "int64", "x-go-name": "ParentItemID", "x-order": 2, "x-go-type-skip-optional-pointer": true}
+    InfoAssetChildren:
+      type: object
+      required: ["parent_item_id", "items"]
+      properties:
+        parent_item_id: {"type": "integer", "format": "int64", "x-go-name": "ParentItemID", "x-order": 1}
+        items: {"type": "array", "items": {"$ref": "#/components/schemas/InfoAssetListItem"}, "x-go-name": "Items", "x-order": 2}
+    InfoContractsInput:
+      type: object
+      nullable: true
+      properties:
+        current: {"type": "integer", "x-go-name": "Current", "x-order": 1, "x-go-type-skip-optional-pointer": true, "description": "Nonpositive values default to 1.", "default": 1}
+        size: {"type": "integer", "x-go-name": "Size", "x-order": 2, "x-go-type-skip-optional-pointer": true, "description": "Nonpositive values default to 200. Values over 1000 are capped at 1000.", "default": 200}
+        type: {"type": "string", "x-go-name": "Type", "x-order": 3, "x-go-type-skip-optional-pointer": true}
+        status: {"type": "string", "x-go-name": "Status", "x-order": 4, "x-go-type-skip-optional-pointer": true}
+        language: {"type": "string", "x-go-name": "Language", "x-order": 5, "x-go-type-skip-optional-pointer": true}
+    InfoContractListItem:
+      type: object
+      required: ["character_id", "character_name", "contract_id", "acceptor_id", "assignee_id", "availability", "date_expired", "date_issued", "for_corporation", "issuer_corporation_id", "issuer_id", "status", "type"]
+      properties:
+        character_id: {"type": "integer", "format": "int64", "x-go-name": "CharacterID", "x-order": 1}
+        character_name: {"type": "string", "x-go-name": "CharacterName", "x-order": 2}
+        contract_id: {"type": "integer", "format": "int64", "x-go-name": "ContractID", "x-order": 3}
+        acceptor_id: {"type": "integer", "format": "int64", "x-go-name": "AcceptorID", "x-order": 4}
+        assignee_id: {"type": "integer", "format": "int64", "x-go-name": "AssigneeID", "x-order": 5}
+        availability: {"type": "string", "x-go-name": "Availability", "x-order": 6}
+        buyout: {"type": "number", "format": "double", "x-go-name": "Buyout", "x-order": 7}
+        collateral: {"type": "number", "format": "double", "x-go-name": "Collateral", "x-order": 8}
+        date_accepted: {"type": "string", "format": "date-time", "x-go-name": "DateAccepted", "x-order": 9}
+        date_completed: {"type": "string", "format": "date-time", "x-go-name": "DateCompleted", "x-order": 10}
+        date_expired: {"type": "string", "format": "date-time", "x-go-name": "DateExpired", "x-order": 11}
+        date_issued: {"type": "string", "format": "date-time", "x-go-name": "DateIssued", "x-order": 12}
+        days_to_complete: {"type": "integer", "x-go-name": "DaysToComplete", "x-order": 13}
+        end_location_id: {"type": "integer", "format": "int64", "x-go-name": "EndLocationID", "x-order": 14}
+        for_corporation: {"type": "boolean", "x-go-name": "ForCorporation", "x-order": 15}
+        issuer_corporation_id: {"type": "integer", "format": "int64", "x-go-name": "IssuerCorporationID", "x-order": 16}
+        issuer_id: {"type": "integer", "format": "int64", "x-go-name": "IssuerID", "x-order": 17}
+        price: {"type": "number", "format": "double", "x-go-name": "Price", "x-order": 18}
+        reward: {"type": "number", "format": "double", "x-go-name": "Reward", "x-order": 19}
+        start_location_id: {"type": "integer", "format": "int64", "x-go-name": "StartLocationID", "x-order": 20}
+        status: {"type": "string", "x-go-name": "Status", "x-order": 21}
+        title: {"type": "string", "x-go-name": "Title", "x-order": 22}
+        type: {"type": "string", "x-go-name": "Type", "x-order": 23}
+        volume: {"type": "number", "format": "double", "x-go-name": "Volume", "x-order": 24}
+    InfoContracts:
+      type: object
+      required: ["list", "total", "page", "pageSize"]
+      properties:
+        list: {"type": "array", "items": {"$ref": "#/components/schemas/InfoContractListItem"}, "x-go-name": "List", "x-order": 1}
+        total: {"type": "integer", "format": "int64", "x-go-name": "Total", "x-order": 2}
+        page: {"type": "integer", "x-go-name": "Page", "x-order": 3}
+        pageSize: {"type": "integer", "x-go-name": "PageSize", "x-order": 4}
+    InfoContractDetailInput:
+      type: object
+      properties:
+        character_id: {"type": "integer", "format": "int64", "x-go-name": "CharacterID", "x-order": 1, "x-go-type-skip-optional-pointer": true}
+        contract_id: {"type": "integer", "format": "int64", "x-go-name": "ContractID", "x-order": 2, "x-go-type-skip-optional-pointer": true}
+        language: {"type": "string", "x-go-name": "Language", "x-order": 3, "x-go-type-skip-optional-pointer": true, "description": "Defaults to zh when empty.", "default": "zh"}
+    InfoContractItemDetail:
+      type: object
+      required: ["type_id", "type_name", "group_name", "category_id", "quantity", "is_included", "is_singleton"]
+      properties:
+        type_id: {"type": "integer", "x-go-name": "TypeID", "x-order": 1}
+        type_name: {"type": "string", "x-go-name": "TypeName", "x-order": 2}
+        group_name: {"type": "string", "x-go-name": "GroupName", "x-order": 3}
+        category_id: {"type": "integer", "x-go-name": "CategoryID", "x-order": 4}
+        quantity: {"type": "integer", "x-go-name": "Quantity", "x-order": 5}
+        is_included: {"type": "boolean", "x-go-name": "IsIncluded", "x-order": 6}
+        is_singleton: {"type": "boolean", "x-go-name": "IsSingleton", "x-order": 7}
+    InfoContractBid:
+      type: object
+      required: ["amount", "bid_id", "bidder_id", "date_bid"]
+      properties:
+        amount: {"type": "number", "format": "double", "x-go-name": "Amount", "x-order": 1}
+        bid_id: {"type": "integer", "format": "int64", "x-go-name": "BidID", "x-order": 2}
+        bidder_id: {"type": "integer", "format": "int64", "x-go-name": "BidderID", "x-order": 3}
+        date_bid: {"type": "string", "format": "date-time", "x-go-name": "DateBid", "x-order": 4}
+    InfoContractDetail:
+      type: object
+      required: ["items", "bids"]
+      properties:
+        items: {"type": "array", "items": {"$ref": "#/components/schemas/InfoContractItemDetail"}, "x-go-name": "Items", "x-order": 1}
+        bids: {"type": "array", "items": {"$ref": "#/components/schemas/InfoContractBid"}, "x-go-name": "Bids", "x-order": 2}
+    InfoAssetsSuccess:
+      type: object
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/InfoAssets"}
+    InfoAssetLocationsSuccess:
+      type: object
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/InfoAssetLocations"}
+    InfoAssetLocationItemsSuccess:
+      type: object
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/InfoAssetLocationItems"}
+    InfoAssetChildrenSuccess:
+      type: object
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/InfoAssetChildren"}
+    InfoContractsSuccess:
+      type: object
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/InfoContracts"}
+    InfoContractDetailSuccess:
+      type: object
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/InfoContractDetail"}

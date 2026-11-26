@@ -1,0 +1,510 @@
+paths:
+  /mentor/mentors:
+    get:
+      operationId: listMentorCandidates
+      x-gin-access: ["jwt", "login", "cap:menu.newbro"]
+      responses:
+        '200': {$ref: '#/components/responses/MentorCandidateListResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /mentor/me:
+    get:
+      operationId: getMyMentorStatus
+      x-gin-access: ["jwt", "login", "cap:menu.newbro"]
+      responses:
+        '200': {$ref: '#/components/responses/MentorMyStatusResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /mentor/apply:
+    post:
+      operationId: applyForMentor
+      x-gin-access: ["jwt", "login", "cap:menu.newbro"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MentorApplyInput'}
+      responses:
+        '200': {$ref: '#/components/responses/MentorApplyResultResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /mentor/dashboard/applications:
+    get:
+      operationId: listMentorApplications
+      x-gin-access: ["jwt", "login", "cap:menu.newbro", "role:mentor"]
+      responses:
+        '200': {$ref: '#/components/responses/MentorMenteeListResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /mentor/dashboard/mentees:
+    get:
+      operationId: listMentorMentees
+      x-gin-access: ["jwt", "login", "cap:menu.newbro", "role:mentor"]
+      parameters:
+      - name: current
+        in: query
+        schema: {type: integer, default: 1}
+        description: Values below 1 use 1. Non-integers return a parameter error.
+      - name: size
+        in: query
+        schema: {type: integer, default: 20}
+        description: Values outside 1–100 use 20.
+      - name: status
+        in: query
+        schema: {type: string, default: active}
+        description: Case-insensitive; pending, active, rejected, revoked, graduated or all. Explicitly empty means all.
+      responses:
+        '200': {$ref: '#/components/responses/MentorMenteePageResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /mentor/dashboard/reward-stages:
+    get:
+      operationId: getMentorDashboardRewardStages
+      x-gin-access: ["jwt", "login", "cap:menu.newbro", "role:mentor"]
+      responses:
+        '200': {$ref: '#/components/responses/MentorRewardStageListResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /mentor/dashboard/accept:
+    post:
+      operationId: acceptMentorApplication
+      x-gin-access: ["jwt", "login", "cap:menu.newbro", "role:mentor"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MentorRelationshipActionInput'}
+      responses:
+        '200': {$ref: '#/components/responses/MentorEmptyResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /mentor/dashboard/reject:
+    post:
+      operationId: rejectMentorApplication
+      x-gin-access: ["jwt", "login", "cap:menu.newbro", "role:mentor"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MentorRelationshipActionInput'}
+      responses:
+        '200': {$ref: '#/components/responses/MentorEmptyResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/mentor/relationships:
+    get:
+      operationId: adminListMentorRelationships
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      parameters:
+      - name: current
+        in: query
+        schema: {type: integer, default: 1}
+        description: Values below 1 use 1. Non-integers return a parameter error.
+      - name: size
+        in: query
+        schema: {type: integer, default: 20}
+        description: Values outside 1–200 use 20.
+      - name: status
+        in: query
+        schema: {type: string}
+        description: Case-insensitive; pending, active, rejected, revoked, graduated or all. Empty means all.
+      - name: keyword
+        in: query
+        schema: {type: string}
+      responses:
+        '200': {$ref: '#/components/responses/MentorRelationshipPageResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/mentor/reward-distributions:
+    get:
+      operationId: adminListMentorRewardDistributions
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      parameters:
+      - name: current
+        in: query
+        schema: {type: integer, default: 1}
+        description: Values below 1 use 1. Non-integers return a parameter error.
+      - name: size
+        in: query
+        schema: {type: integer, default: 200}
+        description: Values below 1 use 200; values above 1000 are capped at 1000.
+      - name: keyword
+        in: query
+        schema: {type: string}
+      responses:
+        '200': {$ref: '#/components/responses/MentorDistributionPageResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/mentor/revoke:
+    post:
+      operationId: adminRevokeMentorRelationship
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MentorRelationshipActionInput'}
+      responses:
+        '200': {$ref: '#/components/responses/MentorEmptyResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/mentor/reward-stages:
+    get:
+      operationId: adminGetMentorRewardStages
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      responses:
+        '200': {$ref: '#/components/responses/MentorRewardStageListResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    put:
+      operationId: adminUpdateMentorRewardStages
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MentorRewardStagesInput'}
+      responses:
+        '200': {$ref: '#/components/responses/MentorRewardStageListResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /system/mentor/reward/process:
+    post:
+      operationId: adminProcessMentorRewards
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      responses:
+        '200': {$ref: '#/components/responses/MentorRewardProcessResultResultEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+components:
+  responses:
+    MentorCandidateListResultEnvelope:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/MentorCandidateListSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    MentorMyStatusResultEnvelope:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/MentorMyStatusSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    MentorApplyResultResultEnvelope:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/MentorApplyResultSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    MentorMenteeListResultEnvelope:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/MentorMenteeListSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    MentorMenteePageResultEnvelope:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/MentorMenteePageSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    MentorRewardStageListResultEnvelope:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/MentorRewardStageListSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    MentorEmptyResultEnvelope:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/MentorEmptySuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    MentorRelationshipPageResultEnvelope:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/MentorRelationshipPageSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    MentorDistributionPageResultEnvelope:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/MentorDistributionPageSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    MentorRewardProcessResultResultEnvelope:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/MentorRewardProcessResultSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+  schemas:
+    MentorCandidateListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/MentorCandidateList'}
+    MentorMyStatusSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/MentorMyStatus'}
+    MentorApplyResultSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/MentorApplyResult'}
+    MentorMenteeListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/MentorMenteeList'}
+    MentorMenteePageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/MentorMenteePage'}
+    MentorRewardStageListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/MentorRewardStageList'}
+    MentorEmptySuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/MentorEmpty'}
+    MentorRelationshipPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/MentorRelationshipPage'}
+    MentorDistributionPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/MentorDistributionPage'}
+    MentorRewardProcessResultSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/MentorRewardProcessResult'}
+    MentorCandidate:
+      type: object
+      required: [mentor_user_id, mentor_character_id, mentor_character_name, mentor_nickname, qq, discord_id, active_mentee_count, last_online_at]
+      properties:
+        mentor_user_id: {type: integer, x-go-type: uint, x-go-name: MentorUserID}
+        mentor_character_id: {type: integer, format: int64, x-go-name: MentorCharacterID}
+        mentor_character_name: {type: string}
+        mentor_nickname: {type: string}
+        qq: {type: string, x-go-name: MentorQQ}
+        discord_id: {type: string, x-go-name: MentorDiscordID}
+        active_mentee_count: {type: integer, format: int64}
+        last_online_at: {type: string, format: date-time, nullable: true}
+    MentorMyStatus:
+      type: object
+      required: [is_eligible, disqualified_reason, current_relationship]
+      properties:
+        is_eligible: {type: boolean}
+        disqualified_reason: {type: string}
+        current_relationship:
+          oneOf:
+          - {$ref: '#/components/schemas/MentorRelationshipView'}
+          - {$ref: '#/components/schemas/MentorNoRelationship'}
+          x-go-type: '*MentorRelationshipView'
+    MentorNoRelationship:
+      type: object
+      nullable: true
+      enum: [null]
+    MentorRelationshipView:
+      type: object
+      required: [id, mentee_user_id, mentor_user_id, status, applied_at, responded_at, revoked_at, graduated_at, mentor_character_id, mentor_character_name,
+        mentor_nickname, mentor_qq, mentor_discord_id, mentee_character_id, mentee_character_name, mentee_nickname]
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        mentee_user_id: {type: integer, x-go-type: uint, x-go-name: MenteeUserID}
+        mentor_user_id: {type: integer, x-go-type: uint, x-go-name: MentorUserID}
+        status: {type: string, enum: [pending, active, rejected, revoked, graduated], x-go-type: string}
+        applied_at: {type: string, format: date-time}
+        responded_at: {type: string, format: date-time, nullable: true}
+        revoked_at: {type: string, format: date-time, nullable: true}
+        graduated_at: {type: string, format: date-time, nullable: true}
+        mentor_character_id: {type: integer, format: int64, x-go-name: MentorCharacterID}
+        mentor_character_name: {type: string}
+        mentor_nickname: {type: string}
+        mentor_qq: {type: string, x-go-name: MentorQQ}
+        mentor_discord_id: {type: string, x-go-name: MentorDiscordID}
+        mentee_character_id: {type: integer, format: int64, x-go-name: MenteeCharacterID}
+        mentee_character_name: {type: string}
+        mentee_nickname: {type: string}
+    MentorMenteeItem:
+      type: object
+      required: [relationship_id, mentee_user_id, mentee_character_id, mentee_character_name, mentee_nickname, mentee_qq, mentee_discord_id, mentee_total_sp,
+        mentee_total_pap, mentee_days_active, status, applied_at, responded_at, graduated_at, distributed_stages, distributed_reward_amount]
+      properties:
+        relationship_id: {type: integer, x-go-type: uint, x-go-name: RelationshipID}
+        mentee_user_id: {type: integer, x-go-type: uint, x-go-name: MenteeUserID}
+        mentee_character_id: {type: integer, format: int64, x-go-name: MenteeCharacterID}
+        mentee_character_name: {type: string}
+        mentee_nickname: {type: string}
+        mentee_qq: {type: string, x-go-name: MenteeQQ}
+        mentee_discord_id: {type: string, x-go-name: MenteeDiscordID}
+        mentee_total_sp: {type: integer, format: int64, x-go-name: MenteeTotalSP}
+        mentee_total_pap: {type: number, format: double}
+        mentee_days_active: {type: integer}
+        status: {type: string, enum: [pending, active, rejected, revoked, graduated], x-go-type: string}
+        applied_at: {type: string, format: date-time}
+        responded_at: {type: string, format: date-time, nullable: true}
+        graduated_at: {type: string, format: date-time, nullable: true}
+        distributed_stages: {type: array, items: {type: integer}}
+        distributed_reward_amount: {type: number, format: double}
+    MentorRewardStageInput:
+      type: object
+      required: [stage_order, condition_type, threshold, reward_amount]
+      properties:
+        stage_order: {type: integer, minimum: 1}
+        name: {type: string, x-go-type-skip-optional-pointer: true}
+        condition_type: {type: string, enum: [skill_points, pap_count, days_active], x-go-type: string}
+        threshold: {type: number, format: double, description: The service accepts positive whole numbers.}
+        reward_amount: {type: number, format: double, description: The service accepts positive whole numbers.}
+    MentorRewardProcessResult:
+      type: object
+      required: [processed_relationships, rewards_distributed, total_coin_awarded, graduated_count]
+      properties:
+        processed_relationships: {type: integer}
+        rewards_distributed: {type: integer}
+        total_coin_awarded: {type: number, format: double}
+        graduated_count: {type: integer}
+    MentorDistribution:
+      type: object
+      required: [id, relationship_id, stage_id, stage_order, mentor_user_id, mentor_character_name, mentor_nickname, mentee_user_id, mentee_character_name,
+        mentee_nickname, reward_amount, distributed_at, wallet_ref_id]
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        relationship_id: {type: integer, x-go-type: uint, x-go-name: RelationshipID}
+        stage_id: {type: integer, x-go-type: uint, x-go-name: StageID}
+        stage_order: {type: integer}
+        mentor_user_id: {type: integer, x-go-type: uint, x-go-name: MentorUserID}
+        mentor_character_name: {type: string}
+        mentor_nickname: {type: string}
+        mentee_user_id: {type: integer, x-go-type: uint, x-go-name: MenteeUserID}
+        mentee_character_name: {type: string}
+        mentee_nickname: {type: string}
+        reward_amount: {type: number, format: double}
+        distributed_at: {type: string, format: date-time}
+        wallet_ref_id: {type: string, x-go-name: WalletRefID}
+    MentorApplyResult:
+      type: object
+      required: [id, created_at, updated_at, mentee_user_id, mentee_primary_character_id_at_start, mentor_user_id, status, applied_at, responded_at,
+        revoked_at, revoked_by, graduated_at]
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        mentee_user_id: {type: integer, x-go-type: uint, x-go-name: MenteeUserID}
+        mentee_primary_character_id_at_start: {type: integer, format: int64, x-go-name: MenteePrimaryCharacterIDAtStart}
+        mentor_user_id: {type: integer, x-go-type: uint, x-go-name: MentorUserID}
+        status: {type: string, enum: [pending, active, rejected, revoked, graduated], x-go-type: string}
+        applied_at: {type: string, format: date-time}
+        responded_at: {type: string, format: date-time, nullable: true}
+        revoked_at: {type: string, format: date-time, nullable: true}
+        revoked_by: {type: integer, x-go-type: uint, nullable: true}
+        graduated_at: {type: string, format: date-time, nullable: true}
+    MentorRewardStage:
+      type: object
+      required: [id, created_at, updated_at, stage_order, name, condition_type, threshold, reward_amount]
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        stage_order: {type: integer}
+        name: {type: string}
+        condition_type: {type: string, enum: [skill_points, pap_count, days_active], x-go-type: string}
+        threshold: {type: number, format: double}
+        reward_amount: {type: number, format: double}
+    MentorApplyInput:
+      type: object
+      required: [mentor_user_id]
+      properties:
+        mentor_user_id: {type: integer, x-go-type: uint, minimum: 1, x-go-name: MentorUserID, x-oapi-codegen-extra-tags: {binding: required}}
+    MentorRelationshipActionInput:
+      type: object
+      required: [relationship_id]
+      properties:
+        relationship_id: {type: integer, x-go-type: uint, minimum: 1, x-go-name: RelationshipID, x-oapi-codegen-extra-tags: {binding: required}}
+    MentorRewardStagesInput:
+      type: object
+      required: [stages]
+      properties:
+        stages: {type: array, items: {$ref: '#/components/schemas/MentorRewardStageInput'}, x-oapi-codegen-extra-tags: {binding: required}}
+    MentorEmpty:
+      type: object
+      additionalProperties: false
+      maxProperties: 0
+    MentorCandidateList: {type: array, items: {$ref: '#/components/schemas/MentorCandidate'}}
+    MentorMenteeList: {type: array, items: {$ref: '#/components/schemas/MentorMenteeItem'}}
+    MentorRewardStageList: {type: array, items: {$ref: '#/components/schemas/MentorRewardStage'}}
+    MentorMenteePage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: {type: array, items: {$ref: '#/components/schemas/MentorMenteeItem'}}
+        total: {type: integer, format: int64}
+        page: {type: integer}
+        pageSize: {type: integer}
+    MentorRelationshipPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: {type: array, items: {$ref: '#/components/schemas/MentorRelationshipView'}}
+        total: {type: integer, format: int64}
+        page: {type: integer}
+        pageSize: {type: integer}
+    MentorDistributionPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: {type: array, items: {$ref: '#/components/schemas/MentorDistribution'}}
+        total: {type: integer, format: int64}
+        page: {type: integer}
+        pageSize: {type: integer}

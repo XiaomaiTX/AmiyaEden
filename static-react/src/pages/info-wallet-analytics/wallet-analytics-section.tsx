@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
-import { fetchInfoWalletAnalytics } from '@/api/eve-info'
+import { getWalletAnalytics } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import {
   ChartContainer,
@@ -15,7 +16,7 @@ import { useI18n } from '@/i18n'
 import { formatIskPlain, formatIskSmart } from '@/lib/isk'
 import { cn } from '@/lib/utils'
 import { formatJournalTypeLabel } from '@/lib/wallet-journal-type'
-import type { WalletAnalyticsResponse } from '@/types/api/eve-info'
+import type { InfoWalletAnalyticsResponse } from '@/api/generated/client'
 import {
   WALLET_ANALYTICS_PRESETS,
   buildBalanceSeries,
@@ -60,7 +61,7 @@ export function WalletAnalyticsSection({ characterId }: WalletAnalyticsSectionPr
   const { t } = useI18n()
   const [loading, setLoading] = useState(Boolean(characterId))
   const [error, setError] = useState<string | null>(null)
-  const [analytics, setAnalytics] = useState<WalletAnalyticsResponse | null>(null)
+  const [analytics, setAnalytics] = useState<InfoWalletAnalyticsResponse | null>(null)
   /** 已就位数据所属的人物，用于切换人物时避免展示上一个人物的图表 */
   const [loadedCharacterId, setLoadedCharacterId] = useState<number | null>(null)
   /** null 表示用户手动选定的自定义区间，此时不高亮任何预设 */
@@ -83,7 +84,10 @@ export function WalletAnalyticsSection({ characterId }: WalletAnalyticsSectionPr
       setError(null)
 
       try {
-        const data = await fetchInfoWalletAnalytics({ character_id: characterId })
+        const data = await unwrapContract(
+          getWalletAnalytics({ character_id: characterId }),
+          'fetch wallet analytics failed'
+        )
         if (cancelled) return
         setAnalytics(data)
         setLoadedCharacterId(characterId)
@@ -113,11 +117,14 @@ export function WalletAnalyticsSection({ characterId }: WalletAnalyticsSectionPr
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchInfoWalletAnalytics({
-        character_id: characterId,
-        from: range.from,
-        to: range.to,
-      })
+      const data = await unwrapContract(
+        getWalletAnalytics({
+          character_id: characterId,
+          from: range.from,
+          to: range.to,
+        }),
+        'fetch wallet analytics failed'
+      )
       setAnalytics(data)
       setLoadedCharacterId(characterId)
     } catch (loadError) {

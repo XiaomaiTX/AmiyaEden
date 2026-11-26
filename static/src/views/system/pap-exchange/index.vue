@@ -139,10 +139,11 @@
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
   import {
-    fetchPAPExchangeConfig,
-    updatePAPExchangeConfig,
-    type PAPExchangeConfig
-  } from '@/api/pap-exchange'
+    getPapExchangeRates,
+    setPapExchangeRates,
+    type PapExchangeConfig
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineOptions({ name: 'PAPExchange' })
 
@@ -150,7 +151,7 @@
 
   const loading = ref(false)
   const saving = ref(false)
-  const form = reactive<PAPExchangeConfig>({
+  const form = reactive<PapExchangeConfig>({
     rates: [],
     multichar_full_reward_count: 3,
     multichar_reduced_reward_count: 3,
@@ -160,7 +161,7 @@
   async function loadRates() {
     loading.value = true
     try {
-      const config = await fetchPAPExchangeConfig()
+      const config = await unwrapContract(getPapExchangeRates())
       form.rates = config.rates
       form.multichar_full_reward_count = config.multichar_full_reward_count
       form.multichar_reduced_reward_count = config.multichar_reduced_reward_count
@@ -175,16 +176,18 @@
   async function handleSave() {
     saving.value = true
     try {
-      const config = await updatePAPExchangeConfig({
-        multichar_full_reward_count: form.multichar_full_reward_count,
-        multichar_reduced_reward_count: form.multichar_reduced_reward_count,
-        multichar_reduced_reward_pct: form.multichar_reduced_reward_pct,
-        rates: form.rates.map(({ pap_type, display_name, rate }) => ({
-          pap_type,
-          display_name,
-          rate
-        }))
-      })
+      const config = await unwrapContract(
+        setPapExchangeRates({
+          multichar_full_reward_count: form.multichar_full_reward_count,
+          multichar_reduced_reward_count: form.multichar_reduced_reward_count,
+          multichar_reduced_reward_pct: form.multichar_reduced_reward_pct,
+          rates: form.rates.map(({ pap_type, display_name, rate }) => ({
+            pap_type,
+            display_name,
+            rate
+          }))
+        })
+      )
       form.rates = config.rates
       form.multichar_full_reward_count = config.multichar_full_reward_count
       form.multichar_reduced_reward_count = config.multichar_reduced_reward_count

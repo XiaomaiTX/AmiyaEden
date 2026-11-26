@@ -1,0 +1,509 @@
+paths:
+  /skill-planning/skill-plans:
+    get:
+      operationId: listSkillPlans
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      parameters:
+        - { name: current, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 50 }, description: Values outside 1–100 use 50. }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Skill plan page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createSkillPlan
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "role:admin,senior_fc"]
+      parameters:
+        - { name: lang, in: query, schema: { type: string }, description: Falls back to the Accept-Language header and language cookie before using zh. }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SkillPlanCreateInput' }
+      responses:
+        '200':
+          description: Skill plan details or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanDetailSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /skill-planning/skill-plans/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    get:
+      operationId: getSkillPlan
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      parameters:
+        - { name: lang, in: query, schema: { type: string }, description: Falls back to the Accept-Language header and language cookie before using zh. }
+      responses:
+        '200':
+          description: Skill plan details or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanDetailSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateSkillPlan
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "role:admin,senior_fc"]
+      parameters:
+        - { name: lang, in: query, schema: { type: string }, description: Falls back to the Accept-Language header and language cookie before using zh. }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SkillPlanUpdateInput' }
+      responses:
+        '200':
+          description: Skill plan details or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanDetailSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: deleteSkillPlan
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "role:admin,senior_fc"]
+      responses:
+        '200':
+          description: Operation completed or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /skill-planning/skill-plans/reorder:
+    put:
+      operationId: reorderSkillPlans
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "role:admin,senior_fc"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SkillPlanReorderInput' }
+      responses:
+        '200':
+          description: Operation completed or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /skill-planning/skill-plans/check/selection:
+    get:
+      operationId: getSkillPlanCheckSelection
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      responses:
+        '200':
+          description: Saved character selection or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanCharacterSelectionSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: saveSkillPlanCheckSelection
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SkillPlanCharacterSelectionInput' }
+      responses:
+        '200':
+          description: Saved character selection or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanCharacterSelectionSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /skill-planning/skill-plans/check/plan-selection:
+    get:
+      operationId: getSkillPlanCheckPlanSelection
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      responses:
+        '200':
+          description: Saved plan selection or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanPlanSelectionSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: saveSkillPlanCheckPlanSelection
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SkillPlanPlanSelectionInput' }
+      responses:
+        '200':
+          description: Saved plan selection or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanPlanSelectionSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /skill-planning/skill-plans/check/run:
+    post:
+      operationId: runSkillPlanCompletionCheck
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      parameters:
+        - { name: lang, in: query, schema: { type: string }, description: Falls back to the Accept-Language header and language cookie before using zh. }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SkillPlanCheckInput' }
+      responses:
+        '200':
+          description: Completion check results or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanCheckSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /skill-planning/personal-skill-plans:
+    get:
+      operationId: listPersonalSkillPlans
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      parameters:
+        - { name: current, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 50 }, description: Values outside 1–100 use 50. }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Skill plan page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createPersonalSkillPlan
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      parameters:
+        - { name: lang, in: query, schema: { type: string }, description: Falls back to the Accept-Language header and language cookie before using zh. }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SkillPlanCreateInput' }
+      responses:
+        '200':
+          description: Skill plan details or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanDetailSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /skill-planning/personal-skill-plans/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    get:
+      operationId: getPersonalSkillPlan
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      parameters:
+        - { name: lang, in: query, schema: { type: string }, description: Falls back to the Accept-Language header and language cookie before using zh. }
+      responses:
+        '200':
+          description: Skill plan details or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanDetailSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updatePersonalSkillPlan
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      parameters:
+        - { name: lang, in: query, schema: { type: string }, description: Falls back to the Accept-Language header and language cookie before using zh. }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SkillPlanUpdateInput' }
+      responses:
+        '200':
+          description: Skill plan details or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillPlanDetailSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: deletePersonalSkillPlan
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      responses:
+        '200':
+          description: Operation completed or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /skill-planning/personal-skill-plans/reorder:
+    put:
+      operationId: reorderPersonalSkillPlans
+      x-gin-access: ["jwt", "login", "cap:menu.skill_planning", "login"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SkillPlanReorderInput' }
+      responses:
+        '200':
+          description: Operation completed or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    SkillPlanScope:
+      type: string
+      enum: [corp, personal]
+    SkillPlanWriteRequirement:
+      type: object
+      required: [skill_type_id, required_level]
+      properties:
+        skill_type_id: { type: integer, minimum: 1 }
+        required_level: { type: integer, minimum: 1, maximum: 5 }
+    SkillPlanCreateInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 256, x-oapi-codegen-extra-tags: { binding: required } }
+        disabled: { type: boolean, nullable: true }
+        description: { type: string, x-go-type-skip-optional-pointer: true }
+        ship_type_id: { type: integer, nullable: true }
+        skills:
+          type: array
+          items: { $ref: '#/components/schemas/SkillPlanWriteRequirement' }
+          x-go-type-skip-optional-pointer: true
+        skills_text: { type: string, x-go-type-skip-optional-pointer: true }
+    SkillPlanUpdateInput:
+      allOf:
+        - $ref: '#/components/schemas/SkillPlanCreateInput'
+        - type: object
+          properties:
+            sort_order: { type: integer, nullable: true }
+    SkillPlanReorderInput:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items: { type: integer, x-go-type: uint }
+          x-go-name: IDs
+          x-oapi-codegen-extra-tags: { binding: required }
+    SkillPlanRecord:
+      type: object
+      required: [id, disabled, title, description, plan_scope, ship_type_id, sort_order, created_by, created_at, updated_at, skill_count]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        disabled: { type: boolean }
+        title: { type: string }
+        description: { type: string }
+        plan_scope: { $ref: '#/components/schemas/SkillPlanScope' }
+        ship_type_id: { type: integer, nullable: true }
+        sort_order: { type: integer }
+        created_by: { type: integer, x-go-type: uint }
+        created_at: { type: string, format: date-time, x-go-type: string }
+        updated_at: { type: string, format: date-time, x-go-type: string }
+        skill_count: { type: integer }
+    SkillPlanRequirement:
+      type: object
+      required: [id, skill_plan_id, skill_type_id, skill_name, group_name, required_level, sort]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        skill_plan_id: { type: integer, x-go-type: uint }
+        skill_type_id: { type: integer }
+        skill_name: { type: string }
+        group_name: { type: string }
+        required_level: { type: integer }
+        sort: { type: integer }
+    SkillPlanDetail:
+      allOf:
+        - $ref: '#/components/schemas/SkillPlanRecord'
+        - type: object
+          required: [ship_name, skills]
+          properties:
+            ship_name: { type: string }
+            skills: { type: array, items: { $ref: '#/components/schemas/SkillPlanRequirement' } }
+    SkillPlanPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/SkillPlanRecord' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer, x-go-name: PageSize }
+    SkillPlanCharacterSelectionInput:
+      type: object
+      properties:
+        character_ids:
+          type: array
+          items: { type: integer, format: int64 }
+          x-go-name: CharacterIDs
+          x-go-type-skip-optional-pointer: true
+    SkillPlanPlanSelectionInput:
+      type: object
+      properties:
+        plan_ids:
+          type: array
+          items: { type: integer, x-go-type: uint }
+          x-go-name: PlanIDs
+          x-go-type-skip-optional-pointer: true
+    SkillPlanCharacterSelection:
+      type: object
+      required: [character_ids]
+      properties:
+        character_ids: { type: array, items: { type: integer, format: int64 }, x-go-name: CharacterIDs }
+    SkillPlanPlanSelection:
+      type: object
+      required: [plan_ids]
+      properties:
+        plan_ids: { type: array, items: { type: integer, x-go-type: uint }, x-go-name: PlanIDs }
+    SkillPlanCheckInput:
+      type: object
+      properties:
+        character_ids:
+          type: array
+          items: { type: integer, format: int64 }
+          x-go-name: CharacterIDs
+          x-go-type-skip-optional-pointer: true
+        language:
+          type: string
+          description: Overrides the lang query and other language defaults when nonempty.
+          x-go-type-skip-optional-pointer: true
+    SkillPlanMissingSkill:
+      type: object
+      required: [skill_type_id, skill_name, group_name, required_level, current_level]
+      properties:
+        skill_type_id: { type: integer }
+        skill_name: { type: string }
+        group_name: { type: string }
+        required_level: { type: integer }
+        current_level: { type: integer }
+    SkillPlanCompletionPlan:
+      type: object
+      required: [plan_id, plan_title, plan_description, ship_type_id, matched_skills, total_skills, fully_satisfied, missing_skills]
+      properties:
+        plan_id: { type: integer, x-go-type: uint }
+        plan_title: { type: string }
+        plan_description: { type: string }
+        ship_type_id: { type: integer, nullable: true }
+        matched_skills: { type: integer }
+        total_skills: { type: integer }
+        fully_satisfied: { type: boolean }
+        missing_skills: { type: array, items: { $ref: '#/components/schemas/SkillPlanMissingSkill' } }
+    SkillPlanCompletionCharacter:
+      type: object
+      required: [character_id, character_name, completed_plans, total_plans, plans]
+      properties:
+        character_id: { type: integer, format: int64 }
+        character_name: { type: string }
+        completed_plans: { type: integer }
+        total_plans: { type: integer }
+        plans: { type: array, items: { $ref: '#/components/schemas/SkillPlanCompletionPlan' } }
+    SkillPlanCheckResult:
+      type: object
+      required: [characters, plan_count]
+      properties:
+        characters: { type: array, items: { $ref: '#/components/schemas/SkillPlanCompletionCharacter' } }
+        plan_count: { type: integer }
+    SkillPlanPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SkillPlanPage' }
+    SkillPlanDetailSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SkillPlanDetail' }
+    SkillPlanCharacterSelectionSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SkillPlanCharacterSelection' }
+    SkillPlanPlanSelectionSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SkillPlanPlanSelection' }
+    SkillPlanCheckSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SkillPlanCheckResult' }

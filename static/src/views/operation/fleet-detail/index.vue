@@ -191,6 +191,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { FleetInvite, FleetMemberWithPap, FleetRecord } from '@/api/generated/client'
   import { ArrowLeft, Refresh, Plus } from '@element-plus/icons-vue'
   import { formatTime } from '@utils/common'
   import {
@@ -212,17 +213,18 @@
   import { useTable } from '@/hooks/core/useTable'
   import { useUserStore } from '@/store/modules/user'
   import {
-    fetchFleetDetail,
-    syncESIFleetMembers,
+    createInvite,
+    deactivateInvite,
+    getFleet,
+    getInvites,
+    getMembersWithPap,
     issuePap,
-    addFleetMembersByCharacterNames,
-    fetchFleetInvites,
-    createFleetInvite,
-    deactivateFleetInvite,
+    manualAddMembers,
+    pingFleet,
     refreshFleetESI,
-    fetchMembersWithPap,
-    pingFleet
-  } from '@/api/fleet'
+    syncESIMembers
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useNameResolver } from '@/hooks'
 
   defineOptions({ name: 'FleetDetail' })
@@ -239,7 +241,7 @@
   })
 
   // ---- 舰队信息 ----
-  const fleet = ref<Api.Fleet.FleetItem | null>(null)
+  const fleet = ref<FleetRecord | null>(null)
   const fleetLoading = ref(false)
 
   const IMPORTANCE_MAP: Record<string, string> = {
@@ -254,10 +256,9 @@
     fleetLoading.value = true
     try {
       try {
-        const refreshed = await refreshFleetESI(fleetId.value)
-        fleet.value = refreshed
+        fleet.value = await unwrapContract(refreshFleetESI(fleetId.value))
       } catch {
-        fleet.value = await fetchFleetDetail(fleetId.value)
+        fleet.value = await unwrapContract(getFleet(fleetId.value))
       }
     } catch {
       fleet.value = null
@@ -277,7 +278,9 @@
   const memberPageSize = 260
 
   const apiFn = (params: { current: number; size: number }) =>
-    fetchMembersWithPap(fleetId.value, { current: params.current, size: memberPageSize })
+    unwrapContract(
+      getMembersWithPap(fleetId.value, { current: params.current, size: memberPageSize })
+    )
 
   const {
     columns,
@@ -305,7 +308,7 @@
           label: t('fleet.members.shipType'),
           width: 160,
           showOverflowTooltip: true,
-          formatter: (row: Api.Fleet.MemberWithPap) =>
+          formatter: (row: FleetMemberWithPap) =>
             h('span', {}, getName(row.ship_type_id, '-', 'type'))
         },
         {
@@ -313,21 +316,21 @@
           label: t('fleet.members.solarSystem'),
           width: 140,
           showOverflowTooltip: true,
-          formatter: (row: Api.Fleet.MemberWithPap) =>
+          formatter: (row: FleetMemberWithPap) =>
             h('span', {}, getName(row.solar_system_id, '-', 'solar_system'))
         },
         {
           prop: 'joined_at',
           label: t('fleet.members.joinedAt'),
           width: 180,
-          formatter: (row: Api.Fleet.MemberWithPap) => h('span', {}, formatTime(row.joined_at))
+          formatter: (row: FleetMemberWithPap) => h('span', {}, formatTime(row.joined_at))
         },
         {
           prop: 'pap_count',
           label: t('fleet.pap.count'),
           width: 120,
           align: 'center',
-          formatter: (row: Api.Fleet.MemberWithPap) =>
+          formatter: (row: FleetMemberWithPap) =>
             row.pap_count != null
               ? h(ElTag, { type: 'success', size: 'small' }, () => `+${row.pap_count}`)
               : h('span', { class: 'text-gray-400' }, '-')
@@ -350,7 +353,7 @@
   const handleSyncESI = async () => {
     syncLoading.value = true
     try {
-      await syncESIFleetMembers(fleetId.value)
+      await unwrapContract(syncESIMembers(fleetId.value))
       ElMessage.success(t('fleet.members.syncSuccess'))
       refreshData()
     } catch {
@@ -373,7 +376,7 @@
     }
     papIssueLoading.value = true
     try {
-      await issuePap(fleetId.value)
+      await unwrapContract(issuePap(fleetId.value))
       ElMessage.success(t('fleet.pap.issueSuccess'))
       refreshData()
     } catch {
@@ -407,9 +410,11 @@
 
     manualAddLoading.value = true
     try {
-      const result = await addFleetMembersByCharacterNames(fleetId.value, {
-        character_names: characterNames
-      })
+      const result = await unwrapContract(
+        manualAddMembers(fleetId.value, {
+          character_names: characterNames
+        })
+      )
 
       const messages: string[] = []
       if (result.added_character_names.length) {
@@ -443,7 +448,7 @@
   const handlePing = async () => {
     pingLoading.value = true
     try {
-      await pingFleet(fleetId.value)
+      await unwrapContract(pingFleet(fleetId.value))
       ElMessage.success(t('fleet.ping.success'))
     } catch {
       /* handled */
@@ -453,14 +458,14 @@
   }
 
   // ---- 邀请链接 ----
-  const invites = ref<Api.Fleet.FleetInvite[]>([])
+  const invites = ref<FleetInvite[]>([])
   const invitesLoading = ref(false)
   const inviteCreateLoading = ref(false)
 
   const loadInvites = async () => {
     invitesLoading.value = true
     try {
-      invites.value = (await fetchFleetInvites(fleetId.value)) ?? []
+      invites.value = (await unwrapContract(getInvites(fleetId.value))) ?? []
     } catch {
       invites.value = []
     } finally {
@@ -471,7 +476,7 @@
   const handleCreateInvite = async () => {
     inviteCreateLoading.value = true
     try {
-      await createFleetInvite(fleetId.value)
+      await unwrapContract(createInvite(fleetId.value))
       ElMessage.success(t('fleet.invite.createSuccess'))
       loadInvites()
     } catch {
@@ -481,7 +486,7 @@
     }
   }
 
-  const copyInviteLink = async (invite: Api.Fleet.FleetInvite) => {
+  const copyInviteLink = async (invite: FleetInvite) => {
     const link = `${window.location.origin}/#/operation/join?code=${invite.code}`
     try {
       await navigator.clipboard.writeText(link)
@@ -491,7 +496,7 @@
     }
   }
 
-  const handleDeactivateInvite = async (invite: Api.Fleet.FleetInvite) => {
+  const handleDeactivateInvite = async (invite: FleetInvite) => {
     try {
       await ElMessageBox.confirm(
         t('fleet.invite.deactivateConfirm'),
@@ -506,7 +511,7 @@
       return
     }
     try {
-      await deactivateFleetInvite(invite.id)
+      await unwrapContract(deactivateInvite(invite.id))
       ElMessage.success(t('fleet.invite.deactivateSuccess'))
       loadInvites()
     } catch {

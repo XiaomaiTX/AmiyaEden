@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchMyCharacters } from '@/api/auth'
+import { listMyEveCharacters } from '@/api/generated/client'
+import { listFleets, syncESIMembers, type FleetListItem } from '@/api/generated/client'
 import {
   createFleet,
   deleteFleet,
-  fetchFleetList,
   refreshFleetESI,
   issuePap,
-  syncESIFleetMembers,
   updateFleet,
-} from '@/api/fleet'
-import { fetchFleetConfigList } from '@/api/fleet-config'
+  listFleetConfigs,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { DataTable, type ColumnDef } from '@/components/ui/data-table'
 import { Input } from '@/components/ui/input'
@@ -26,14 +26,17 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
 import type { EveCharacter } from '@/types/api/auth'
-import type { FleetAutoSrpMode, FleetImportance, FleetItem } from '@/types/api/fleet'
-import type { FleetConfigItem } from '@/types/api/fleet-config'
+import type {
+  FleetRecordAutoSrpMode as FleetAutoSrpMode,
+  FleetCreateInputImportance as FleetImportance,
+} from '@/api/generated/client'
+import type { FleetConfigRecord as FleetConfigItem } from '@/api/generated/client'
 import { formatDateTime, getErrorMessage, ShopBadge, ShopDialog } from './shop-page-utils'
 
 type FleetFormState = {
   title: string
   description: string
-  importance: FleetImportance
+  importance: string
   pap_count: number
   character_id: number | ''
   start_at: string
@@ -69,7 +72,11 @@ function toIsoFromLocalInput(value: string) {
   return Number.isNaN(date.getTime()) ? value : date.toISOString()
 }
 
-function importanceBadgeClass(value: FleetImportance) {
+function createImportance(value: string): FleetImportance {
+  return value === 'cta' || value === 'strat_op' ? value : 'other'
+}
+
+function importanceBadgeClass(value: string) {
   switch (value) {
     case 'cta':
       return 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
@@ -86,7 +93,7 @@ export function OperationFleetsPage() {
   const roles = useSessionStore((state) => state.roles)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [fleets, setFleets] = useState<FleetItem[]>([])
+  const [fleets, setFleets] = useState<FleetListItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -96,7 +103,7 @@ export function OperationFleetsPage() {
   const [fleetConfigs, setFleetConfigs] = useState<FleetConfigItem[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [editingFleet, setEditingFleet] = useState<FleetItem | null>(null)
+  const [editingFleet, setEditingFleet] = useState<FleetListItem | null>(null)
   const [papFleetId, setPapFleetId] = useState<string | null>(null)
   const [form, setForm] = useState<FleetFormState>(defaultFormState)
 
@@ -109,11 +116,14 @@ export function OperationFleetsPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetchFleetList({
-        current: page,
-        size: pageSize,
-        importance: importance || undefined,
-      })
+      const response = await unwrapContract(
+        listFleets({
+          current: page,
+          size: pageSize,
+          importance: importance || undefined,
+        }),
+        'fetch fleet list failed'
+      ).then((data) => data ?? { list: [], total: 0, page: 1, pageSize: 20 })
       setFleets(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -129,7 +139,11 @@ export function OperationFleetsPage() {
 
   const loadCharacters = useCallback(async () => {
     try {
-      setCharacters(await fetchMyCharacters())
+      setCharacters(
+        await unwrapContract(listMyEveCharacters(), 'fetch characters failed').then(
+          (data) => data ?? []
+        )
+      )
     } catch {
       setCharacters([])
     }
@@ -137,7 +151,10 @@ export function OperationFleetsPage() {
 
   const loadFleetConfigs = useCallback(async () => {
     try {
-      const response = await fetchFleetConfigList({ current: 1, size: 100 })
+      const response = await unwrapContract(
+        listFleetConfigs({ current: 1, size: 100 }),
+        'fetch fleet config list failed'
+      )
       setFleetConfigs(response.list ?? [])
     } catch {
       setFleetConfigs([])
@@ -165,7 +182,7 @@ export function OperationFleetsPage() {
     setDialogOpen(true)
   }, [])
 
-  const openEditDialog = useCallback((fleet: FleetItem) => {
+  const openEditDialog = useCallback((fleet: FleetListItem) => {
     setEditingFleet(fleet)
     setForm({
       title: fleet.title,
@@ -212,13 +229,17 @@ export function OperationFleetsPage() {
       }
 
       if (editingFleet) {
-        await updateFleet(editingFleet.id, payload)
+        await unwrapContract(updateFleet(editingFleet.id, payload), 'update fleet failed')
         setError(null)
       } else {
-        await createFleet({
-          ...payload,
-          send_ping: form.send_ping,
-        })
+        await unwrapContract(
+          createFleet({
+            ...payload,
+            importance: createImportance(form.importance),
+            send_ping: form.send_ping,
+          }),
+          'create fleet failed'
+        )
       }
 
       setDialogOpen(false)
@@ -232,13 +253,13 @@ export function OperationFleetsPage() {
   }, [editingFleet, form, t])
 
   const handleDelete = useCallback(
-    async (fleet: FleetItem) => {
+    async (fleet: FleetListItem) => {
       if (!window.confirm(t('fleet.manage.deleteConfirm', { title: fleet.title }))) {
         return
       }
 
       try {
-        await deleteFleet(fleet.id)
+        await unwrapContract(deleteFleet(fleet.id), 'delete fleet failed')
         setRefreshSeed((current) => current + 1)
       } catch (caughtError) {
         setError(getErrorMessage(caughtError, t('fleet.manage.deleteFailed')))
@@ -248,7 +269,7 @@ export function OperationFleetsPage() {
   )
 
   const handleIssuePap = useCallback(
-    async (fleet: FleetItem) => {
+    async (fleet: FleetListItem) => {
       if (
         !window.confirm(
           t('fleet.manage.issuePapConfirm', {
@@ -262,10 +283,10 @@ export function OperationFleetsPage() {
       setPapFleetId(fleet.id)
       try {
         if (!fleet.esi_fleet_id) {
-          await refreshFleetESI(fleet.id)
+          await unwrapContract(refreshFleetESI(fleet.id), 'refresh fleet esi failed')
         }
-        await syncESIFleetMembers(fleet.id)
-        await issuePap(fleet.id)
+        await unwrapContract(syncESIMembers(fleet.id), 'sync fleet members failed')
+        await unwrapContract(issuePap(fleet.id), 'issue pap failed')
         setRefreshSeed((current) => current + 1)
       } catch (caughtError) {
         setError(getErrorMessage(caughtError, t('fleet.manage.issuePapFailed')))
@@ -277,7 +298,7 @@ export function OperationFleetsPage() {
   )
 
   const importanceLabel = useCallback(
-    (value: FleetImportance) => {
+    (value: string) => {
       const key = `fleet.importance.${value}`
       const translated = t(key)
       return translated === key ? value : translated
@@ -285,7 +306,7 @@ export function OperationFleetsPage() {
     [t]
   )
 
-  const columns = useMemo<ColumnDef<FleetItem>[]>(
+  const columns = useMemo<ColumnDef<FleetListItem>[]>(
     () => [
       {
         accessorKey: 'title',
@@ -415,10 +436,12 @@ export function OperationFleetsPage() {
               <span className="text-sm text-muted-foreground">{t('fleet.fields.importance')}</span>
               <Select
                 selectedKey={String(importance ?? '')}
-                onSelectionChange={(key) => ((value) => {
-                  setImportance(value)
-                  setPage(1)
-                })(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => {
+                    setImportance(value)
+                    setPage(1)
+                  })(String(key))
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -528,11 +551,13 @@ export function OperationFleetsPage() {
             <span className="text-sm text-muted-foreground">{t('fleet.fields.importance')}</span>
             <Select
               selectedKey={String(form.importance ?? '')}
-              onSelectionChange={(key) => ((value) =>
-                setForm((current) => ({
-                  ...current,
-                  importance: value as FleetImportance,
-                })))(String(key))}
+              onSelectionChange={(key) =>
+                ((value) =>
+                  setForm((current) => ({
+                    ...current,
+                    importance: value,
+                  })))(String(key))
+              }
             >
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -559,11 +584,13 @@ export function OperationFleetsPage() {
             <span className="text-sm text-muted-foreground">{t('fleet.fields.fc')}</span>
             <Select
               selectedKey={String(form.character_id ?? '')}
-              onSelectionChange={(key) => ((value) =>
-                setForm((current) => ({
-                  ...current,
-                  character_id: value ? Number(value) : '',
-                })))(String(key))}
+              onSelectionChange={(key) =>
+                ((value) =>
+                  setForm((current) => ({
+                    ...current,
+                    character_id: value ? Number(value) : '',
+                  })))(String(key))
+              }
             >
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -585,11 +612,13 @@ export function OperationFleetsPage() {
             <span className="text-sm text-muted-foreground">{t('fleet.fields.fleetConfig')}</span>
             <Select
               selectedKey={String(form.fleet_config_id ?? '')}
-              onSelectionChange={(key) => ((value) =>
-                setForm((current) => ({
-                  ...current,
-                  fleet_config_id: value ? Number(value) : '',
-                })))(String(key))}
+              onSelectionChange={(key) =>
+                ((value) =>
+                  setForm((current) => ({
+                    ...current,
+                    fleet_config_id: value ? Number(value) : '',
+                  })))(String(key))
+              }
             >
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -608,11 +637,13 @@ export function OperationFleetsPage() {
             <span className="text-sm text-muted-foreground">{t('fleet.fields.autoSrpMode')}</span>
             <Select
               selectedKey={String(form.auto_srp_mode ?? '')}
-              onSelectionChange={(key) => ((value) =>
-                setForm((current) => ({
-                  ...current,
-                  auto_srp_mode: value as FleetAutoSrpMode,
-                })))(String(key))}
+              onSelectionChange={(key) =>
+                ((value) =>
+                  setForm((current) => ({
+                    ...current,
+                    auto_srp_mode: value as FleetAutoSrpMode,
+                  })))(String(key))
+              }
             >
               <SelectTrigger className="w-full">
                 <SelectValue />

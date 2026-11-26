@@ -14,11 +14,14 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useEffect, useMemo, useState } from 'react'
-import { fetchEveSSOScopes, fetchMyCharacters, getEveBindURL } from '@/api/auth'
+import { getEveBindURL } from '@/api/auth'
+import { listMyEveCharacters, listEveSsoScopes } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useI18n } from '@/i18n'
-import type { EveCharacter, RegisteredScope } from '@/types/api/auth'
+import type { EveCharacter } from '@/types/api/auth'
+import type { EveSsoScope as RegisteredScope } from '@/api/generated/client'
 import { calculateScopeCoverage, findInvalidCharacters } from '@/pages/info-esi-check-logic'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -52,8 +55,10 @@ export function InfoEsiCheckPage() {
 
       try {
         const [scopesData, charactersData] = await Promise.all([
-          fetchEveSSOScopes(),
-          fetchMyCharacters(),
+          unwrapContract(listEveSsoScopes(), 'fetch scopes failed').then((data) => data ?? []),
+          unwrapContract(listMyEveCharacters(), 'fetch characters failed').then(
+            (data) => data ?? []
+          ),
         ])
 
         if (cancelled) {
@@ -191,7 +196,9 @@ export function InfoEsiCheckPage() {
                   </span>
                   <Select
                     selectedKey={String(selectedCharacterId ?? '')}
-                    onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
+                    onSelectionChange={(key) =>
+                      ((value) => setSelectedCharacterId(Number(value)))(String(key))
+                    }
                   >
                     <SelectTrigger className="h-10 min-w-[240px]">
                       <SelectValue />

@@ -11,7 +11,7 @@ source_of_truth:
   - server/internal/handler/mentor_mentee.go
   - server/internal/handler/mentor_mentor.go
   - server/internal/handler/mentor_admin.go
-  - static/src/api/mentor.ts
+  - static/src/api/generated/client.ts
   - static/src/views/newbro/select-mentor
   - static/src/views/newbro/mentor
   - static/src/views/newbro/mentor-manage
@@ -66,30 +66,9 @@ source_of_truth:
   - 奖励发放记录 tab：按 ledger 方式分页显示导师奖励发放记录，并支持按导师人物名或昵称搜索
   - `设置奖励阶段` tab：配置奖励阶段，并支持手动执行一次奖励处理
 
-### 后端路由
+### 后端契约
 
-学员侧：
-
-- `GET /api/v1/mentor/mentors`
-- `GET /api/v1/mentor/me`
-- `POST /api/v1/mentor/apply`
-
-导师侧：
-
-- `GET /api/v1/mentor/dashboard/applications`
-- `GET /api/v1/mentor/dashboard/mentees`
-- `GET /api/v1/mentor/dashboard/reward-stages`
-- `POST /api/v1/mentor/dashboard/accept`
-- `POST /api/v1/mentor/dashboard/reject`
-
-管理侧：
-
-- `GET /api/v1/system/mentor/relationships`
-- `GET /api/v1/system/mentor/reward-distributions`
-- `POST /api/v1/system/mentor/revoke`
-- `GET /api/v1/system/mentor/reward-stages`
-- `PUT /api/v1/system/mentor/reward-stages`
-- `POST /api/v1/system/mentor/reward/process`
+[导师 OpenAPI：学员、导师与管理操作](../../../contracts/modules/mentor.yaml)。
 
 ## 权限边界
 
@@ -125,7 +104,7 @@ source_of_truth:
 - `server/internal/handler/mentor_mentor.go`
 - `server/internal/handler/mentor_admin.go`
 - `server/jobs/mentor_reward.go`
-- `static/src/api/mentor.ts`
+- `static/src/api/generated/client.ts`
 - `static/src/router/modules/newbro.ts`
 - `static/src/router/modules/system.ts`
 - `static/src/views/newbro/select-mentor/`

@@ -298,7 +298,7 @@ type CorporationStructureAssignmentItem struct {
 
 type CorporationStructureAssignmentListResponse struct {
 	Items        []CorporationStructureAssignmentItem `json:"items"`
-	FuelOfficers []repository.FuelOfficerUserOption   `json:"fuel_officers"`
+	FuelOfficers []model.FuelOfficerUserOption        `json:"fuel_officers"`
 }
 
 type CorporationStructureAssignmentBinding struct {
@@ -848,7 +848,7 @@ func (s *CorporationStructureService) UpdateAssignments(
 		)
 		return errors.New("读取燃料官列表失败")
 	}
-	officerByUserID := make(map[uint]repository.FuelOfficerUserOption, len(fuelOfficers))
+	officerByUserID := make(map[uint]model.FuelOfficerUserOption, len(fuelOfficers))
 	for _, o := range fuelOfficers {
 		officerByUserID[o.UserID] = o
 	}

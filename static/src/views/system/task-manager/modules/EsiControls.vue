@@ -67,6 +67,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { EsiRefreshTask } from '@/api/generated/client'
   import {
     ElButton,
     ElCard,
@@ -81,17 +82,18 @@
   import { useI18n } from 'vue-i18n'
   import { h, ref, computed, reactive } from 'vue'
   import {
-    fetchESIRefreshTasks,
-    runESIRefreshAll,
-    runESIRefreshTaskByName,
-    updateESITaskInterval
-  } from '@/api/esi-refresh'
+    listEsiRefreshTasks,
+    runEsiRefreshAll,
+    runEsiRefreshTaskByName,
+    updateEsiRefreshTaskInterval
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTableColumns } from '@/hooks/core/useTableColumns'
   import { useUserStore } from '@/store/modules/user'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import { getTaskDisplayName, getTaskDisplayDescription } from '../task-labels'
 
-  type TaskInfo = Api.ESIRefresh.TaskInfo
+  type TaskInfo = EsiRefreshTask
 
   const { t } = useI18n()
   const userStore = useUserStore()
@@ -157,10 +159,12 @@
   async function handleSaveInterval() {
     intervalSaving.value = true
     try {
-      await updateESITaskInterval(intervalForm.taskName, {
-        active_minutes: intervalForm.activeMinutes,
-        inactive_minutes: intervalForm.inactiveMinutes
-      })
+      await unwrapContract(
+        updateEsiRefreshTaskInterval(intervalForm.taskName, {
+          active_minutes: intervalForm.activeMinutes,
+          inactive_minutes: intervalForm.inactiveMinutes
+        })
+      )
       ElMessage.success(t('taskManager.messages.scheduleUpdated'))
       intervalDialogVisible.value = false
       await loadTasks()
@@ -262,7 +266,7 @@
   async function loadTasks() {
     tasksLoading.value = true
     try {
-      tasks.value = (await fetchESIRefreshTasks()) ?? []
+      tasks.value = (await unwrapContract(listEsiRefreshTasks())) ?? []
     } catch {
       tasks.value = []
     } finally {
@@ -289,7 +293,7 @@
 
     runningByName.value.add(row.name)
     try {
-      await runESIRefreshTaskByName({ task_name: row.name })
+      await unwrapContract(runEsiRefreshTaskByName({ task_name: row.name }))
       ElMessage.success(
         t('taskManager.esi.messages.taskTriggeredAll', {
           name: getTaskDisplayName(t, row.name, row.description)
@@ -319,7 +323,7 @@
 
     runAllLoading.value = true
     try {
-      await runESIRefreshAll()
+      await unwrapContract(runEsiRefreshAll())
       ElMessage.success(t('taskManager.messages.esiRefreshTriggered'))
     } catch {
       ElMessage.error(t('taskManager.esi.messages.refreshTriggerFailed'))

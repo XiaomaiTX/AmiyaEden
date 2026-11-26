@@ -8,6 +8,7 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/taskregistry"
+	"amiya-eden/jobs"
 	"amiya-eden/pkg/jwt"
 	"net/http"
 	"net/http/httptest"
@@ -21,6 +22,20 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+)
+
+// Role groups used by isolated middleware fixtures below. Production policies
+// are generated from the OpenAPI contract, not from these test inputs.
+var (
+	srpPriceManageRoles          = []string{model.RoleAdmin, model.RoleSeniorFC}
+	srpManageRoles               = []string{model.RoleSRP, model.RoleSeniorFC, model.RoleAdmin}
+	srpPayoutRoles               = []string{model.RoleSRP, model.RoleSeniorFC, model.RoleAdmin}
+	shopOrderManageRoles         = []string{model.RoleAdmin, model.RoleShopOrder}
+	welfareApprovalRoles         = []string{model.RoleAdmin, model.RoleWelfare}
+	skillPlanManageRoles         = []string{model.RoleAdmin, model.RoleSeniorFC}
+	autoRoleManageRoles          = []string{model.RoleSuperAdmin}
+	systemBasicConfigManageRoles = []string{model.RoleSuperAdmin}
+	systemWebhookManageRoles     = []string{model.RoleSuperAdmin}
 )
 
 func newTaskRouterTestService(t *testing.T) *service.TaskService {
@@ -111,6 +126,60 @@ func TestRegisterRoutesIncludesTaskManagerEndpoints(t *testing.T) {
 		if routeExists(routes, http.MethodPost, path) {
 			t.Fatalf("expected retired POST %s route to be removed", path)
 		}
+	}
+}
+
+func TestGeneratedTicketReplyAndStatusHistoryRestoreAdminCapability(t *testing.T) {
+	r, userToken, adminToken, _, _ := newFuxiHallManageRouteTestRouter(t)
+	db := global.DB
+	if err := db.AutoMigrate(&model.EveCharacter{}, &model.SystemConfig{}); err != nil {
+		t.Fatal(err)
+	}
+	const corpID int64 = 98765
+	for _, character := range []model.EveCharacter{
+		{CharacterID: 1001, CharacterName: "Member", UserID: 1, CorporationID: corpID},
+		{CharacterID: 1002, CharacterName: "Admin", UserID: 2, CorporationID: corpID},
+	} {
+		if err := db.Create(&character).Error; err != nil {
+			t.Fatal(err)
+		}
+		if err := db.Model(&model.User{}).Where("id = ?", character.UserID).Update("primary_character_id", character.CharacterID).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	configure := func(capabilities ...string) {
+		t.Helper()
+		if err := service.NewCorporationPolicyService().UpdatePolicies(service.CorporationPolicyConfig{
+			Version: 1, DefaultMode: "deny",
+			Policies: []service.CorporationPolicy{{CorporationID: corpID, Capabilities: capabilities}},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	configure(model.CorpCapabilityTicketManage)
+	// The invalid ID proves authorization reached the generated binder, without requiring ticket data.
+	for _, suffix := range []string{"replies", "status-history"} {
+		path := "/api/v1/system/ticket/tickets/invalid/" + suffix
+		assertRouteStatus(t, r, http.MethodGet, path+"?token="+adminToken, http.StatusOK)
+		assertRouteStatus(t, r, http.MethodGet, path+"?token="+userToken, http.StatusForbidden)
+	}
+	assertRouteStatus(t, r, http.MethodGet, "/api/v1/system/ticket/tickets?token="+adminToken, http.StatusForbidden)
+	configure()
+	for _, suffix := range []string{"replies", "status-history"} {
+		assertRouteStatus(t, r, http.MethodGet, "/api/v1/system/ticket/tickets/invalid/"+suffix+"?token="+adminToken, http.StatusForbidden)
+	}
+}
+
+func TestGeneratedESIStatusesReturnsEmptyPageBeforeInvalidPaginationWhenQueueUnavailable(t *testing.T) {
+	r, _, _, _, superAdminToken := newFuxiHallManageRouteTestRouter(t)
+	oldQueue := jobs.GetESIQueue()
+	jobs.SetTestESIQueue(nil)
+	t.Cleanup(func() { jobs.SetTestESIQueue(oldQueue) })
+	recorder := httptest.NewRecorder()
+	r.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/tasks/esi/statuses?current=bad&size=bad&token="+superAdminToken, nil))
+	if recorder.Code != http.StatusOK || !strings.Contains(recorder.Body.String(), `"code":200`) ||
+		!strings.Contains(recorder.Body.String(), `"list":[]`) || !strings.Contains(recorder.Body.String(), `"page":1,"pageSize":20`) {
+		t.Fatalf("expected the default empty page, got HTTP %d %s", recorder.Code, recorder.Body.String())
 	}
 }
 

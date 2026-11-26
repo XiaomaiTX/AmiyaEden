@@ -1,4 +1,4 @@
-import type { BadgeCounts } from '@/types/api/badge'
+import type { BadgeCounts } from '@/api/generated/client'
 import { useBadgeStore } from '@/stores/badge-store'
 import { useSessionStore } from '@/stores/session-store'
 
@@ -35,9 +35,10 @@ describe('badge store', () => {
     await useBadgeStore.getState().load(1001)
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    const [url, init] = fetchMock.mock.calls[0] ?? []
-    expect(url).toBe('/api/v1/badge-counts')
-    expect(init?.method ?? 'GET').toBe('GET')
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/badge-counts',
+      expect.objectContaining({ method: 'GET' })
+    )
     expect(useBadgeStore.getState().counts).toEqual({ order_pending: 2 })
   })
 

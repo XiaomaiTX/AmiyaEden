@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { adminTicketStatistics } from '@/api/ticket'
+import { adminStatistics } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useI18n } from '@/i18n'
-import type { Statistics } from '@/types/api/ticket'
+import type { TicketStatistics as Statistics } from '@/api/generated/client'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -29,7 +30,7 @@ export function TicketStatisticsPage() {
       setLoading(true)
       setError(null)
       try {
-        const response = await adminTicketStatistics()
+        const response = await unwrapContract(adminStatistics(), 'admin ticket statistics failed')
         if (!cancelled) setStats(response)
       } catch (caughtError) {
         if (!cancelled) {
@@ -55,7 +56,9 @@ export function TicketStatisticsPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('ticketStatistics.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('ticketStatistics.loading')}</p>
+      ) : null}
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label={t('ticketStatistics.total')} value={stats?.total ?? 0} />
@@ -88,7 +91,10 @@ export function TicketStatisticsPage() {
         <h2 className="text-base font-semibold">{t('ticketStatistics.byCategory')}</h2>
         <div className="mt-3 space-y-2">
           {Object.entries(stats?.category ?? {}).map(([name, count]) => (
-            <div key={name} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+            <div
+              key={name}
+              className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+            >
               <span>{name}</span>
               <span className="font-medium">{count}</span>
             </div>

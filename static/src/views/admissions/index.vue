@@ -377,14 +377,21 @@
   import { ElMessageBox } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import { useBadgeStore } from '@/store/modules/badge'
-  import { getAdmission, listAdmissions, processAdmission } from '@/api/admissions'
+  import {
+    getAdmission,
+    inviteAdmission,
+    listAdmissionReviews,
+    listMyAdmissions,
+    rejectAdmission
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useAdmissionStore } from '@/store/modules/admissions'
   import type {
     AdmissionApplication,
     AdmissionBlacklistHit,
     AdmissionDetail,
-    AdmissionList
-  } from '@/types/api/admissions'
+    AdmissionPage as AdmissionList
+  } from '@/api/generated/client'
   import AdmissionForm from './admission-form.vue'
   import EvidenceImage from './evidence-image.vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
@@ -462,15 +469,24 @@
     loading.value = true
     try {
       if (id.value) {
-        const result = await getAdmission(id.value)
+        const result = await unwrapContract(
+          getAdmission(id.value, { showErrorMessage: false }),
+          'admissions.errors.internal'
+        )
         if (current === generation) detail.value = result
       } else {
-        const result = await listAdmissions(
-          mode.value === 'review',
-          page.value,
-          mode.value === 'review' ? status.value : '',
-          target.value,
-          kind.value
+        const reviewer = mode.value === 'review'
+        const params = {
+          current: page.value,
+          size: 20,
+          status: reviewer ? status.value : '',
+          kind: kind.value,
+          ...(target.value ? { target_corporation_id: target.value } : {})
+        }
+        const options = { showErrorMessage: false }
+        const result = await unwrapContract(
+          reviewer ? listAdmissionReviews(params, options) : listMyAdmissions(params, options),
+          'admissions.errors.internal'
         )
         if (current === generation) list.value = result
       }
@@ -536,7 +552,14 @@
     }
     error.value = ''
     try {
-      await processAdmission(application.id, application.version, action, submittedReason)
+      const input = { expected_version: application.version, reason: submittedReason }
+      const options = { showErrorMessage: false }
+      await unwrapContract(
+        action === 'invited'
+          ? inviteAdmission(application.id, input, options)
+          : rejectAdmission(application.id, input, options),
+        'admissions.errors.internal'
+      )
       void useBadgeStore()
         .fetchBadgeCounts()
         .catch(() => undefined)

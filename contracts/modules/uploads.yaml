@@ -1,0 +1,52 @@
+paths:
+  /upload/image:
+    post:
+      operationId: uploadImage
+      x-gin-body: { maxBytes: 2098176 }
+      x-gin-access: ["jwt", "login"]
+      requestBody: { $ref: '#/components/requestBodies/ImageUpload' }
+      responses: &uploadResponses
+        '200': { $ref: '#/components/responses/ImageUploadResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /welfare/upload-evidence:
+    post:
+      operationId: uploadEvidence
+      x-gin-body: { maxBytes: 2098176 }
+      x-gin-access: ["jwt", "login", "cap:welfare.user"]
+      requestBody: { $ref: '#/components/requestBodies/ImageUpload' }
+      responses: *uploadResponses
+components:
+  requestBodies:
+    ImageUpload:
+      required: true
+      description: JPEG, PNG or WebP; the file limit is 2 MiB.
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [file]
+            properties:
+              file: { type: string, format: binary }
+  responses:
+    ImageUploadResult:
+      description: Uploaded image as a base64 data URL, or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ImageUploadSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+  schemas:
+    ImageUploadData:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string }
+    ImageUploadSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/ImageUploadData' }

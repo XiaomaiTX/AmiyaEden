@@ -46,7 +46,7 @@ func TestUpdateCharacterESIRestrictionConfigRejectsMissingField(t *testing.T) {
 	ctx.Request.Header.Set("Content-Type", "application/json")
 	ctx.Set("roles", []string{model.RoleSuperAdmin})
 
-	NewSysConfigHandler().UpdateCharacterESIRestrictionConfig(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: NewSysConfigHandler()}).UpdateCharacterESIRestrictionConfig(ctx)
 
 	var resp response.Response
 	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {

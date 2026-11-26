@@ -1,0 +1,253 @@
+paths:
+  /system/user:
+    get:
+      operationId: listSystemUsers
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      description: Non-super-admins see only users with characters in allowed corporations.
+      parameters:
+        - name: current
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          description: Values below 1 use 20; values above 1000 are capped at 1000.
+          schema: { type: integer, default: 20 }
+        - name: keyword
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          description: An invalid integer is treated as status 0 (subject to integer range limits).
+          x-gin-legacy-atoi: true
+          schema: { type: integer }
+        - name: role
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: User page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SystemUserPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/user/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    get:
+      operationId: getSystemUser
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      responses:
+        '200':
+          description: User details or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SystemUserDetailSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateSystemUser
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SystemUserUpdateInput' }
+      responses:
+        '200':
+          description: User updated, contact conflict, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/ContactConflict'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: deleteSystemUser
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      responses:
+        '200':
+          description: User deleted or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/user/{id}/impersonate:
+    post:
+      operationId: impersonateSystemUser
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+      responses:
+        '200':
+          description: Impersonation token and user details or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SystemUserImpersonationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/user/{id}/roles:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    get:
+      operationId: getSystemUserRoles
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      responses:
+        '200':
+          description: Assigned role definitions or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SystemRoleDefinitionListSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: setSystemUserRoles
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SystemUserRolesInput' }
+      responses:
+        '200':
+          description: Roles changed or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/role/definitions:
+    get:
+      operationId: listRoleDefinitions
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      responses:
+        '200':
+          description: System role definitions.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemRoleDefinitionListSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    SystemUserListCharacter:
+      type: object
+      required: [character_id, character_name, total_sp, token_invalid]
+      properties:
+        character_id: { type: integer, format: int64 }
+        character_name: { type: string }
+        total_sp: { type: integer, format: int64 }
+        token_invalid: { type: boolean }
+    SystemUserListItem:
+      type: object
+      required: [id, nickname, qq, discord_id, primary_character_id, status, roles, characters, last_login_at, last_login_ip, created_at, updated_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        nickname: { type: string }
+        qq: { type: string }
+        discord_id: { type: string }
+        primary_character_id: { type: integer, format: int64 }
+        status: { type: integer, x-go-type: int8 }
+        roles: { type: array, items: { type: string } }
+        characters: { type: array, items: { $ref: '#/components/schemas/SystemUserListCharacter' } }
+        last_login_at: { type: string, format: date-time, nullable: true }
+        last_login_ip: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    SystemUserPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/SystemUserListItem' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    SystemUserUpdateInput:
+      type: object
+      properties:
+        nickname: { type: string, nullable: true }
+        qq: { type: string, nullable: true }
+        discord_id: { type: string, nullable: true }
+        status: { type: integer, nullable: true, x-go-type: int8 }
+    SystemRoleDefinition:
+      type: object
+      required: [code, name, i18nKey, description, sort]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        i18nKey: { type: string, x-go-name: I18nKey }
+        description: { type: string }
+        sort: { type: integer }
+    SystemUserRolesInput:
+      type: object
+      properties:
+        role_codes:
+          type: array
+          nullable: true
+          items: { type: string }
+          x-go-type-skip-optional-pointer: true
+    SystemUserImpersonation:
+      type: object
+      required: [token, user]
+      properties:
+        token: { type: string }
+        user: { $ref: '#/components/schemas/CurrentUser' }
+    SystemUserPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SystemUserPage' }
+    SystemUserDetailSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/CurrentUser' }
+    SystemUserImpersonationSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SystemUserImpersonation' }
+    SystemRoleDefinitionListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/SystemRoleDefinition' } }

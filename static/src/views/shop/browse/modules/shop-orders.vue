@@ -30,8 +30,10 @@
 </template>
 
 <script setup lang="ts">
+  import type { ShopOrder, ShopOrderListInput } from '@/api/generated/client'
   import { ElTag, ElSelect, ElOption } from 'element-plus'
-  import { fetchMyOrders } from '@/api/shop'
+  import { listMyShopOrders } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
   import { useI18n } from 'vue-i18n'
   import { formatFuxiCoinWhole, formatTime } from '@utils/common'
@@ -40,7 +42,7 @@
 
   const { t } = useI18n()
 
-  type Order = Api.Shop.Order
+  type Order = ShopOrder
 
   // ─── 订单状态映射 ───
   const ORDER_STATUS_MAP: Record<string, { label: string; type: string }> = {
@@ -69,7 +71,8 @@
     getAllColumns
   } = useTable({
     core: {
-      apiFn: fetchMyOrders,
+      apiFn: (data?: ShopOrderListInput) =>
+        unwrapContract(listMyShopOrders(data ?? { current: 1, size: 20 })),
       apiParams: { current: 1, size: 20, status: undefined as string | undefined },
       immediate: false,
       columnsFactory: () => [

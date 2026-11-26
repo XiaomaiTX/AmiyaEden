@@ -79,7 +79,7 @@
               </ElTableColumn>
               <ElTableColumn :label="$t('fleet.pap.issuedAt')" width="175">
                 <template #default="{ row }">
-                  {{ formatTime(row.issued_at || row.created_at) }}
+                  {{ formatTime(row.issued_at) }}
                 </template>
               </ElTableColumn>
             </ElTable>
@@ -265,12 +265,14 @@
     ElDatePicker,
     ElPagination
   } from 'element-plus'
-  import { fetchMyPapLogs } from '@/api/fleet'
   import {
-    fetchMyAlliancePAP,
-    type AlliancePAPSummary,
-    type AlliancePAPFleet
-  } from '@/api/alliance-pap'
+    getMyAlliancePAP,
+    getMyPapLogs,
+    type FleetAlliancePAPRecord,
+    type FleetAlliancePAPSummary,
+    type FleetPapLogDetail
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useNameResolver } from '@/hooks'
 
   defineOptions({ name: 'MyPap' })
@@ -281,7 +283,7 @@
   const activeTab = ref('corporation')
 
   // ── 本系统 PAP ──
-  const papLogs = ref<Api.Fleet.PapLog[]>([])
+  const papLogs = ref<FleetPapLogDetail[]>([])
   const loading = ref(false)
 
   const papPage = ref(1)
@@ -297,7 +299,7 @@
   const loadPapLogs = async () => {
     loading.value = true
     try {
-      papLogs.value = (await fetchMyPapLogs()) ?? []
+      papLogs.value = (await unwrapContract(getMyPapLogs())) ?? []
       papPage.value = 1
       // 解析舰船名称
       const shipIds = papLogs.value
@@ -319,8 +321,8 @@
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   )
   const allianceLoading = ref(false)
-  const allianceSummary = ref<AlliancePAPSummary | null>(null)
-  const allianceFleets = ref<AlliancePAPFleet[]>([])
+  const allianceSummary = ref<FleetAlliancePAPSummary>(null)
+  const allianceFleets = ref<FleetAlliancePAPRecord[]>([])
 
   const alliancePage = ref(1)
   const alliancePageSize = ref(50)
@@ -334,10 +336,12 @@
     allianceLoading.value = true
     try {
       const [yearStr, monthStr] = allianceMonth.value.split('-')
-      const result = await fetchMyAlliancePAP({
-        year: Number(yearStr),
-        month: Number(monthStr)
-      })
+      const result = await unwrapContract(
+        getMyAlliancePAP({
+          year: Number(yearStr),
+          month: Number(monthStr)
+        })
+      )
       allianceSummary.value = result?.summary ?? null
       allianceFleets.value = result?.fleets ?? []
       alliancePage.value = 1

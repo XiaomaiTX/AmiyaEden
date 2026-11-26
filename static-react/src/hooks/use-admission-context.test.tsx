@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { useSessionStore } from '@/stores'
 import { useAdmissionContext } from './use-admission-context'
-import type { AdmissionContext } from '@/types/api/admissions'
+import type { AdmissionContext } from '@/api/generated/client'
 
 vi.unmock('@/hooks/use-admission-context')
 const fetchMock = vi.fn<typeof fetch>()

@@ -121,13 +121,13 @@ type GalaxyRegistryEntryListFilter struct {
 }
 
 type GalaxyRegistryAdminAnalytics struct {
-	RangeStart       string                                   `json:"range_start"`
-	RangeEnd         string                                   `json:"range_end"`
-	CurrentSnapshot  GalaxyRegistryCurrentSnapshot            `json:"current_snapshot"`
-	Recent7D         GalaxyRegistryPeriodSummary              `json:"recent_7d"`
-	Recent30D        GalaxyRegistryPeriodSummary              `json:"recent_30d"`
-	TopSystems       []repository.GalaxyRegistryTopSystemStat `json:"top_systems"`
-	RecentViolations []GalaxyRegistryEntryItem                `json:"recent_violations"`
+	RangeStart       string                              `json:"range_start"`
+	RangeEnd         string                              `json:"range_end"`
+	CurrentSnapshot  GalaxyRegistryCurrentSnapshot       `json:"current_snapshot"`
+	Recent7D         GalaxyRegistryPeriodSummary         `json:"recent_7d"`
+	Recent30D        GalaxyRegistryPeriodSummary         `json:"recent_30d"`
+	TopSystems       []model.GalaxyRegistryTopSystemStat `json:"top_systems"`
+	RecentViolations []GalaxyRegistryEntryItem           `json:"recent_violations"`
 }
 
 type GalaxyRegistryCurrentSnapshot struct {
@@ -722,13 +722,13 @@ func (s *GalaxyRegistryService) DeleteAdminSystem(id uint) error {
 	return nil
 }
 
-func (s *GalaxyRegistryService) SearchAdminSdeSystems(keyword string, limit int) ([]repository.GalaxyRegistrySdeSystem, error) {
+func (s *GalaxyRegistryService) SearchAdminSdeSystems(keyword string, limit int) ([]model.GalaxyRegistrySdeSystem, error) {
 	if limit <= 0 {
 		limit = 20
 	}
 	keyword = strings.TrimSpace(keyword)
 	if keyword == "" {
-		return []repository.GalaxyRegistrySdeSystem{}, nil
+		return []model.GalaxyRegistrySdeSystem{}, nil
 	}
 	return repository.NewSdeRepository().SearchSolarSystemsByKeyword(keyword, 0, limit)
 }

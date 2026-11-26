@@ -114,29 +114,36 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    EsiRefreshMonitorFailure,
+    EsiRefreshMonitorOverdue,
+    EsiRefreshMonitorSnapshot,
+    EsiRefreshMonitorTaskPanel
+  } from '@/api/generated/client'
   import { ElAlert, ElButton, ElCard, ElMessage, ElSwitch } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { h } from 'vue'
   import { formatTime } from '@utils/common'
-  import { fetchESIRefreshMonitor } from '@/api/esi-refresh'
+  import { getEsiRefreshMonitor } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTableColumns } from '@/hooks/core/useTableColumns'
   import { getTaskDisplayName, getTaskDisplayDescription } from '../task-labels'
 
   const { t } = useI18n()
-  const monitor = ref<Api.ESIRefresh.MonitorResponse>()
+  const monitor = ref<EsiRefreshMonitorSnapshot>()
   const loading = ref(false)
   const errorMessage = ref('')
   const autoRefreshEnabled = ref(true)
   const refreshTimer = ref<number>()
 
-  const { columns: taskPanelColumns } = useTableColumns<Api.ESIRefresh.MonitorTaskPanelItem>(() => [
+  const { columns: taskPanelColumns } = useTableColumns<EsiRefreshMonitorTaskPanel>(() => [
     { type: 'index', width: 60, label: '#' },
     {
       prop: 'task_name',
       label: t('taskManager.columns.name'),
       minWidth: 180,
       showOverflowTooltip: true,
-      formatter: (row: Api.ESIRefresh.MonitorTaskPanelItem) =>
+      formatter: (row: EsiRefreshMonitorTaskPanel) =>
         getTaskDisplayName(t, row.task_name, row.task_name)
     },
     {
@@ -144,7 +151,7 @@
       label: t('taskManager.columns.description'),
       minWidth: 180,
       showOverflowTooltip: true,
-      formatter: (row: Api.ESIRefresh.MonitorTaskPanelItem) =>
+      formatter: (row: EsiRefreshMonitorTaskPanel) =>
         getTaskDisplayDescription(t, row.task_name, row.description)
     },
     { prop: 'total', label: t('taskManager.esi.monitor.cards.total'), width: 100 },
@@ -155,8 +162,7 @@
       prop: 'success_rate',
       label: t('taskManager.esi.monitor.columns.successRate'),
       width: 130,
-      formatter: (row: Api.ESIRefresh.MonitorTaskPanelItem) =>
-        `${(row.success_rate * 100).toFixed(1)}%`
+      formatter: (row: EsiRefreshMonitorTaskPanel) => `${(row.success_rate * 100).toFixed(1)}%`
     },
     {
       prop: 'worst_lag_seconds',
@@ -165,14 +171,14 @@
     }
   ])
 
-  const { columns: failureColumns } = useTableColumns<Api.ESIRefresh.MonitorFailureItem>(() => [
+  const { columns: failureColumns } = useTableColumns<EsiRefreshMonitorFailure>(() => [
     { type: 'index', width: 60, label: '#' },
     {
       prop: 'task_name',
       label: t('taskManager.columns.name'),
       width: 160,
       showOverflowTooltip: true,
-      formatter: (row: Api.ESIRefresh.MonitorFailureItem) =>
+      formatter: (row: EsiRefreshMonitorFailure) =>
         getTaskDisplayName(t, row.task_name, row.task_name)
     },
     { prop: 'character_name', label: t('common.name'), width: 150, showOverflowTooltip: true },
@@ -181,26 +187,26 @@
       prop: 'last_run',
       label: t('taskManager.columns.lastRun'),
       width: 180,
-      formatter: (row: Api.ESIRefresh.MonitorFailureItem) => formatTime(row.last_run)
+      formatter: (row: EsiRefreshMonitorFailure) => formatTime(row.last_run)
     },
     {
       prop: 'error',
       label: t('taskManager.columns.error'),
       minWidth: 220,
       showOverflowTooltip: true,
-      formatter: (row: Api.ESIRefresh.MonitorFailureItem) =>
+      formatter: (row: EsiRefreshMonitorFailure) =>
         row.error ? h('span', { class: 'text-red-500' }, row.error) : '-'
     }
   ])
 
-  const { columns: overdueColumns } = useTableColumns<Api.ESIRefresh.MonitorOverdueItem>(() => [
+  const { columns: overdueColumns } = useTableColumns<EsiRefreshMonitorOverdue>(() => [
     { type: 'index', width: 60, label: '#' },
     {
       prop: 'task_name',
       label: t('taskManager.columns.name'),
       width: 160,
       showOverflowTooltip: true,
-      formatter: (row: Api.ESIRefresh.MonitorOverdueItem) =>
+      formatter: (row: EsiRefreshMonitorOverdue) =>
         getTaskDisplayName(t, row.task_name, row.task_name)
     },
     { prop: 'character_name', label: t('common.name'), width: 150, showOverflowTooltip: true },
@@ -209,7 +215,7 @@
       prop: 'next_run',
       label: t('taskManager.esi.columns.nextRun'),
       width: 180,
-      formatter: (row: Api.ESIRefresh.MonitorOverdueItem) => formatTime(row.next_run)
+      formatter: (row: EsiRefreshMonitorOverdue) => formatTime(row.next_run)
     },
     {
       prop: 'overdue_seconds',
@@ -222,7 +228,7 @@
     loading.value = true
     errorMessage.value = ''
     try {
-      monitor.value = await fetchESIRefreshMonitor()
+      monitor.value = await unwrapContract(getEsiRefreshMonitor())
     } catch (error) {
       errorMessage.value = t('taskManager.esi.monitor.messages.loadFailed')
       if (showErrorTip) {

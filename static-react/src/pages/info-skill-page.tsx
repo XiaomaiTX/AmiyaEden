@@ -1,7 +1,8 @@
 import { BookOpen, Check, ChevronsRight } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { fetchMyCharacters } from '@/api/auth'
-import { fetchInfoSkills, runMyCharacterESIRefresh } from '@/api/eve-info'
+import { listMyEveCharacters } from '@/api/generated/client'
+import { getCharacterSkills, runMyCharacterTask } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -15,7 +16,7 @@ import { confirmAction, notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
 import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
 import type { EveCharacter } from '@/types/api/auth'
-import type { SkillItem, SkillQueueItem, SkillResponse } from '@/types/api/eve-info'
+import type { InfoSkillItem, InfoSkillQueueItem, InfoSkillResponse } from '@/api/generated/client'
 
 const numberFormatter = new Intl.NumberFormat('en-US')
 
@@ -28,7 +29,7 @@ function romanLevel(level: number) {
   return numerals[level] || String(level)
 }
 
-function calcTimeProgress(item: SkillQueueItem, nowSeconds: number) {
+function calcTimeProgress(item: InfoSkillQueueItem, nowSeconds: number) {
   if (!item.start_date || !item.finish_date) return 0
   const total = item.finish_date - item.start_date
   if (total <= 0) return 100
@@ -43,7 +44,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 interface SkillGroup {
   groupName: string
   count: number
-  skills: SkillItem[]
+  skills: InfoSkillItem[]
   progress: number
 }
 
@@ -90,7 +91,7 @@ export function InfoSkillPage() {
   const [reloadVersion, setReloadVersion] = useState(0)
   const [keyword, setKeyword] = useState('')
   const [selectedGroup, setSelectedGroup] = useState('')
-  const [skillData, setSkillData] = useState<SkillResponse | null>(null)
+  const [skillData, setSkillData] = useState<InfoSkillResponse | null>(null)
 
   const [nowSeconds] = useState(() => Math.floor(Date.now() / 1000))
 
@@ -100,7 +101,9 @@ export function InfoSkillPage() {
       setLoading(true)
       setError(null)
       try {
-        const list = await fetchMyCharacters()
+        const list = await unwrapContract(listMyEveCharacters(), 'fetch characters failed').then(
+          (data) => data ?? []
+        )
         if (cancelled) return
         setCharacters(list)
         if (list.length > 0) {
@@ -128,7 +131,10 @@ export function InfoSkillPage() {
       setLoading(true)
       setError(null)
       try {
-        const data = await fetchInfoSkills({ character_id: selectedCharacterId, language })
+        const data = await unwrapContract(
+          getCharacterSkills({ character_id: selectedCharacterId, language }),
+          'fetch skills failed'
+        )
         if (!cancelled) setSkillData(data)
       } catch {
         if (!cancelled) {
@@ -204,7 +210,7 @@ export function InfoSkillPage() {
   }, [keyword, selectedGroup, skillData?.skills])
 
   const queueSkillMap = useMemo(() => {
-    const map = new Map<number, SkillQueueItem>()
+    const map = new Map<number, InfoSkillQueueItem>()
     for (const item of skillData?.skill_queue ?? []) {
       if (!map.has(item.skill_id)) map.set(item.skill_id, item)
     }
@@ -224,7 +230,9 @@ export function InfoSkillPage() {
 
   const queue = skillData?.skill_queue ?? []
   const lastQueueItem = queue.length > 0 ? queue[queue.length - 1] : null
-  const totalQueueTime = lastQueueItem?.finish_date ? formatRemainingTime(lastQueueItem.finish_date) : '-'
+  const totalQueueTime = lastQueueItem?.finish_date
+    ? formatRemainingTime(lastQueueItem.finish_date)
+    : '-'
 
   const totalQueueSP = useMemo(() => {
     return (skillData?.skill_queue ?? []).reduce(
@@ -259,10 +267,13 @@ export function InfoSkillPage() {
 
     setEsiRefreshing(true)
     try {
-      await runMyCharacterESIRefresh({
-        task_name: 'character_skill',
-        character_id: selectedCharacterId,
-      })
+      await unwrapContract(
+        runMyCharacterTask({
+          task_name: 'character_skill',
+          character_id: selectedCharacterId,
+        }),
+        'trigger esi refresh failed'
+      )
       notifySuccess(t('infoSkill.skillESIRefreshSubmitted'))
     } catch (caughtError) {
       const message = getErrorMessage(caughtError, t('infoSkill.esiRefreshSubmitFailed'))
@@ -395,7 +406,10 @@ export function InfoSkillPage() {
                   } ${!skill.learned ? 'opacity-50 hover:opacity-80' : ''}`}
                 >
                   {!skill.learned ? (
-                    <div className="flex w-16 shrink-0 items-center" title={t('infoSkill.skillNotLearned')}>
+                    <div
+                      className="flex w-16 shrink-0 items-center"
+                      title={t('infoSkill.skillNotLearned')}
+                    >
                       <BookOpen className="size-3.5 text-muted-foreground" />
                     </div>
                   ) : (

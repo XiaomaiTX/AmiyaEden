@@ -14,12 +14,13 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useEffect, useMemo, useState } from 'react'
-import { fetchMyCharacters } from '@/api/auth'
-import { fetchInfoWallet } from '@/api/eve-info'
+import { listMyEveCharacters } from '@/api/generated/client'
+import { getWalletJournal } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useI18n } from '@/i18n'
 import { formatJournalTypeLabel } from '@/lib/wallet-journal-type'
 import type { EveCharacter } from '@/types/api/auth'
-import type { WalletResponse } from '@/types/api/eve-info'
+import type { InfoWalletResponse } from '@/api/generated/client'
 
 import { WalletAnalyticsSection } from './info-wallet-analytics/wallet-analytics-section'
 
@@ -32,7 +33,7 @@ export function InfoWalletPage() {
   const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | null>(null)
   const [selectedRefType, setSelectedRefType] = useState('')
-  const [wallet, setWallet] = useState<WalletResponse | null>(null)
+  const [wallet, setWallet] = useState<InfoWalletResponse | null>(null)
 
   const refTypeOptions = useMemo(() => wallet?.ref_types ?? [], [wallet?.ref_types])
 
@@ -43,7 +44,9 @@ export function InfoWalletPage() {
       setLoading(true)
       setError(null)
       try {
-        const list = await fetchMyCharacters()
+        const list = await unwrapContract(listMyEveCharacters(), 'fetch characters failed').then(
+          (data) => data ?? []
+        )
         if (cancelled) return
         setCharacters(list)
         if (list.length > 0) {
@@ -73,12 +76,15 @@ export function InfoWalletPage() {
       setLoading(true)
       setError(null)
       try {
-        const data = await fetchInfoWallet({
-          character_id: selectedCharacterId,
-          page: 1,
-          page_size: PAGE_SIZE,
-          ref_types: selectedRefType ? [selectedRefType] : undefined,
-        })
+        const data = await unwrapContract(
+          getWalletJournal({
+            character_id: selectedCharacterId,
+            page: 1,
+            page_size: PAGE_SIZE,
+            ref_types: selectedRefType ? [selectedRefType] : undefined,
+          }),
+          'fetch wallet failed'
+        )
         if (!cancelled) setWallet(data)
       } catch {
         if (!cancelled) setError(t('infoWallet.loadWalletFailed'))

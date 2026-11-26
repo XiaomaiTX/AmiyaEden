@@ -359,36 +359,46 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    SkillReadinessCharacter,
+    SkillReadinessCharacterDetail,
+    SkillReadinessOptions,
+    SkillReadinessRequest,
+    SkillReadinessResult,
+    SkillReadinessStatus,
+    SkillReadinessUser
+  } from '@/api/generated/client'
   import { computed, nextTick, onMounted, ref, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { useRoute, useRouter } from 'vue-router'
   import {
-    fetchSkillReadinessCharacterSkills,
-    fetchSkillReadinessOptions,
-    fetchSkillReadinessUserCharacters,
+    getSkillReadinessCharacterSkills,
+    getSkillReadinessOptions,
+    getSkillReadinessUserCharacters,
     querySkillReadiness
-  } from '@/api/skill-readiness'
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   type Filters = { corporationIds: number[]; planId: number; page: number; pageSize: number }
 
   const route = useRoute()
   const router = useRouter()
   const { locale, t } = useI18n()
-  const options = ref<Api.SkillReadiness.Options>({ corporations: [], plans: [] })
+  const options = ref<SkillReadinessOptions>({ corporations: [], plans: [] })
   const optionsLoading = ref(true)
   const optionsLoaded = ref(false)
   const corporationIds = ref<number[]>([])
   const planId = ref(0)
   const page = ref(1)
   const pageSize = ref(20)
-  const result = ref<Api.SkillReadiness.Result | null>(null)
+  const result = ref<SkillReadinessResult | null>(null)
   const loading = ref(false)
   const error = ref('')
-  const userCharacters = ref<Record<number, Api.SkillReadiness.CharacterRow[]>>({})
+  const userCharacters = ref<Record<number, SkillReadinessCharacter[]>>({})
   const userLoading = ref<Record<number, boolean>>({})
   const userErrors = ref<Record<number, string>>({})
   const detailOpen = ref(false)
-  const detail = ref<Api.SkillReadiness.CharacterDetail | null>(null)
+  const detail = ref<SkillReadinessCharacterDetail | null>(null)
   const detailLoading = ref(false)
   const detailError = ref('')
   const detailTab = ref<'comparison' | 'skills'>('comparison')
@@ -400,7 +410,7 @@
   let writingQuery = false
   let restoringRoute = false
 
-  function queryFilters(value: Filters): Api.SkillReadiness.Request {
+  function queryFilters(value: Filters): SkillReadinessRequest {
     return {
       corporation_ids: value.corporationIds,
       plan_id: value.planId,
@@ -449,13 +459,15 @@
     loading.value = true
     error.value = ''
     try {
-      const data = await querySkillReadiness(
-        queryFilters({
-          corporationIds: corporationIds.value,
-          planId: planId.value,
-          page: page.value,
-          pageSize: pageSize.value
-        })
+      const data = await unwrapContract(
+        querySkillReadiness(
+          queryFilters({
+            corporationIds: corporationIds.value,
+            planId: planId.value,
+            page: page.value,
+            pageSize: pageSize.value
+          })
+        )
       )
       if (sequence === querySequence.value) result.value = data
     } catch (caughtError) {
@@ -482,10 +494,7 @@
     await loadResult()
   }
 
-  async function onExpandChange(
-    row: Api.SkillReadiness.UserRow,
-    expandedRows: Api.SkillReadiness.UserRow[]
-  ) {
+  async function onExpandChange(row: SkillReadinessUser, expandedRows: SkillReadinessUser[]) {
     if (
       !expandedRows.some((item) => item.user_id === row.user_id) ||
       userCharacters.value[row.user_id]
@@ -495,14 +504,16 @@
     userLoading.value = { ...userLoading.value, [row.user_id]: true }
     userErrors.value = { ...userErrors.value, [row.user_id]: '' }
     try {
-      const rows = await fetchSkillReadinessUserCharacters(
-        row.user_id,
-        queryFilters({
-          corporationIds: corporationIds.value,
-          planId: planId.value,
-          page: page.value,
-          pageSize: pageSize.value
-        })
+      const rows = await unwrapContract(
+        getSkillReadinessUserCharacters(
+          row.user_id,
+          queryFilters({
+            corporationIds: corporationIds.value,
+            planId: planId.value,
+            page: page.value,
+            pageSize: pageSize.value
+          })
+        )
       )
       if (scopeSequence === userScopeSequence.value) {
         userCharacters.value = { ...userCharacters.value, [row.user_id]: rows }
@@ -524,7 +535,7 @@
     }
   }
 
-  async function openCharacter(character: Api.SkillReadiness.CharacterRow) {
+  async function openCharacter(character: SkillReadinessCharacter) {
     const sequence = ++detailSequence.value
     detailOpen.value = true
     detail.value = null
@@ -534,14 +545,16 @@
     matchedOnly.value = false
     skillSearch.value = ''
     try {
-      const data = await fetchSkillReadinessCharacterSkills(
-        character.character_id,
-        queryFilters({
-          corporationIds: corporationIds.value,
-          planId: planId.value,
-          page: page.value,
-          pageSize: pageSize.value
-        })
+      const data = await unwrapContract(
+        getSkillReadinessCharacterSkills(
+          character.character_id,
+          queryFilters({
+            corporationIds: corporationIds.value,
+            planId: planId.value,
+            page: page.value,
+            pageSize: pageSize.value
+          })
+        )
       )
       if (sequence === detailSequence.value) detail.value = data
     } catch (caughtError) {
@@ -555,7 +568,7 @@
     }
   }
 
-  function statusTagType(status: Api.SkillReadiness.Status): 'success' | 'danger' | 'info' {
+  function statusTagType(status: SkillReadinessStatus): 'success' | 'danger' | 'info' {
     if (status === 'satisfied') return 'success'
     if (status === 'unsatisfied') return 'danger'
     return 'info'
@@ -648,7 +661,7 @@
     await nextTick()
     restoringRoute = false
     try {
-      options.value = await fetchSkillReadinessOptions()
+      options.value = await unwrapContract(getSkillReadinessOptions())
     } catch (caughtError) {
       error.value =
         caughtError instanceof Error ? caughtError.message : t('dashboardSkillReadiness.loadFailed')

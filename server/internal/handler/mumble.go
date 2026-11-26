@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"context"
+	"strings"
+
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,39 +20,20 @@ func NewMumbleHandler() *MumbleHandler {
 	return &MumbleHandler{svc: service.NewMumbleIdentityService()}
 }
 
-func (h *MumbleHandler) GetCredential(c *gin.Context) {
-	status, err := h.svc.GetCredentialStatus(middleware.GetUserID(c))
-	if err != nil {
-		response.Fail(c, response.CodeBizError, "加载 Mumble 凭据状态失败")
-		return
+func mumbleCredentialStatus(status service.MumbleCredentialStatus) apicontract.MumbleCredentialStatus {
+	var servers []apicontract.MumblePublicNode
+	if len(status.Servers) > 0 {
+		servers = make([]apicontract.MumblePublicNode, len(status.Servers))
+		for i, node := range status.Servers {
+			servers[i] = apicontract.MumblePublicNode{
+				Name: node.Name, Description: node.Description, Address: node.Address, Port: node.Port,
+			}
+		}
 	}
-	response.OK(c, status)
-}
-
-func (h *MumbleHandler) CreateCredential(c *gin.Context) {
-	status, password, err := h.svc.CreateCredential(middleware.GetUserID(c))
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+	return apicontract.MumbleCredentialStatus{
+		Created: status.Created, Enabled: status.Enabled, Servers: servers,
+		CredentialVersion: status.CredentialVersion, PasswordRotatedAt: status.PasswordRotatedAt,
 	}
-	response.OK(c, gin.H{"credential": status, "password": password})
-}
-
-func (h *MumbleHandler) RotateCredential(c *gin.Context) {
-	status, password, err := h.svc.RotateCredential(middleware.GetUserID(c))
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, gin.H{"credential": status, "password": password})
-}
-
-func (h *MumbleHandler) RevokeCredential(c *gin.Context) {
-	if err := h.svc.RevokeCredential(middleware.GetUserID(c)); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, nil)
 }
 
 type mumbleAuthenticateRequest struct {
@@ -113,4 +97,51 @@ func (h *MumbleHandler) ResolveIdentities(c *gin.Context) {
 		identities = append(identities, gin.H{"user_id": claims.StableUserID, "eligible": true, "name": claims.Name, "groups": claims.Groups, "identity_version": claims.IdentityVersion, "policy_version": claims.PolicyVersion})
 	}
 	response.OK(c, gin.H{"identities": identities})
+}
+
+func (h *MumbleHandler) GetMumbleCredential(ctx context.Context, _ apicontract.GetMumbleCredentialRequestObject) (apicontract.GetMumbleCredentialResponseObject, error) {
+	c := ctx.(*gin.Context)
+	var out apicontract.GetMumbleCredential200JSONResponse
+	status, err := h.svc.GetCredentialStatus(middleware.GetUserID(c))
+	if err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, "加载 Mumble 凭据状态失败"))
+	}
+	return &out, out.FromMumbleCredentialStatusSuccess(apicontract.MumbleCredentialStatusSuccess{
+		Code: response.CodeOK, Msg: "success", Data: mumbleCredentialStatus(status),
+	})
+}
+
+func (h *MumbleHandler) IssueMumbleCredential(ctx context.Context, _ apicontract.IssueMumbleCredentialRequestObject) (apicontract.IssueMumbleCredentialResponseObject, error) {
+	c := ctx.(*gin.Context)
+	var out apicontract.IssueMumbleCredential200JSONResponse
+	status, password, err := h.svc.CreateCredential(middleware.GetUserID(c))
+	if err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return &out, out.FromMumbleCredentialResultSuccess(apicontract.MumbleCredentialResultSuccess{
+		Code: response.CodeOK, Msg: "success",
+		Data: apicontract.MumbleCredentialResult{Credential: mumbleCredentialStatus(status), Password: password},
+	})
+}
+
+func (h *MumbleHandler) RenewMumbleCredential(ctx context.Context, _ apicontract.RenewMumbleCredentialRequestObject) (apicontract.RenewMumbleCredentialResponseObject, error) {
+	c := ctx.(*gin.Context)
+	var out apicontract.RenewMumbleCredential200JSONResponse
+	status, password, err := h.svc.RotateCredential(middleware.GetUserID(c))
+	if err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return &out, out.FromMumbleCredentialResultSuccess(apicontract.MumbleCredentialResultSuccess{
+		Code: response.CodeOK, Msg: "success",
+		Data: apicontract.MumbleCredentialResult{Credential: mumbleCredentialStatus(status), Password: password},
+	})
+}
+
+func (h *MumbleHandler) DeleteMumbleCredential(ctx context.Context, _ apicontract.DeleteMumbleCredentialRequestObject) (apicontract.DeleteMumbleCredentialResponseObject, error) {
+	c := ctx.(*gin.Context)
+	var out apicontract.DeleteMumbleCredential200JSONResponse
+	if err := h.svc.RevokeCredential(middleware.GetUserID(c)); err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
 }

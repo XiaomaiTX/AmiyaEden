@@ -68,11 +68,13 @@
 </template>
 
 <script setup lang="ts">
+  import type { SrpKillmailDetail } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import { ElDialog, ElButton, ElEmpty } from 'element-plus'
   import { formatIskSmart, formatTime } from '@utils/common'
   import { useUserStore } from '@/store/modules/user'
-  import { useKillmailDetail } from '@/hooks/srp/useKillmailDetail'
+  import { getSrpKillmailDetail } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineOptions({ name: 'KmPreviewDialog' })
 
@@ -84,20 +86,21 @@
 
   useI18n()
   const userStore = useUserStore()
-  const { fetchKillmailDetail } = useKillmailDetail()
 
   const loading = ref(false)
-  const detail = ref<Api.Srp.KillmailDetailResponse | null>(null)
+  const detail = ref<SrpKillmailDetail | null>(null)
 
   const loadDetail = async () => {
     if (!props.killmailId) return
     loading.value = true
     detail.value = null
     try {
-      detail.value = await fetchKillmailDetail({
-        killmail_id: props.killmailId,
-        language: userStore.language
-      })
+      detail.value = await unwrapContract(
+        getSrpKillmailDetail({
+          killmail_id: props.killmailId,
+          language: userStore.language
+        })
+      )
     } catch {
       detail.value = null
     } finally {

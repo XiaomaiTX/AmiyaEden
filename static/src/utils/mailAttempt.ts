@@ -1,4 +1,10 @@
 import { ElMessage } from 'element-plus'
+import type { WelfareReviewResult } from '@/api/generated/client'
+
+type MailActionResult = Pick<
+  WelfareReviewResult,
+  Extract<keyof WelfareReviewResult, `mail_${string}`>
+>
 
 type Translator = (key: string, params?: Record<string, unknown>) => string
 
@@ -10,10 +16,7 @@ function formatCharacter(name?: string, id?: number) {
   return ''
 }
 
-export function formatMailAttemptSuccess(
-  result: Api.Common.MailActionResult,
-  t: Translator
-): string {
+export function formatMailAttemptSuccess(result: MailActionResult, t: Translator): string {
   const parts: string[] = []
   const sender = formatCharacter(result.mail_sender_character_name, result.mail_sender_character_id)
   const recipient = formatCharacter(
@@ -29,10 +32,7 @@ export function formatMailAttemptSuccess(
   return `${t('mailAttempt.sent')} ${parts.join(', ')}`
 }
 
-export function formatMailAttemptWarning(
-  result: Api.Common.MailActionResult,
-  t: Translator
-): string {
+export function formatMailAttemptWarning(result: MailActionResult, t: Translator): string {
   const error = result.mail_error?.trim()
   if (!error) return ''
 
@@ -50,7 +50,7 @@ export function formatMailAttemptWarning(
   return `${t('mailAttempt.failed')} ${parts.join(', ')}`
 }
 
-export function showMailAttemptMessage(result: Api.Common.MailActionResult, t: Translator): void {
+export function showMailAttemptMessage(result: MailActionResult, t: Translator): void {
   const mailWarning = formatMailAttemptWarning(result, t)
   if (mailWarning) {
     ElMessage.warning(mailWarning)

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getRefundSettings, saveRefundSettings } from '@/api/captain-refund'
-import type { RefundSettings } from '@/types/api/captain-refund'
+import { getCaptainRefundSettings, updateCaptainRefundSettings } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
+import type { CaptainRefundSettings as RefundSettings } from '@/api/generated/client'
 import { useI18n } from '@/i18n'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -23,7 +24,7 @@ export function CaptainRefundSettingsPanel() {
 
   useEffect(() => {
     let active = true
-    void getRefundSettings()
+    void unwrapContract(getCaptainRefundSettings(), 'Request failed')
       .then((settings) => {
         if (active) {
           setCfg(settings)
@@ -68,10 +69,13 @@ export function CaptainRefundSettingsPanel() {
 
     setBusy(true)
     try {
-      const updated = await saveRefundSettings({
-        ...cfg,
-        allowed_system_ids: [...new Set(ids)],
-      })
+      const updated = await unwrapContract(
+        updateCaptainRefundSettings({
+          ...cfg,
+          allowed_system_ids: [...new Set(ids)],
+        }),
+        'Request failed'
+      )
       setCfg(updated)
       setSystems(updated.allowed_system_ids.join('\n'))
       setMessageType('success')

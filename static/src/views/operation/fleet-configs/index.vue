@@ -32,10 +32,16 @@
 </template>
 
 <script setup lang="ts">
+  import type { FleetConfigRecord } from '@/api/generated/client'
   import { useTable } from '@/hooks/core/useTable'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import FleetConfigDialog from './modules/fleet-config-dialog.vue'
-  import { fetchFleetConfigList, deleteFleetConfig } from '@/api/fleet-config'
+  import {
+    deleteFleetConfig,
+    listFleetConfigs,
+    type ListFleetConfigsParams
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { ElButton, ElTag, ElMessageBox } from 'element-plus'
   import { Plus } from '@element-plus/icons-vue'
   import { useI18n } from 'vue-i18n'
@@ -44,7 +50,7 @@
 
   defineOptions({ name: 'FleetConfigs' })
 
-  type FleetConfigItem = Api.FleetConfig.FleetConfigItem
+  type FleetConfigItem = FleetConfigRecord
 
   const { t } = useI18n()
 
@@ -65,7 +71,7 @@
     handleCurrentChange
   } = useTable({
     core: {
-      apiFn: fetchFleetConfigList,
+      apiFn: (params?: ListFleetConfigsParams) => unwrapContract(listFleetConfigs(params)),
       apiParams: { current: 1, size: 20 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
@@ -170,7 +176,7 @@
       }
     )
     try {
-      await deleteFleetConfig(row.id)
+      await unwrapContract(deleteFleetConfig(row.id))
       ElMessage.success(t('fleetConfig.deleteSuccess'))
       getData()
     } catch (e: any) {

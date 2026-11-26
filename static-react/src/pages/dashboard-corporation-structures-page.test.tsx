@@ -5,7 +5,7 @@ import { appRoutes } from '@/app/router'
 import { useSessionStore } from '@/stores'
 
 const jsonResponse = (data: unknown) =>
-  new Response(JSON.stringify({ code: 0, msg: 'ok', data }), {
+  new Response(JSON.stringify({ code: 200, msg: 'ok', data }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   })
@@ -92,7 +92,7 @@ describe('dashboard corporation structures page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               corporations: [
@@ -115,7 +115,7 @@ describe('dashboard corporation structures page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               systems: [
@@ -138,7 +138,7 @@ describe('dashboard corporation structures page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               modules: [],
@@ -152,7 +152,7 @@ describe('dashboard corporation structures page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               items: [

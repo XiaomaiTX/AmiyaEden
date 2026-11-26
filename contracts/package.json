@@ -1,0 +1,16 @@
+{
+  "name": "amiya-eden-api-contract",
+  "private": true,
+  "packageManager": "pnpm@11.15.1",
+  "scripts": {
+    "generate:ts": "orval --config orval.config.cjs",
+    "api:generate": "bash generate.sh",
+    "api:check": "bash check.sh"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "12.1.0",
+    "openapi-types": "12.1.3",
+    "orval": "7.13.0",
+    "yaml": "2.9.1"
+  }
+}

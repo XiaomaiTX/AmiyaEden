@@ -2,18 +2,20 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   createFleetConfig,
   deleteFleetConfig,
-  fetchFleetConfigDetail,
-  fetchFleetConfigEFT,
-  fetchFleetConfigList,
+  getFleetConfig,
+  getFittingEFT,
+  listFleetConfigs,
   updateFleetConfig,
-} from '@/api/fleet-config'
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { DataTable, type ColumnDef } from '@/components/ui/data-table'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
-import type { FleetConfigItem, FittingReq } from '@/types/api/fleet-config'
+import type { FittingReq } from '@/types/api/fleet-config'
+import type { FleetConfigRecord as FleetConfigItem } from '@/api/generated/client'
 import { formatDateTime, getErrorMessage, ShopDialog } from './shop-page-utils'
 
 type FittingFormState = FittingReq
@@ -51,7 +53,10 @@ export function OperationFleetConfigsPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetchFleetConfigList({ current: page, size: pageSize })
+      const response = await unwrapContract(
+        listFleetConfigs({ current: page, size: pageSize }),
+        'fetch fleet config list failed'
+      )
       setConfigs(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -84,8 +89,10 @@ export function OperationFleetConfigsPage() {
     setDialogLoading(true)
     try {
       const [detail, eft] = await Promise.all([
-        fetchFleetConfigDetail(config.id),
-        fetchFleetConfigEFT(config.id, 'en').catch(() => null),
+        unwrapContract(getFleetConfig(config.id), 'fetch fleet config detail failed'),
+        unwrapContract(getFittingEFT(config.id, { lang: 'en' }), 'fetch fleet config eft failed').catch(
+          () => null
+        ),
       ])
       const eftMap = new Map<number, string>()
       eft?.fittings?.forEach((item) => {
@@ -150,9 +157,12 @@ export function OperationFleetConfigsPage() {
       }
 
       if (editingConfig) {
-        await updateFleetConfig(editingConfig.id, payload)
+        await unwrapContract(
+          updateFleetConfig(editingConfig.id, payload),
+          'update fleet config failed'
+        )
       } else {
-        await createFleetConfig(payload)
+        await unwrapContract(createFleetConfig(payload), 'create fleet config failed')
       }
 
       setDialogOpen(false)
@@ -173,7 +183,7 @@ export function OperationFleetConfigsPage() {
       }
 
       try {
-        await deleteFleetConfig(config.id)
+        await unwrapContract(deleteFleetConfig(config.id), 'delete fleet config failed')
         setRefreshSeed((current) => current + 1)
       } catch (caughtError) {
         setError(getErrorMessage(caughtError, t('fleetConfig.deleteFailed')))

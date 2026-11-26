@@ -28,11 +28,9 @@ func TestUploadImageReturnsDataURL(t *testing.T) {
 
 	req := newUploadImageRequest(t, "tiny.png", fileBytes)
 	recorder := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Request = req
-
-	handler := NewUploadHandler()
-	handler.UploadImage(ctx)
+	r := gin.New()
+	registerMigratedOperationRoutes(r, newMigratedOperationAdapter(migratedOperations{UploadHandler: NewUploadHandler()}), migratedOperationParamError)
+	r.ServeHTTP(recorder, req)
 
 	var resp response.Response
 	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
@@ -59,11 +57,9 @@ func TestUploadImageRejectsFilesOverTwoMB(t *testing.T) {
 	fileBytes := bytes.Repeat([]byte("a"), (2048<<10)+1)
 	req := newUploadImageRequest(t, "too-large.png", fileBytes)
 	recorder := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Request = req
-
-	handler := NewUploadHandler()
-	handler.UploadImage(ctx)
+	r := gin.New()
+	registerMigratedOperationRoutes(r, newMigratedOperationAdapter(migratedOperations{UploadHandler: NewUploadHandler()}), migratedOperationParamError)
+	r.ServeHTTP(recorder, req)
 
 	var resp response.Response
 	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {

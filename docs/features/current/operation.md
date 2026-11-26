@@ -9,8 +9,7 @@ source_of_truth:
   - server/internal/service/fleet_config.go
   - server/internal/service/auto_srp.go
   - server/internal/service/pap_exchange.go
-  - static/src/api/fleet.ts
-  - static/src/api/fleet-config.ts
+  - static/src/api/generated/client.ts
   - static/src/views/operation
 ---
 
@@ -40,13 +39,11 @@ source_of_truth:
 - `static/src/views/operation/join`
 - `static/src/views/operation/pap`
 
-### 后端路由
+### 后端契约
 
-- `/api/v1/operation/fleets/*`
-- `/api/v1/operation/fleet-configs/*`
+[舰队 OpenAPI](../../../contracts/modules/fleets.yaml)、[舰队配置与联盟 PAP OpenAPI](../../../contracts/modules/fleet-config-admin-pap.yaml)。
 
-技能规划已拆分为独立模块，详见 `docs/features/current/skill-planning.md`。
-用户侧钱包页面归属 Commerce / Shop 模块，详见 `docs/features/current/commerce.md`。
+技能规划和用户侧钱包分别见[技能规划](skill-planning.md)与[商店和交易](commerce.md)。
 
 ## 权限边界
 
@@ -81,8 +78,7 @@ source_of_truth:
 - `server/internal/service/fleet_config.go`
 - `server/internal/service/auto_srp.go`
 - `server/internal/router/router.go`
-- `static/src/api/fleet.ts`
-- `static/src/api/fleet-config.ts`
+- `static/src/api/generated/client.ts`
 - `static/src/views/operation`
 
 ## 前端实现映射（迁移期）

@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"amiya-eden/internal/apicontract"
+	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -63,6 +66,18 @@ func TestSplitAny(t *testing.T) {
 	}
 }
 
+type eveSSOTestFallback struct {
+	apicontract.StrictServerInterface
+}
+
+func newEveSSOTestWrapper() *apicontract.ServerInterfaceWrapper {
+	adapter := apicontract.NewStrictHandler(struct {
+		eveSSOTestFallback
+		*EveSSOHandler
+	}{EveSSOHandler: &EveSSOHandler{}})
+	return &apicontract.ServerInterfaceWrapper{Handler: adapter}
+}
+
 func TestLoginRejectsAdminOnlyExtraScopesForPublicRequests(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	rec := httptest.NewRecorder()
@@ -73,7 +88,7 @@ func TestLoginRejectsAdminOnlyExtraScopesForPublicRequests(t *testing.T) {
 		nil,
 	)
 
-	(&EveSSOHandler{}).Login(ctx)
+	newEveSSOTestWrapper().GetEveSsoLogin(ctx)
 
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("expected 403 for public corp killmail scope request, got %d", rec.Code)
@@ -99,7 +114,7 @@ func TestBindLoginRejectsAdminOnlyExtraScopesForNonAdminUsers(t *testing.T) {
 		nil,
 	)
 
-	(&EveSSOHandler{}).BindLogin(ctx)
+	newEveSSOTestWrapper().GetEveSsoBind(ctx)
 
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("expected 403 for non-admin corp killmail scope request, got %d", rec.Code)
@@ -110,5 +125,49 @@ func TestBindLoginRejectsAdminOnlyExtraScopesForNonAdminUsers(t *testing.T) {
 	}
 	if resp.Code != response.CodeForbidden {
 		t.Fatalf("expected response code %d, got %d", response.CodeForbidden, resp.Code)
+	}
+}
+
+func TestEveSsoStrictRedirectPreservesHeadersAndRelativeLocation(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/sso/eve/callback", nil)
+	out := eveSsoRedirectResponse{
+		request: request,
+		headers: apicontract.EveSsoCallback302ResponseHeaders{
+			Location: "../auth/继续?x=1&y=2", CacheControl: "no-store", ReferrerPolicy: "no-referrer",
+		},
+	}
+	w := httptest.NewRecorder()
+	if err := out.VisitEveSsoCallbackResponse(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != http.StatusFound || w.Header().Get("Location") != "/api/v1/sso/auth/%e7%bb%a7%e7%bb%ad?x=1&y=2" {
+		t.Fatalf("unexpected redirect: status=%d location=%q", w.Code, w.Header().Get("Location"))
+	}
+	if w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("Referrer-Policy") != "no-referrer" {
+		t.Fatalf("unexpected redirect cache/referrer headers: %v", w.Header())
+	}
+	if !strings.Contains(w.Body.String(), "?x=1&amp;y=2") {
+		t.Fatalf("redirect body did not HTML-escape the location: %s", w.Body.String())
+	}
+}
+
+func TestEveSsoStrictRegistrationErrorKeepsNoStoreAndEnvelope(t *testing.T) {
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/sso/eve/registration", nil)
+	h := &EveSSOHandler{svc: &service.EveSSOService{}}
+	out, err := h.GetEveRegistration(ctx, apicontract.GetEveRegistrationRequestObject{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := out.VisitGetEveRegistrationResponse(w); err != nil {
+		t.Fatal(err)
+	}
+	var envelope apicontract.BusinessError
+	if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != http.StatusOK || w.Header().Get("Cache-Control") != "no-store" || envelope.Code != 400 || envelope.Data != nil {
+		t.Fatalf("unexpected registration response: status=%d headers=%v body=%s", w.Code, w.Header(), w.Body.String())
 	}
 }

@@ -323,20 +323,28 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    SkillPlanCheckResult,
+    SkillPlanCompletionPlan,
+    SkillPlanRecord,
+    SkillPlanScope
+  } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import { ElMessage } from 'element-plus'
-  import { fetchMyCharacters } from '@/api/auth'
+
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { useClipboardCopy } from '@/hooks/core/useClipboardCopy'
   import {
-    fetchPersonalSkillPlanList,
-    fetchSkillPlanCheckSelection,
-    fetchSkillPlanCheckPlanSelection,
-    fetchSkillPlanList,
+    listMyEveCharacters,
+    getSkillPlanCheckPlanSelection,
+    getSkillPlanCheckSelection,
+    listPersonalSkillPlans,
+    listSkillPlans,
     runSkillPlanCompletionCheck,
-    saveSkillPlanCheckSelection,
-    saveSkillPlanCheckPlanSelection
-  } from '@/api/skill-plan'
+    saveSkillPlanCheckPlanSelection,
+    saveSkillPlanCheckSelection
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'SkillPlanCompletionCheck' })
@@ -349,7 +357,7 @@
   const characters = ref<Api.Auth.EveCharacter[]>([])
   const selectedCharacterIds = ref<number[]>([])
   const draftCharacterIds = ref<number[]>([])
-  const result = ref<Api.SkillPlan.CompletionCheckResult | null>(null)
+  const result = ref<SkillPlanCheckResult | null>(null)
   const characterDialogVisible = ref(false)
   const savingSelection = ref(false)
   const running = ref(false)
@@ -357,7 +365,7 @@
   const activePlanNames = ref<Record<number, string[]>>({})
 
   // Plan selection state
-  const allPlans = ref<Api.SkillPlan.SkillPlanListItem[]>([])
+  const allPlans = ref<SkillPlanRecord[]>([])
   const selectedPlanIds = ref<number[]>([])
   const draftPlanIds = ref<number[]>([])
   const planDialogVisible = ref(false)
@@ -393,18 +401,18 @@
     return new Map(allPlans.value.map((plan) => [plan.id, plan]))
   })
 
-  function planScopeLabel(scope: Api.SkillPlan.SkillPlanScope) {
+  function planScopeLabel(scope: SkillPlanScope) {
     return scope === 'personal' ? t('skillPlan.scope.personal') : t('skillPlan.scope.corp')
   }
 
-  function formatPlanLabel(plan: Api.SkillPlan.SkillPlanListItem) {
+  function formatPlanLabel(plan: SkillPlanRecord) {
     return t('skillPlanCheck.planOptionLabel', {
       scope: planScopeLabel(plan.plan_scope),
       title: plan.title
     })
   }
 
-  function formatCompletionPlanLabel(plan: Api.SkillPlan.CompletionPlan) {
+  function formatCompletionPlanLabel(plan: SkillPlanCompletionPlan) {
     const matchedPlan = planLabelMap.value.get(plan.plan_id)
 
     if (!matchedPlan) {
@@ -417,7 +425,7 @@
     })
   }
 
-  function copyMissingSkills(plan: Api.SkillPlan.CompletionPlan) {
+  function copyMissingSkills(plan: SkillPlanCompletionPlan) {
     const text = plan.missing_skills
       .map((skill) => `${skill.skill_name} ${skill.required_level}`)
       .join('\n')
@@ -437,11 +445,11 @@
   }
 
   async function loadCharacters() {
-    characters.value = (await fetchMyCharacters()) ?? []
+    characters.value = (await unwrapContract(listMyEveCharacters())) ?? []
   }
 
   async function loadSavedSelection() {
-    const saved = await fetchSkillPlanCheckSelection()
+    const saved = await unwrapContract(getSkillPlanCheckSelection())
     const availableIDs = new Set(characters.value.map((character) => character.character_id))
     selectedCharacterIds.value = (saved.character_ids ?? []).filter((id) => availableIDs.has(id))
     syncDraftSelection()
@@ -453,7 +461,7 @@
       const payload = {
         character_ids: [...draftCharacterIds.value]
       }
-      const saved = await saveSkillPlanCheckSelection(payload)
+      const saved = await unwrapContract(saveSkillPlanCheckSelection(payload))
       selectedCharacterIds.value = saved.character_ids ?? []
       syncDraftSelection()
       characterDialogVisible.value = false
@@ -468,8 +476,8 @@
   async function loadAllPlans() {
     try {
       const [corpRes, personalRes] = await Promise.all([
-        fetchSkillPlanList({ current: 1, size: 200 }),
-        fetchPersonalSkillPlanList({ current: 1, size: 200 })
+        unwrapContract(listSkillPlans({ current: 1, size: 200 })),
+        unwrapContract(listPersonalSkillPlans({ current: 1, size: 200 }))
       ])
       allPlans.value = [...(corpRes?.list ?? []), ...(personalRes?.list ?? [])].filter(
         (plan) => !plan.disabled
@@ -480,7 +488,7 @@
   }
 
   async function loadSavedPlanSelection() {
-    const saved = await fetchSkillPlanCheckPlanSelection()
+    const saved = await unwrapContract(getSkillPlanCheckPlanSelection())
     const availableIDs = new Set(allPlans.value.map((plan) => plan.id))
     selectedPlanIds.value = (saved.plan_ids ?? []).filter((id) => availableIDs.has(id))
     draftPlanIds.value = [...selectedPlanIds.value]
@@ -494,9 +502,11 @@
   async function savePlanSelection() {
     savingPlanSelection.value = true
     try {
-      const saved = await saveSkillPlanCheckPlanSelection({
-        plan_ids: [...draftPlanIds.value]
-      })
+      const saved = await unwrapContract(
+        saveSkillPlanCheckPlanSelection({
+          plan_ids: [...draftPlanIds.value]
+        })
+      )
       selectedPlanIds.value = saved.plan_ids ?? []
       draftPlanIds.value = [...selectedPlanIds.value]
       planDialogVisible.value = false
@@ -508,7 +518,7 @@
     }
   }
 
-  function expandResults(data: Api.SkillPlan.CompletionCheckResult) {
+  function expandResults(data: SkillPlanCheckResult) {
     activeCharacterNames.value = data.characters.map((character) => String(character.character_id))
     activePlanNames.value = Object.fromEntries(
       data.characters.map((character) => [character.character_id, []])
@@ -523,10 +533,12 @@
 
     running.value = true
     try {
-      const data = await runSkillPlanCompletionCheck({
-        character_ids: selectedCharacterIds.value,
-        language: currentLang.value
-      })
+      const data = await unwrapContract(
+        runSkillPlanCompletionCheck({
+          character_ids: selectedCharacterIds.value,
+          language: currentLang.value
+        })
+      )
       result.value = data
       expandResults(data)
     } catch (error: any) {

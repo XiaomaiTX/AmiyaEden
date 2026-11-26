@@ -122,13 +122,15 @@
 </template>
 
 <script setup lang="ts">
+  import type { InfoWalletAnalyticsResponse } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import { ElButton, ElCard, ElDatePicker } from 'element-plus'
 
   import ArtDualBarCompareChart from '@/components/core/charts/art-dual-bar-compare-chart/index.vue'
   import ArtHBarChart from '@/components/core/charts/art-h-bar-chart/index.vue'
   import ArtLineChart from '@/components/core/charts/art-line-chart/index.vue'
-  import { fetchInfoWalletAnalytics } from '@/api/eve-info'
+  import { getWalletAnalytics } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { formatIskPlain, formatIskSmart } from '@/utils/common'
 
   import { formatJournalTypeLabel } from './wallet-journal-type'
@@ -172,7 +174,7 @@
 
   const loading = ref(false)
   const loadError = ref('')
-  const analytics = ref<Api.EveInfo.WalletAnalyticsResponse | null>(null)
+  const analytics = ref<InfoWalletAnalyticsResponse | null>(null)
   /** null 表示用户手动选定的自定义区间，此时不高亮任何预设 */
   const activePreset = ref<WalletAnalyticsPreset | null>('all')
   const dateRange = ref<[string, string] | null>(null)
@@ -293,11 +295,13 @@
     loading.value = true
     loadError.value = ''
     try {
-      const res = await fetchInfoWalletAnalytics({
-        character_id: characterID,
-        from: range?.from,
-        to: range?.to
-      })
+      const res = await unwrapContract(
+        getWalletAnalytics({
+          character_id: characterID,
+          from: range?.from,
+          to: range?.to
+        })
+      )
       analytics.value = res ?? null
 
       const availableFrom = res?.summary?.available_from ?? ''

@@ -89,10 +89,16 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    FleetCorporationPapItem,
+    FleetCorporationPapOverview,
+    GetCorporationPapSummaryParams
+  } from '@/api/generated/client'
   import { Refresh } from '@element-plus/icons-vue'
   import { ElButton, ElCard, ElInputNumber, ElOption, ElSelect, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
-  import { fetchCorporationPapSummary } from '@/api/fleet'
+  import { getCorporationPapSummary } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import type { ColumnOption } from '@/types/component'
 
   defineOptions({ name: 'CorporationPap' })
@@ -103,12 +109,12 @@
   const currentYear = new Date().getFullYear()
 
   const loading = ref(false)
-  const records = ref<Api.Fleet.CorporationPapSummaryItem[]>([])
-  const filters = reactive<
-    Required<Pick<Api.Fleet.CorporationPapSummaryParams, 'period' | 'year'>> & {
-      corpTickers: string[]
-    }
-  >({
+  const records = ref<FleetCorporationPapItem[]>([])
+  const filters = reactive<{
+    period: FleetCorporationPapOverview['period']
+    year: number
+    corpTickers: string[]
+  }>({
     period: 'last_month',
     year: currentYear,
     corpTickers: [...defaultTickers]
@@ -118,7 +124,7 @@
     size: 200,
     total: 0
   })
-  const overview = ref<Api.Fleet.CorporationPapOverview>({
+  const overview = ref<FleetCorporationPapOverview>({
     filtered_pap_total: 0,
     filtered_strat_op_total: 0,
     all_pap_total: 0,
@@ -167,7 +173,7 @@
       maximumFractionDigits: 1
     }).format(value ?? 0)
 
-  const columns = computed<ColumnOption<Api.Fleet.CorporationPapSummaryItem>[]>(() => [
+  const columns = computed<ColumnOption<FleetCorporationPapItem>[]>(() => [
     { type: 'globalIndex', width: 60, label: '#' },
     {
       prop: 'corp_ticker',
@@ -221,7 +227,7 @@
     }
   ])
 
-  const emptyOverview = (): Api.Fleet.CorporationPapOverview => ({
+  const emptyOverview = (): FleetCorporationPapOverview => ({
     filtered_pap_total: 0,
     filtered_strat_op_total: 0,
     all_pap_total: 0,
@@ -232,7 +238,7 @@
   async function loadData() {
     loading.value = true
     try {
-      const params: Api.Fleet.CorporationPapSummaryParams = {
+      const params: GetCorporationPapSummaryParams = {
         current: pagination.current,
         size: pagination.size,
         period: filters.period,
@@ -246,7 +252,7 @@
         params.year = filters.year
       }
 
-      const result = await fetchCorporationPapSummary(params)
+      const result = await unwrapContract(getCorporationPapSummary(params))
       records.value = result?.list ?? []
       pagination.total = result?.total ?? 0
       pagination.current = result?.page ?? pagination.current

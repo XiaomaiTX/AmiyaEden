@@ -1,0 +1,315 @@
+paths:
+  /info/fittings:
+    post:
+      operationId: getFittings
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.fittings.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoFittingsInput"}
+      responses:
+        '200':
+          description: Query or mutation result, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoFittingsSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/fittings/save:
+    post:
+      operationId: saveFitting
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.fittings.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/SaveFittingInput"}
+      responses:
+        '200':
+          description: Saved fitting (slot details are not hydrated; slots is null), or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoFittingSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/npc-kills:
+    post:
+      operationId: getNpcKills
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.npc_kills.self"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/NpcKillCharacterInput"}
+      responses:
+        '200':
+          description: Query or mutation result, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/NpcKillDataSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/npc-kills/all:
+    post:
+      operationId: getAllNpcKills
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.npc_kills.self"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/NpcKillAllInput"}
+      responses:
+        '200':
+          description: Query or mutation result, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/NpcKillDataSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/npc-kills:
+    post:
+      operationId: getCorpNpcKills
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.dashboard", "cap:dashboard.npc_kills.corp", "cap:info.npc_kills.corp"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/NpcKillCorpInput"}
+      responses:
+        '200':
+          description: Query or mutation result, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/NpcKillCorpDataSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    InfoFittingsInput:
+      type: object
+      properties:
+        language: {"type": "string", "x-go-name": "Language", "x-order": 1, "x-go-type-skip-optional-pointer": true}
+    InfoFittingItem:
+      type: object
+      required: ["type_id", "type_name", "quantity", "flag"]
+      properties:
+        type_id: {"type": "integer", "format": "int64", "x-go-name": "TypeID", "x-order": 1}
+        type_name: {"type": "string", "x-go-name": "TypeName", "x-order": 2}
+        quantity: {"type": "integer", "x-go-name": "Quantity", "x-order": 3}
+        flag: {"type": "string", "x-go-name": "Flag", "x-order": 4}
+    InfoFittingSlot:
+      type: object
+      required: ["flag_name", "flag_text", "order_id", "items"]
+      properties:
+        flag_name: {"type": "string", "x-go-name": "FlagName", "x-order": 1}
+        flag_text: {"type": "string", "x-go-name": "FlagText", "x-order": 2}
+        order_id: {"type": "integer", "x-go-name": "OrderID", "x-order": 3}
+        items: {"type": "array", "items": {"$ref": "#/components/schemas/InfoFittingItem"}, "x-go-name": "Items", "x-order": 4}
+    InfoFitting:
+      type: object
+      required: ["fitting_id", "character_id", "name", "description", "ship_type_id", "ship_name", "group_id", "group_name", "race_id", "race_name", "slots"]
+      properties:
+        fitting_id: {"type": "integer", "format": "int64", "x-go-name": "FittingID", "x-order": 1}
+        character_id: {"type": "integer", "format": "int64", "x-go-name": "CharacterID", "x-order": 2}
+        name: {"type": "string", "x-go-name": "Name", "x-order": 3}
+        description: {"type": "string", "x-go-name": "Description", "x-order": 4}
+        ship_type_id: {"type": "integer", "format": "int64", "x-go-name": "ShipTypeID", "x-order": 5}
+        ship_name: {"type": "string", "x-go-name": "ShipName", "x-order": 6}
+        group_id: {"type": "integer", "x-go-name": "GroupID", "x-order": 7}
+        group_name: {"type": "string", "x-go-name": "GroupName", "x-order": 8}
+        race_id: {"type": "integer", "x-go-name": "RaceID", "x-order": 9}
+        race_name: {"type": "string", "x-go-name": "RaceName", "x-order": 10}
+        slots: {"type": "array", "items": {"$ref": "#/components/schemas/InfoFittingSlot"}, "x-go-name": "Slots", "x-order": 11, "nullable": true, "x-go-type-skip-optional-pointer": true}
+    InfoFittings:
+      type: object
+      required: ["total", "fittings"]
+      properties:
+        total: {"type": "integer", "x-go-name": "Total", "x-order": 1}
+        fittings: {"type": "array", "items": {"$ref": "#/components/schemas/InfoFitting"}, "x-go-name": "Fittings", "x-order": 2}
+    NpcKillCharacterInput:
+      type: object
+      required: ["character_id"]
+      properties:
+        character_id: {"type": "integer", "format": "int64", "x-go-name": "CharacterID", "x-order": 1, "x-oapi-codegen-extra-tags": {"binding": "required"}}
+        start_date: {"type": "string", "x-go-name": "StartDate", "x-order": 2, "x-go-type-skip-optional-pointer": true}
+        end_date: {"type": "string", "x-go-name": "EndDate", "x-order": 3, "x-go-type-skip-optional-pointer": true}
+        language: {"type": "string", "x-go-name": "Language", "x-order": 4, "x-go-type-skip-optional-pointer": true}
+        page: {"type": "integer", "x-go-name": "Page", "x-order": 5, "x-go-type-skip-optional-pointer": true, "x-oapi-codegen-extra-tags": {"binding": "min=0"}, "minimum": 0}
+        page_size: {"type": "integer", "x-go-name": "PageSize", "x-order": 6, "x-go-type-skip-optional-pointer": true, "x-oapi-codegen-extra-tags": {"binding": "min=0"}, "minimum": 0}
+        ref_types: {"type": "array", "items": {"type": "string"}, "x-go-name": "RefTypes", "x-order": 7, "x-go-type-skip-optional-pointer": true}
+        solar_system_ids: {"type": "array", "items": {"type": "integer"}, "x-go-name": "SolarSystemIDs", "x-order": 8, "x-go-type-skip-optional-pointer": true}
+        character_ids: {"type": "array", "items": {"type": "integer", "format": "int64"}, "x-go-name": "CharacterIDs", "x-order": 9, "x-go-type-skip-optional-pointer": true}
+        user_ids: {"type": "array", "items": {"type": "integer", "x-go-type": "uint"}, "x-go-name": "UserIDs", "x-order": 10, "x-go-type-skip-optional-pointer": true}
+        min_amount: {"type": "number", "format": "double", "x-go-name": "MinAmount", "x-order": 11, "nullable": true, "x-omitempty": true}
+        max_amount: {"type": "number", "format": "double", "x-go-name": "MaxAmount", "x-order": 12, "nullable": true, "x-omitempty": true}
+    NpcKillAllInput:
+      type: object
+      properties:
+        start_date: {"type": "string", "x-go-name": "StartDate", "x-order": 1, "x-go-type-skip-optional-pointer": true}
+        end_date: {"type": "string", "x-go-name": "EndDate", "x-order": 2, "x-go-type-skip-optional-pointer": true}
+        language: {"type": "string", "x-go-name": "Language", "x-order": 3, "x-go-type-skip-optional-pointer": true}
+        page: {"type": "integer", "x-go-name": "Page", "x-order": 4, "x-go-type-skip-optional-pointer": true, "x-oapi-codegen-extra-tags": {"binding": "min=0"}, "minimum": 0}
+        page_size: {"type": "integer", "x-go-name": "PageSize", "x-order": 5, "x-go-type-skip-optional-pointer": true, "x-oapi-codegen-extra-tags": {"binding": "min=0"}, "minimum": 0}
+        ref_types: {"type": "array", "items": {"type": "string"}, "x-go-name": "RefTypes", "x-order": 6, "x-go-type-skip-optional-pointer": true}
+        solar_system_ids: {"type": "array", "items": {"type": "integer"}, "x-go-name": "SolarSystemIDs", "x-order": 7, "x-go-type-skip-optional-pointer": true}
+        character_ids: {"type": "array", "items": {"type": "integer", "format": "int64"}, "x-go-name": "CharacterIDs", "x-order": 8, "x-go-type-skip-optional-pointer": true}
+        user_ids: {"type": "array", "items": {"type": "integer", "x-go-type": "uint"}, "x-go-name": "UserIDs", "x-order": 9, "x-go-type-skip-optional-pointer": true}
+        min_amount: {"type": "number", "format": "double", "x-go-name": "MinAmount", "x-order": 10, "nullable": true, "x-omitempty": true}
+        max_amount: {"type": "number", "format": "double", "x-go-name": "MaxAmount", "x-order": 11, "nullable": true, "x-omitempty": true}
+    NpcKillCorpInput:
+      type: object
+      properties:
+        start_date: {"type": "string", "x-go-name": "StartDate", "x-order": 1, "x-go-type-skip-optional-pointer": true}
+        end_date: {"type": "string", "x-go-name": "EndDate", "x-order": 2, "x-go-type-skip-optional-pointer": true}
+        language: {"type": "string", "x-go-name": "Language", "x-order": 3, "x-go-type-skip-optional-pointer": true}
+        page: {"type": "integer", "x-go-name": "Page", "x-order": 4, "x-go-type-skip-optional-pointer": true, "x-oapi-codegen-extra-tags": {"binding": "min=0"}, "minimum": 0}
+        page_size: {"type": "integer", "x-go-name": "PageSize", "x-order": 5, "x-go-type-skip-optional-pointer": true, "x-oapi-codegen-extra-tags": {"binding": "min=0"}, "minimum": 0}
+        corp_tickers: {"type": "string", "x-go-name": "CorpTickers", "x-order": 6, "x-go-type-skip-optional-pointer": true}
+        ref_types: {"type": "array", "items": {"type": "string"}, "x-go-name": "RefTypes", "x-order": 7, "x-go-type-skip-optional-pointer": true}
+        solar_system_ids: {"type": "array", "items": {"type": "integer"}, "x-go-name": "SolarSystemIDs", "x-order": 8, "x-go-type-skip-optional-pointer": true}
+        character_ids: {"type": "array", "items": {"type": "integer", "format": "int64"}, "x-go-name": "CharacterIDs", "x-order": 9, "x-go-type-skip-optional-pointer": true}
+        user_ids: {"type": "array", "items": {"type": "integer", "x-go-type": "uint"}, "x-go-name": "UserIDs", "x-order": 10, "x-go-type-skip-optional-pointer": true}
+        min_amount: {"type": "number", "format": "double", "x-go-name": "MinAmount", "x-order": 11, "nullable": true, "x-omitempty": true}
+        max_amount: {"type": "number", "format": "double", "x-go-name": "MaxAmount", "x-order": 12, "nullable": true, "x-omitempty": true}
+    NpcKillSummary:
+      type: object
+      required: ["total_bounty", "total_ess", "total_incursion", "total_mission", "total_tax", "actual_income", "total_records"]
+      properties:
+        total_bounty: {"type": "number", "format": "double", "x-go-name": "TotalBounty", "x-order": 1}
+        total_ess: {"type": "number", "format": "double", "x-go-name": "TotalESS", "x-order": 2}
+        total_incursion: {"type": "number", "format": "double", "x-go-name": "TotalIncursion", "x-order": 3}
+        total_mission: {"type": "number", "format": "double", "x-go-name": "TotalMission", "x-order": 4}
+        total_tax: {"type": "number", "format": "double", "x-go-name": "TotalTax", "x-order": 5}
+        actual_income: {"type": "number", "format": "double", "x-go-name": "ActualIncome", "x-order": 6}
+        total_records: {"type": "integer", "x-go-name": "TotalRecords", "x-order": 7}
+    NpcKillByNpc:
+      type: object
+      required: ["npc_id", "npc_name", "count", "amount"]
+      properties:
+        npc_id: {"type": "integer", "x-go-name": "NpcID", "x-order": 1}
+        npc_name: {"type": "string", "x-go-name": "NpcName", "x-order": 2}
+        count: {"type": "integer", "x-go-name": "Count", "x-order": 3}
+        amount: {"type": "number", "format": "double", "x-go-name": "Amount", "x-order": 4}
+    NpcKillBySystem:
+      type: object
+      required: ["solar_system_id", "solar_system_name", "count", "amount"]
+      properties:
+        solar_system_id: {"type": "integer", "x-go-name": "SolarSystemID", "x-order": 1}
+        solar_system_name: {"type": "string", "x-go-name": "SolarSystemName", "x-order": 2}
+        count: {"type": "integer", "x-go-name": "Count", "x-order": 3}
+        amount: {"type": "number", "format": "double", "x-go-name": "Amount", "x-order": 4}
+    NpcKillTrend:
+      type: object
+      required: ["date", "amount", "count"]
+      properties:
+        date: {"type": "string", "x-go-name": "Date", "x-order": 1}
+        amount: {"type": "number", "format": "double", "x-go-name": "Amount", "x-order": 2}
+        count: {"type": "integer", "x-go-name": "Count", "x-order": 3}
+    NpcKillJournalItem:
+      type: object
+      required: ["id", "character_id", "character_name", "amount", "tax", "date", "ref_type", "solar_system_id", "solar_system_name", "reason"]
+      properties:
+        id: {"type": "integer", "format": "int64", "x-go-name": "ID", "x-order": 1}
+        character_id: {"type": "integer", "format": "int64", "x-go-name": "CharacterID", "x-order": 2}
+        character_name: {"type": "string", "x-go-name": "CharacterName", "x-order": 3}
+        amount: {"type": "number", "format": "double", "x-go-name": "Amount", "x-order": 4}
+        tax: {"type": "number", "format": "double", "x-go-name": "Tax", "x-order": 5}
+        date: {"type": "string", "x-go-name": "Date", "x-order": 6}
+        ref_type: {"type": "string", "x-go-name": "RefType", "x-order": 7}
+        solar_system_id: {"type": "integer", "x-go-name": "SolarSystemID", "x-order": 8}
+        solar_system_name: {"type": "string", "x-go-name": "SolarSystemName", "x-order": 9}
+        reason: {"type": "string", "x-go-name": "Reason", "x-order": 10}
+    NpcKillData:
+      type: object
+      required: ["summary", "by_npc", "by_system", "trend", "journals", "total", "page", "page_size"]
+      properties:
+        summary: {"allOf": [{"$ref": "#/components/schemas/NpcKillSummary"}], "x-go-name": "Summary", "x-order": 1}
+        by_npc: {"type": "array", "items": {"$ref": "#/components/schemas/NpcKillByNpc"}, "x-go-name": "ByNpc", "x-order": 2, "nullable": true, "x-go-type": "[]NpcKillByNpc"}
+        by_system: {"type": "array", "items": {"$ref": "#/components/schemas/NpcKillBySystem"}, "x-go-name": "BySystem", "x-order": 3}
+        trend: {"type": "array", "items": {"$ref": "#/components/schemas/NpcKillTrend"}, "x-go-name": "Trend", "x-order": 4}
+        journals: {"type": "array", "items": {"$ref": "#/components/schemas/NpcKillJournalItem"}, "x-go-name": "Journals", "x-order": 5}
+        total: {"type": "integer", "format": "int64", "x-go-name": "Total", "x-order": 6}
+        page: {"type": "integer", "x-go-name": "Page", "x-order": 7}
+        page_size: {"type": "integer", "x-go-name": "PageSize", "x-order": 8}
+    NpcKillCorpMemberSummary:
+      type: object
+      required: ["user_id", "display_name", "character_count", "total_bounty", "total_ess", "total_incursion", "total_mission", "total_tax", "actual_income", "record_count"]
+      properties:
+        user_id: {"type": "integer", "x-go-type": "uint", "x-go-name": "UserID", "x-order": 1}
+        display_name: {"type": "string", "x-go-name": "DisplayName", "x-order": 2}
+        character_count: {"type": "integer", "x-go-name": "CharacterCount", "x-order": 3}
+        total_bounty: {"type": "number", "format": "double", "x-go-name": "TotalBounty", "x-order": 4}
+        total_ess: {"type": "number", "format": "double", "x-go-name": "TotalESS", "x-order": 5}
+        total_incursion: {"type": "number", "format": "double", "x-go-name": "TotalIncursion", "x-order": 6}
+        total_mission: {"type": "number", "format": "double", "x-go-name": "TotalMission", "x-order": 7}
+        total_tax: {"type": "number", "format": "double", "x-go-name": "TotalTax", "x-order": 8}
+        actual_income: {"type": "number", "format": "double", "x-go-name": "ActualIncome", "x-order": 9}
+        record_count: {"type": "integer", "x-go-name": "RecordCount", "x-order": 10}
+    NpcKillCorpData:
+      type: object
+      required: ["summary", "members", "by_system", "trend"]
+      properties:
+        summary: {"allOf": [{"$ref": "#/components/schemas/NpcKillSummary"}], "x-go-name": "Summary", "x-order": 1}
+        members: {"type": "array", "items": {"$ref": "#/components/schemas/NpcKillCorpMemberSummary"}, "x-go-name": "Members", "x-order": 2}
+        by_system: {"type": "array", "items": {"$ref": "#/components/schemas/NpcKillBySystem"}, "x-go-name": "BySystem", "x-order": 3}
+        trend: {"type": "array", "items": {"$ref": "#/components/schemas/NpcKillTrend"}, "x-go-name": "Trend", "x-order": 4}
+    SaveFittingInput:
+      type: object
+      required: ["character_id", "name", "ship_type_id", "items"]
+      properties:
+        character_id: {"type": "integer", "format": "int64", "x-go-name": "CharacterID", "x-order": 1, "x-oapi-codegen-extra-tags": {"binding": "required"}}
+        fitting_id: {"type": "integer", "format": "int64", "x-go-name": "FittingID", "x-order": 2, "nullable": true, "x-omitempty": true}
+        name: {"type": "string", "x-go-name": "Name", "x-order": 3, "x-oapi-codegen-extra-tags": {"binding": "required,min=1,max=50"}, "minLength": 1, "maxLength": 50}
+        description: {"type": "string", "x-go-name": "Description", "x-order": 4, "x-go-type-skip-optional-pointer": true, "x-oapi-codegen-extra-tags": {"binding": "max=500"}, "maxLength": 500}
+        ship_type_id: {"type": "integer", "format": "int64", "x-go-name": "ShipTypeID", "x-order": 5, "x-oapi-codegen-extra-tags": {"binding": "required"}}
+        items: {"type": "array", "minItems": 1, "items": {"$ref": "#/components/schemas/SaveFittingItem"}, "x-go-name": "Items", "x-order": 6, "x-oapi-codegen-extra-tags": {"binding": "required,min=1"}}
+    SaveFittingItem:
+      type: object
+      properties:
+        type_id: {"type": "integer", "format": "int64", "x-go-name": "TypeID", "x-order": 1, "x-go-type-skip-optional-pointer": true}
+        quantity: {"type": "integer", "x-go-name": "Quantity", "x-order": 2, "x-go-type-skip-optional-pointer": true}
+        flag: {"type": "string", "x-go-name": "Flag", "x-order": 3, "x-go-type-skip-optional-pointer": true}
+    InfoFittingsSuccess:
+      type: object
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/InfoFittings"}
+    InfoFittingSuccess:
+      type: object
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/InfoFitting"}
+    NpcKillDataSuccess:
+      type: object
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/NpcKillData"}
+    NpcKillCorpDataSuccess:
+      type: object
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/NpcKillCorpData"}

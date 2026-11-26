@@ -9,7 +9,7 @@
  * - 错误拦截和转换，将 Axios 错误转换为标准的 HttpError
  * - 错误消息国际化处理，根据状态码返回对应的多语言错误提示
  * - 错误日志记录，便于问题追踪和调试
- * - 错误和成功消息的统一展示
+ * - 错误消息的统一展示
  * - 类型守卫函数，用于判断错误类型
  *
  * ## 使用场景
@@ -25,6 +25,10 @@ import { AxiosError } from 'axios'
 import { ApiStatus } from './status'
 import { $t } from '@/locales'
 import { ElMessageBox } from 'element-plus'
+import { HttpError } from './http-error'
+
+export { HttpError } from './http-error'
+export type { ErrorLogData } from './http-error'
 
 // 错误响应接口
 export interface ErrorResponse {
@@ -34,63 +38,6 @@ export interface ErrorResponse {
   msg: string
   /** 错误附加数据 */
   data?: unknown
-}
-
-// 错误日志数据接口
-export interface ErrorLogData {
-  /** 错误状态码 */
-  code: number
-  /** 错误消息 */
-  message: string
-  /** 错误附加数据 */
-  data?: unknown
-  /** 错误发生时间戳 */
-  timestamp: string
-  /** 请求 URL */
-  url?: string
-  /** 请求方法 */
-  method?: string
-  /** 错误堆栈信息 */
-  stack?: string
-}
-
-// 自定义 HttpError 类
-export class HttpError extends Error {
-  public readonly code: number
-  public readonly data?: unknown
-  public readonly timestamp: string
-  public readonly url?: string
-  public readonly method?: string
-
-  constructor(
-    message: string,
-    code: number,
-    options?: {
-      data?: unknown
-      url?: string
-      method?: string
-    }
-  ) {
-    super(message)
-    this.name = 'HttpError'
-    this.code = code
-    this.data = options?.data
-    this.timestamp = new Date().toISOString()
-    this.url = options?.url
-    this.method = options?.method
-  }
-
-  public toLogData(): ErrorLogData {
-    return {
-      code: this.code,
-      message: this.message,
-      data: this.data,
-      timestamp: this.timestamp,
-      url: this.url,
-      method: this.method,
-      stack: this.stack
-    }
-  }
 }
 
 /**
@@ -177,17 +124,6 @@ export function showError(error: HttpError, showMessage: boolean = true): void {
   }
   // 记录错误日志
   console.error('[HTTP Error]', error.toLogData())
-}
-
-/**
- * 显示成功消息
- * @param message 成功消息
- * @param showMessage 是否显示消息
- */
-export function showSuccess(message: string, showMessage: boolean = true): void {
-  if (showMessage) {
-    ElMessage.success(message)
-  }
 }
 
 /**

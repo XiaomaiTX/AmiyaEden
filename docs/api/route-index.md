@@ -2,608 +2,77 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-11-12
+last_reviewed: 2026-11-26
 source_of_truth:
+  - contracts/openapi.yaml
+  - contracts/modules
+  - server/internal/apicontract/api.gen.go
   - server/internal/router/router.go
-  - server/internal/model/corporation_capability.go
-  - static/src/router/modules
-  - static-react/src/app/migration-routes.ts
 ---
 
 # API 路由索引
 
-## 私有 Mumble 身份接口
-
-以下入口位于 `/api/internal/mumble/v1`，仅接受 `mumble.service_token` 对应的 Bearer 服务凭据；普通 Seat JWT 一律拒绝。`/api/internal` 是服务间路由分类，不面向浏览器用户。生产部署还应使用私网 HTTPS，并推荐 mTLS。
-
-| Method | Path | 说明 | 权限 |
-| --- | --- | --- | --- |
-| POST | `/api/internal/mumble/v1/authenticate` | 验证主人物名和 Mumble App Password；`server_instance_id` 可选且当前仅供调用方标识；成功返回稳定 Mumble User ID、canonical name 与 `fuxi_*` runtime groups；失败统一返回业务 deny | Mumble service |
-| POST | `/api/internal/mumble/v1/identities/resolve` | 最多批量解析 500 个稳定 ID 和/或 canonical name，供在线会话重验与协议身份查找；返回当前资格、名称与 runtime groups | Mumble service |
-
 ## 说明
 
-本文件只记录当前 `server/internal/router/router.go` 已注册的路由分组、路径与主要权限边界。
-权限列说明：
-
-- `JWT`：任意持有有效 JWT 的已认证用户可访问，包含 `guest`
-- `Login`：任意已认证且非 `guest` 的产品用户可访问
-- `RequireCorpCapability(x)`：在 JWT/Login/Role 之外叠加军团能力策略；`super_admin` 与 `full_access=true` 军团在 capability 层自动放行。前端只消费后端 enforced capability 目录。
-
-业务域 capability 覆盖：
-
-| 域                       | capability                                                                |
-| ------------------------ | ------------------------------------------------------------------------- |
-| Dashboard 聚合与军团建筑 | `menu.dashboard`                                                          |
-| 舰队行动                 | `menu.operation`                                                          |
-| 技能计划                 | `menu.skill_planning`                                                     |
-| 人物信息                 | `menu.info`                                                               |
-| 新人帮扶 / 导师 / 招新   | `menu.newbro`                                                             |
-| 伏羲大厅                 | `menu.fuxi_hall`                                                          |
-| 工单用户端               | `menu.ticket`                                                             |
-| 工单管理端               | `ticket.manage`                                                           |
-| 商店用户端               | `menu.shop`                                                               |
-| 商店管理端               | `shop.manage`                                                             |
-| 系统管理端               | `system.manage` / `system.task.read` / `system.wallet.read` / `system.audit.read` / `system.basic_config.read`（父菜单 OR） |
-| 角色管理                 | `system.manage`                                                           |
-| SRP                      | `srp.user` / `srp.manage`（父菜单 OR）                                   |
-| 福利                     | `welfare.user` / `welfare.approval` / `welfare.settings`（父菜单 OR）     |
-
-> Stage 0A 约定：`menu.srp`、`menu.welfare`、`menu.role`、`menu.system` 和 `dashboard.corp_structures.read` 是 reserved capability，不得用于前端路由、菜单或按钮门禁。页面同时需要模块入口与页面能力时，使用 AND；父菜单没有后端 enforced 的 `menu.*` 时，使用有效子能力 OR。完整目录以 `model.EnforcedCorpCapabilities()` 为准。
-
-## Public
-
-### EVE SSO
-
-| Method | Path                | 说明                | 权限   |
-| ------ | ------------------- | ------------------- | ------ |
-| GET    | `/sso/eve/login`    | 获取 SSO 登录地址   | Public |
-| GET    | `/sso/eve/callback` | 处理 SSO 回调       | Public |
-| GET    | `/sso/eve/scopes`   | 获取当前注册 scopes | Public |
-| GET    | `/sso/eve/registration` | 获取待注册人物 ID / 名字 | Public + `X-Registration-Token` |
-| POST   | `/sso/eve/registration` | 提交 `nickname`、`qq`、`discord_id`，完成注册并返回 `{token}` | Public + `X-Registration-Token` |
-
-首次 SSO 回调返回前端 `?registration=<ticket>`（无 redirect 时返回 `{registration}`），不创建用户或签发 JWT。注册票据有效期 15 分钟，只授权上述两个接口；请求与响应禁止缓存，成功后不可重用。资料必须包含昵称和至少一种联系方式。
-
-注册、`PUT /me` 和管理端更新联系方式遇到冲突时，HTTP 200 的业务响应为 `code: 409`、`msg: "contact_already_bound"`，`data` 为 `{contact: "qq" | "discord_id", primary_character_id, primary_character_name}`。前端弹窗说明登录该主人物后使用“绑定新人物”；不自动合并账号。返回主人物是有意设计：提交方已知该联系方式，而联系方式远比人物名称敏感，主人物名称不构成额外泄露。管理员与本人均不可清空最后一个联系方式。
-
-### SDE
-
-| Method | Path           | 说明                | 权限   |
-| ------ | -------------- | ------------------- | ------ |
-| GET    | `/sde/version` | 当前 SDE 版本       | Public |
-| POST   | `/sde/types`   | 批量查询 type 信息  | Public |
-| POST   | `/sde/names`   | 批量查询名称映射    | Public |
-| POST   | `/sde/search`  | 模糊搜索物品 / 成员 | Public |
-
-### 招募链接
-
-| Method | Path                    | 说明       | 权限   |
-| ------ | ----------------------- | ---------- | ------ |
-| POST   | `/recruit/:code/submit` | 提交 QQ 号 | Public |
-
-### Fuxi Hall
-
-| Method | Path                      | 说明                                          | 权限  |
-| ------ | ------------------------- | --------------------------------------------- | ----- |
-| GET | `/fuxi-hall/hall-of-fame` | 名人堂配置、楼层和可见卡片（含本人编辑权限、累计在团时长、当前绑定账号 `qq` 及 `contributions.corp_pap` 军团 PAP 合计快照） | Login |
-| PUT | `/fuxi-hall/cards/:id/profile` | 本人修改昵称和简介，按主人物当前绑定关系校验 | Login |
-
-## Authenticated Base
-
-| Method | Path                                                        | 说明                                                                                                                                                                                                                        | 权限                        |
-| ------ | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| GET    | `/sso/eve/characters`                                       | 当前用户绑定人物                                                                                                                                                                                                            | JWT                         |
-| GET    | `/sso/eve/bind`                                             | 获取绑定新人物的 SSO 地址                                                                                                                                                                                                   | JWT                         |
-| PUT    | `/sso/eve/primary/:character_id`                            | 设为主人物                                                                                                                                                                                                                  | JWT                         |
-| DELETE | `/sso/eve/characters/:character_id`                         | 解绑人物                                                                                                                                                                                                                    | JWT                         |
-| GET    | `/me`                                                       | 当前用户、人物、职权、绑定人物，并返回 `enforce_character_esi_restriction`、`primary_corporation_id`、`corp_capabilities`、`corp_rules`；主人物 ESI 已失效时仍返回启动上下文（含 `token_invalid` 状态），由前端决定是否锁定 | JWT                         |
-| DELETE | `/me`                                                       | 注销当前登录用户 / 自助删除账号                                                                                                                                                                                             | JWT                         |
-| GET | `/mumble/credential` | 查询当前用户的 Mumble App Password 状态；不返回密码；附带仅展示的 `servers[]` 服务器节点列表（`name`/`description`/`address`/`port`），不含稳定用户 ID | JWT |
-| POST | `/mumble/credential` | 首次创建 Mumble App Password；明文仅在本响应返回一次 | JWT |
-| POST | `/mumble/credential/rotate` | 轮换 Mumble App Password；旧密码立即失效，明文仅在本响应返回一次 | JWT |
-| DELETE | `/mumble/credential` | 吊销 Mumble App Password | JWT |
-| PUT    | `/me`                                                       | 更新当前用户昵称 / QQ / Discord ID                                                                                                                                                                                          | JWT                         |
-| POST   | `/dashboard`                                                | Dashboard 聚合数据                                                                                                                                                                                                          | JWT                         |
-| GET | `/dashboard/skill-readiness/options` | 军团与共享军团技能方案完整候选 | Login + `RequireRole(admin)` + `RequireCorpCapability(menu.dashboard)` |
-| POST | `/dashboard/skill-readiness/query` | 全范围技能达标统计与分页用户明细 | Login + `RequireRole(admin)` + `RequireCorpCapability(menu.dashboard)` |
-| POST | `/dashboard/skill-readiness/users/:user_id/characters` | 指定用户在军团筛选范围内的角色达标情况 | Login + `RequireRole(admin)` + `RequireCorpCapability(menu.dashboard)` |
-| POST | `/dashboard/skill-readiness/characters/:character_id/skills` | 有效范围内角色的方案比对及全部已同步技能 | Login + `RequireRole(admin)` + `RequireCorpCapability(menu.dashboard)` |
-| GET    | `/dashboard/corporation-structures/settings`                | 获取可管理军团列表、每个军团可选 Director 角色与当前授权映射，同时返回全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（天）                                                                       | `RequireRole(admin)`        |
-| PUT    | `/dashboard/corporation-structures/settings/authorizations` | 保存军团到 Director 角色授权映射；`character_id=0` 表示该军团不参与军团建筑 ESI 刷新；可同时更新全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（`>=0`，`0` 表示关闭）                            | `RequireRole(admin)`        |
-| GET    | `/dashboard/corporation-structures/filter-options`          | 获取建筑列表筛选元数据（星域、星系、类型、服务）                                                                                                                                                                            | `RequireRole(admin)`        |
-| POST   | `/dashboard/corporation-structures/list`                    | 按多条件（含星域）筛选读取军团建筑快照分页列表（支持排序）                                                                                                                                                                  | `RequireRole(admin)`        |
-| POST   | `/dashboard/corporation-structures/run-task`                | 使用已授权 Director 角色触发单个军团建筑后台 ESI 任务（异步入队）                                                                                                                                                           | `RequireRole(admin)`        |
-| GET    | `/dashboard/corporation-structures/assignments`             | 获取可管理军团建筑与燃料官指派列表，同时返回可选燃料官人物                                                                                                                                                                  | `RequireRole(admin)`        |
-| PUT    | `/dashboard/corporation-structures/assignments`             | 批量保存建筑到燃料官人物的指派；`character_id=0` 表示清空该建筑指派                                                                                                                                                         | `RequireRole(admin)`        |
-| GET    | `/dashboard/corporation-structures/fuel-salary-settings`    | 获取燃料官每建筑每月伏羲币单价                                                                                                                                                                                              | `RequireRole(admin)`        |
-| PUT    | `/dashboard/corporation-structures/fuel-salary-settings`    | 更新燃料官每建筑每月伏羲币单价（`>=0`）                                                                                                                                                                                     | `RequireRole(admin)`        |
-| POST   | `/dashboard/corporation-structures/fuel-salary-payouts/run` | 按结算月份（`YYYY-MM`）批量发放燃料官工资，公式=`单价 × 当前指派建筑数`                                                                                                                                                     | `RequireRole(admin)`        |
-| POST   | `/dashboard/corporation-structures/my-assigned-list`        | 查询当前燃料官被指派建筑列表（支持分页/排序/筛选）                                                                                                                                                                          | `RequireRole(fuel_officer)` |
-| GET    | `/dashboard/corporation-structures/service-catalog`         | 查询模块 `type_id` 目录、活动候选模块 `type_ids[]`、系统托管标记及待处理活动所处建筑的已安装模块 Type ID                                                                                                                    | `RequireRole(admin)`        |
-| PUT    | `/dashboard/corporation-structures/service-catalog`         | 以 ESI dogma 2109 校验新服务模块，并保存未知活动到候选模块 `type_ids[]` 的映射；系统托管映射不可修改                                                                                                                        | `RequireRole(admin)`        |
-| GET    | `/dashboard/galaxy-registry/systems`                        | 获取星系配置与当前占用状态汇总；返回 `idle/busy/overdue` 统计与当前 active 队长信息                                                                                                                                         | `Login`                     |
-| POST   | `/dashboard/galaxy-registry/entries`                        | 创建当前队长的星系生产登记；要求目标星系启用且当前无 active 记录；若已有超时 active 登记（`expected_end_at < now` 或 `actual_start_at + 2h < now`），其他队长可在同一事务内覆盖，旧登记被结束为 `completed`，但不能覆盖自己的超时登记 | `RequireRole(captain)`      |
-| POST   | `/dashboard/galaxy-registry/entries/:id/end`                | 结束当前队长自己的 active 登记并释放星系；登记保持 `pending`，钱包刷新与结算由后台 ESI 队列异步完成 | `RequireRole(captain)`      |
-| PUT    | `/dashboard/galaxy-registry/entries/:id/expected-end-at`    | 修改当前队长自己 active 登记的 `expected_end_at`；仅用于展示和超时标记，且不得超过实际开始后 2 小时                                                                                                                                | `RequireRole(captain)`      |
-| GET    | `/dashboard/galaxy-registry/my-entries`                     | 查看当前队长自己的登记记录（ledger 分页，支持 `status`、`validation_status`、`start_date`、`end_date`）                                                                                                                     | `RequireRole(captain)`      |
-| GET    | `/dashboard/galaxy-registry/admin/sde-systems`              | 搜索可登记星系的 SDE 元信息                                                                                                                                                                                                 | `RequireRole(admin)`        |
-| GET    | `/dashboard/galaxy-registry/admin/systems`                  | 获取全部星系登记配置                                                                                                                                                                                                        | `RequireRole(admin)`        |
-| POST   | `/dashboard/galaxy-registry/admin/systems`                  | 新增可登记星系配置；星系基础元信息仅从 SDE 回填                                                                                                                                                                             | `RequireRole(admin)`        |
-| PUT    | `/dashboard/galaxy-registry/admin/systems/:id`              | 更新星系备注、最低有效赏金阈值和启用状态                                                                                                                                                                                    | `RequireRole(admin)`        |
-| DELETE | `/dashboard/galaxy-registry/admin/systems/:id`              | 删除星系配置；若仍存在 active 登记则拒绝                                                                                                                                                                                    | `RequireRole(admin)`        |
-| GET    | `/dashboard/galaxy-registry/admin/entries`                  | 获取全量登记记录（ledger 分页，支持 `system_config_id`、`keyword`、`status`、`validation_status`、`start_date`、`end_date`）                                                                                                | `RequireRole(admin)`        |
-| POST   | `/dashboard/galaxy-registry/admin/entries/:id/force-end`    | 强制结束 active 登记并释放星系；登记保持 `pending`，钱包刷新与结算由后台 ESI 队列异步完成                                                                                                                                                                                                        | `RequireRole(admin)`        |
-| POST   | `/dashboard/galaxy-registry/admin/entries/:id/revalidate`   | 对已结束登记重新提交后台结算；服务层将校验状态重置为 `pending`，由后台 ESI 队列刷新钱包并覆盖现有结果 | `RequireRole(admin)`        |
-| PUT    | `/dashboard/galaxy-registry/admin/entries/:id/validation`   | 人工覆盖已结束登记的校验结果；仅允许 `valid` / `violation`，违规时可附带 `violation_reason`                                                                                                                                 | `RequireRole(admin)`        |
-| GET    | `/dashboard/galaxy-registry/admin/analytics`                | 获取当前快照、近 7/30 天统计、Top 星系和最近违规记录；支持可选 `start_date` / `end_date`                                                                                                                                    | `RequireRole(admin)`        |
-| GET    | `/badge-counts`                                             | 导航徽章计数；仅返回当前登录用户可见且非零的计数字段。福利可申请数仅读取内存缓存，不会在该接口内重新计算资格。`super_admin/admin` 额外返回军团建筑提醒计数 `corporation_structures_attention`                               | Login                       |
-
-## Corporation Admissions
-
-以下路径均相对 `/api/v1`。新人及小号按 user 整单申请，业务与证据规则见[军团申请](../features/current/corporation-admissions.md)。
-
-| Method | Path | 说明 | 权限 |
-| --- | --- | --- | --- |
-| GET | `/admissions/context` | 任一人物成员资格、目标及可审核军团 | JWT，含 guest |
-| GET | `/admissions/applications/me` | 本人历史；`status`、`kind`、`target_corporation_id`、`current`、`size` 分页；行内 `blacklisted` 恒为 `false` | JWT，owner |
-| POST | `/admissions/applications` | 创建整单；multipart `payload` 和新人两图 `launcher`／`seat_profile` | JWT，服务校验新人／小号资格 |
-| GET | `/admissions/applications/:id` | 申请、证据元数据、历史及工资；`blacklist_hits` 为联盟黑名单命中（`kind`、`value`、`display`、`reason`），只在 reviewer 读取 pending 申请时计算，否则为空数组 | JWT，owner 或目标军团 reviewer |
-| PUT | `/admissions/applications/:id` | pending／rejected 修改，校验 `expected_version` | JWT，owner |
-| POST | `/admissions/applications/:id/resubmit` | rejected 原 ID 补正重提，校验 `expected_version` | JWT，owner |
-| GET | `/admissions/applications/:id/evidence/:kind` | 私有 JPEG；到期拒绝，`private, no-store` | JWT，owner 或目标军团 reviewer |
-| GET | `/system/admissions/applications` | 按军团 scope 过滤后计数分页；状态含 `processed`，支持种类／目标；非本人 pending 行有黑名单命中时 `blacklisted` 为 `true` | JWT（不要求 Login 成员资格）+ recruiter／admin；super_admin 通过 |
-| POST | `/system/admissions/applications/:id/invited` | 登记整单游戏内已邀请，`expected_version`；事务发薪 10 币；事务内重新比对黑名单，有命中时拒绝（`admissions.errors.blacklisted`），驳回不受影响 | 同上，服务再次校验目标 scope；申请人不能处理本人申请 |
-| POST | `/system/admissions/applications/:id/reject` | 驳回，`expected_version` 与非空 `reason` | 同上，服务再次校验目标 scope；申请人不能处理本人申请 |
-
-只有 `launcher` 和 `seat_profile` 两类证据，无独立 QQ／Discord／技能点上传项；网站不执行游戏邀请。新人每图最多 2 MiB，multipart 总体最多 5 MiB；小号不接收图片。冲突、证据、资格、钱包禁用、黑名单命中及内部失败返回 `admissions.errors.*` 业务错误键，两端本地化；钱包禁用不提交结案。审核组独立于现有 system admin 父组，不能只凭全局 recruiter 标签读取另一军团申请。
-
-## Operation
-
-### Fleets
-
-| Method | Path                                   | 说明                                                                  | 权限                                |
-| ------ | -------------------------------------- | --------------------------------------------------------------------- | ----------------------------------- |
-| POST   | `/operation/fleets`                    | 创建舰队；`pap_count` 必须大于 `0` 且按 `0.5` 粒度                    | `RequireRole(admin, fc, senior_fc)` |
-| GET    | `/operation/fleets`                    | 舰队列表                                                              | `RequireRole(admin, fc, senior_fc)` |
-| GET    | `/operation/fleets/me`                 | 我的舰队                                                              | Login                               |
-| GET    | `/operation/fleets/:id`                | 舰队详情                                                              | `RequireRole(admin, fc, senior_fc)` |
-| PUT    | `/operation/fleets/:id`                | 更新舰队；若提交 `pap_count`，其值必须大于 `0` 且按 `0.5` 粒度        | `RequireRole(admin, fc, senior_fc)` |
-| DELETE | `/operation/fleets/:id`                | 删除舰队                                                              | `RequireRole(admin)`                |
-| POST   | `/operation/fleets/:id/refresh-esi`    | 刷新舰队 ESI 数据                                                     | `RequireRole(admin, fc, senior_fc)` |
-| GET    | `/operation/fleets/:id/members`        | 舰队成员                                                              | `RequireRole(admin, fc, senior_fc)` |
-| GET    | `/operation/fleets/:id/members-pap`    | 舰队成员与 PAP                                                        | `RequireRole(admin, fc, senior_fc)` |
-| POST   | `/operation/fleets/:id/members/manual` | 手动添加成员                                                          | `RequireRole(admin, fc, senior_fc)` |
-| POST   | `/operation/fleets/:id/members/sync`   | 同步 ESI 成员                                                         | `RequireRole(admin, fc, senior_fc)` |
-| POST   | `/operation/fleets/:id/pap`            | 发放 PAP；仅允许对 `pap_count` 为 `0.5` 粒度且大于 `0` 的舰队执行发放 | `RequireRole(admin, fc, senior_fc)` |
-| GET    | `/operation/fleets/:id/pap`            | PAP 日志                                                              | `RequireRole(admin, fc, senior_fc)` |
-| GET    | `/operation/fleets/pap/me`             | 我的 PAP 日志                                                         | Login                               |
-| GET    | `/operation/fleets/pap/corporation`    | 军团 PAP 汇总                                                         | Login                               |
-| GET    | `/operation/fleets/pap/alliance`       | 我的联盟 PAP                                                          | Login                               |
-| POST   | `/operation/fleets/:id/invites`        | 创建邀请                                                              | `RequireRole(admin, fc, senior_fc)` |
-| GET    | `/operation/fleets/:id/invites`        | 邀请列表                                                              | `RequireRole(admin, fc, senior_fc)` |
-| DELETE | `/operation/fleets/invites/:invite_id` | 停用邀请                                                              | `RequireRole(admin, fc, senior_fc)` |
-| POST   | `/operation/fleets/join`               | 加入舰队                                                              | Login                               |
-| GET    | `/operation/fleets/esi/:character_id`  | 查询人物当前舰队                                                      | Login                               |
-| POST   | `/operation/fleets/:id/ping`           | 发送 Webhook Ping                                                     | `RequireRole(admin, fc, senior_fc)` |
-
-### Fleet Configs
-
-| Method | Path                                                               | 说明                                                                                            | 权限                            |
-| ------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ------------------------------- |
-| GET    | `/operation/fleet-configs`                                         | 配置列表                                                                                        | Login                           |
-| GET    | `/operation/fleet-configs/:id`                                     | 配置详情                                                                                        | Login                           |
-| GET    | `/operation/fleet-configs/:id/eft`                                 | 获取 EFT 文本                                                                                   | Login                           |
-| POST   | `/operation/fleet-configs`                                         | 创建配置                                                                                        | `RequireRole(admin, senior_fc)` |
-| PUT    | `/operation/fleet-configs/:id`                                     | 更新配置；同一装配内按 `flag + type_id + quantity` 组合匹配物品，匹配项保留原有设置，其他项重置 | `RequireRole(admin, senior_fc)` |
-| DELETE | `/operation/fleet-configs/:id`                                     | 删除配置                                                                                        | `RequireRole(admin, senior_fc)` |
-| POST   | `/operation/fleet-configs/import-fitting`                          | 从人物装配导入                                                                                  | `RequireRole(admin, senior_fc)` |
-| POST   | `/operation/fleet-configs/export-esi`                              | 导出到 ESI                                                                                      | Login                           |
-| GET    | `/operation/fleet-configs/:id/fittings/:fitting_id/items`          | 装配物品                                                                                        | Login                           |
-| PUT    | `/operation/fleet-configs/:id/fittings/:fitting_id/items/settings` | 更新物品设置                                                                                    | `RequireRole(admin, senior_fc)` |
-
-## Skill Planning
-
-### Skill Plans
-
-| Method | Path                                               | 说明                                 | 权限                            |
-| ------ | -------------------------------------------------- | ------------------------------------ | ------------------------------- |
-| GET    | `/skill-planning/skill-plans/check/selection`      | 获取当前用户保存的完成度检查人物选择 | Login                           |
-| PUT    | `/skill-planning/skill-plans/check/selection`      | 保存当前用户的完成度检查人物选择     | Login                           |
-| POST   | `/skill-planning/skill-plans/check/run`            | 执行技能规划完成度检查               | Login                           |
-| GET    | `/skill-planning/skill-plans/check/plan-selection` | 获取当前用户保存的完成度检查规划选择 | Login                           |
-| PUT    | `/skill-planning/skill-plans/check/plan-selection` | 保存当前用户的完成度检查规划选择     | Login                           |
-| GET    | `/skill-planning/skill-plans`                      | 技能计划列表                         | Login                           |
-| GET    | `/skill-planning/skill-plans/:id`                  | 技能计划详情                         | Login                           |
-| POST   | `/skill-planning/skill-plans`                      | 创建技能计划                         | `RequireRole(admin, senior_fc)` |
-| PUT    | `/skill-planning/skill-plans/reorder`              | 调整技能计划排序                     | `RequireRole(admin, senior_fc)` |
-| PUT    | `/skill-planning/skill-plans/:id`                  | 更新技能计划                         | `RequireRole(admin, senior_fc)` |
-| DELETE | `/skill-planning/skill-plans/:id`                  | 删除技能计划                         | `RequireRole(admin, senior_fc)` |
-| GET    | `/skill-planning/personal-skill-plans`             | 当前用户个人技能计划列表             | Login                           |
-| GET    | `/skill-planning/personal-skill-plans/:id`         | 当前用户个人技能计划详情             | Login                           |
-| POST   | `/skill-planning/personal-skill-plans`             | 创建当前用户个人技能计划             | Login                           |
-| PUT    | `/skill-planning/personal-skill-plans/reorder`     | 调整当前用户个人技能计划排序         | Login                           |
-| PUT    | `/skill-planning/personal-skill-plans/:id`         | 更新当前用户个人技能计划             | Login                           |
-| DELETE | `/skill-planning/personal-skill-plans/:id`         | 删除当前用户个人技能计划             | Login                           |
-
-## Info
-
-| Method | Path                     | 说明                                              | 权限  |
-| ------ | ------------------------ | ------------------------------------------------- | ----- |
-| POST   | `/info/wallet`           | 钱包流水                                          | Login |
-| POST   | `/info/wallet/analytics` | 钱包收支分析（按 UTC 自然日聚合）                 | Login |
-| POST   | `/info/skills`           | 技能列表                                          | Login |
-| POST   | `/info/ships`            | 舰船列表                                          | Login |
-| POST   | `/info/implants`         | 植入体                                            | Login |
-| POST   | `/info/assets`           | 资产                                              | Login |
-| POST   | `/info/contracts`        | 合同列表                                          | Login |
-| POST   | `/info/contracts/detail` | 合同详情                                          | Login |
-| POST   | `/info/esi-refresh`      | 手动触发指定角色的技能 ESI 刷新（仅限自己的角色） | Login |
-| POST   | `/info/fittings`         | 装配列表                                          | Login |
-| POST   | `/info/fittings/save`    | 保存装配                                          | Login |
-| POST   | `/info/npc-kills`        | 个人 NPC 刷怪报表                                 | Login |
-| POST   | `/info/npc-kills/all`    | 全部 NPC 刷怪报表                                 | Login |
-| GET    | `/info/tool-bookmarks`   | 常用工具网站书签列表（仅启用项）                  | Login |
-
-## Shop
-
-### Common User Side
-
-| Method | Path                           | 说明         | 权限  |
-| ------ | ------------------------------ | ------------ | ----- |
-| POST   | `/shop/wallet/my`              | 我的钱包     | Login |
-| POST   | `/shop/wallet/my/transactions` | 我的钱包流水 | Login |
-| POST   | `/shop/products`               | 商品列表     | Login |
-| POST   | `/shop/product/detail`         | 商品详情     | Login |
-| POST   | `/shop/buy`                    | 购买商品     | Login |
-| POST   | `/shop/orders`                 | 我的订单     | Login |
-
-## Newbro Support
-
-### Recruit Link User Side
-
-| Method | Path                                      | 说明                                              | 权限  |
-| ------ | ----------------------------------------- | ------------------------------------------------- | ----- |
-| POST   | `/newbro/recruit/link`                    | 生成招募链接                                      | Login |
-| GET    | `/newbro/recruit/links`                   | 获取我的招募链接列表                              | Login |
-| GET    | `/newbro/recruit/direct-referral`         | 获取当前用户是否可补录推荐人                      | Login |
-| POST   | `/newbro/recruit/direct-referral/check`   | 按 QQ 检查直接推荐人                              | Login |
-| POST   | `/newbro/recruit/direct-referral/confirm` | 按推荐人 `user_id` 确认直接推荐并立即发放招募奖励 | Login |
-
-### Recruit Link Admin Side
-
-| Method | Path                           | 说明                     | 权限                 |
-| ------ | ------------------------------ | ------------------------ | -------------------- |
-| GET    | `/system/newbro/recruit/links` | 分页获取所有用户招募链接 | `RequireRole(admin)` |
-
-## Mentor System
-
-### Mentee Side
-
-| Method | Path              | 说明                             | 权限                             |
-| ------ | ----------------- | -------------------------------- | -------------------------------- |
-| GET    | `/mentor/mentors` | 当前符合资格学员可申请的导师列表 | `Login` + 当前学员资格（服务层） |
-| GET    | `/mentor/me`      | 当前用户的学员资格与导师关系快照 | Login                            |
-| POST   | `/mentor/apply`   | 向指定导师提交申请               | `Login` + 当前学员资格（服务层） |
-
-### Mentor Side
-
-| Method | Path                              | 说明                           | 权限                  |
-| ------ | --------------------------------- | ------------------------------ | --------------------- |
-| GET    | `/mentor/dashboard/applications`  | 当前导师待处理申请列表         | `RequireRole(mentor)` |
-| GET    | `/mentor/dashboard/mentees`       | 当前导师的学员列表             | `RequireRole(mentor)` |
-| GET    | `/mentor/dashboard/reward-stages` | 当前导师可见的只读奖励阶段配置 | `RequireRole(mentor)` |
-| POST   | `/mentor/dashboard/accept`        | 接受学员申请                   | `RequireRole(mentor)` |
-| POST   | `/mentor/dashboard/reject`        | 拒绝学员申请                   | `RequireRole(mentor)` |
-
-## Welfare
-
-### Welfare User Side
-
-| Method | Path                       | 说明                                                                                                                                                                                                          | 权限  |
-| ------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| POST   | `/welfare/eligible`        | 可申请福利列表                                                                                                                                                                                                | Login |
-| POST   | `/welfare/apply`           | 申请福利；若 `0 < pay_by_fuxi_coin < 当前自动审批阈值` 且资格校验通过，申请会直接自动发放并同步写入 `welfare_payout` 钱包流水。该阈值默认 `500`，由管理员在 `/welfare/settings` 配置，设为 `0` 时关闭自动审批 | Login |
-| POST   | `/welfare/my-applications` | 我的福利申请                                                                                                                                                                                                  | Login |
-| POST   | `/welfare/upload-evidence` | 上传福利申请凭证                                                                                                                                                                                              | Login |
-
-## Ticket
-
-### Ticket User Side
-
-| Method | Path                          | 说明                                     | 权限  |
-| ------ | ----------------------------- | ---------------------------------------- | ----- |
-| POST   | `/ticket/tickets`             | 提交工单                                 | Login |
-| GET    | `/ticket/tickets/me`          | 我的工单列表（分页，支持 `status`）      | Login |
-| GET    | `/ticket/tickets/:id`         | 我的工单详情                             | Login |
-| POST   | `/ticket/tickets/:id/replies` | 我的工单新增回复                         | Login |
-| GET    | `/ticket/tickets/:id/replies` | 我的工单回复列表（回复项包含回复人昵称） | Login |
-| GET    | `/ticket/categories`          | 可用工单分类                             | Login |
-
-## Upload
-
-| Method | Path            | 说明                                                                     | 权限  |
-| ------ | --------------- | ------------------------------------------------------------------------ | ----- |
-| POST   | `/upload/image` | 上传图片，返回 base64 data URL（不落盘，最大 2MB，仅支持 jpeg/png/webp） | Login |
-
-## SRP
-
-| Method | Path                                      | 说明                                                                                                                                                                                | 权限                                                                       |
-| ------ | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| GET    | `/srp/prices`                             | 价格表                                                                                                                                                                              | `RequireCorpCapability(srp.user)` + Login                                  |
-| POST   | `/srp/prices`                             | 新增或更新价格                                                                                                                                                                      | `RequireCorpCapability(srp.manage)` + `RequireRole(admin, senior_fc)`      |
-| DELETE | `/srp/prices/:id`                         | 删除价格                                                                                                                                                                            | `RequireCorpCapability(srp.manage)` + `RequireRole(admin, senior_fc)`      |
-| POST   | `/srp/applications`                       | 提交补损申请                                                                                                                                                                        | `RequireCorpCapability(srp.user)` + Login                                  |
-| GET    | `/srp/applications/me`                    | 我的补损申请                                                                                                                                                                        | `RequireCorpCapability(srp.user)` + Login                                  |
-| GET    | `/srp/killmails/me`                       | 我的 KM；支持可选查询参数 `character_id`、`limit`、`exclude_submitted`                                                                                                              | `RequireCorpCapability(srp.user)` + Login                                  |
-| GET    | `/srp/killmails/fleet/:fleet_id`          | 指定舰队 KM；支持可选查询参数 `limit`、`exclude_submitted`                                                                                                                          | `RequireCorpCapability(srp.user)` + Login                                  |
-| POST   | `/srp/killmails/detail`                   | KM 详情                                                                                                                                                                             | `RequireCorpCapability(srp.user)` + Login                                  |
-| POST   | `/srp/open-info-window`                   | 打开游戏内信息窗口                                                                                                                                                                  | `RequireCorpCapability(srp.user)` + Login                                  |
-| GET    | `/srp/config`                             | 获取 SRP 配置                                                                                                                                                                       | `RequireCorpCapability(srp.manage)` + `RequireRole(admin)`                 |
-| PUT    | `/srp/config`                             | 更新 SRP 配置                                                                                                                                                                       | `RequireCorpCapability(srp.manage)` + `RequireRole(admin)`                 |
-| GET    | `/srp/applications`                       | 审核列表（支持 `tab/review_status/payout_status/fleet_id/character_id/keyword/corporation_id/ship_type_id/solar_system_id/has_recommended_match` 过滤与 `sort_by/sort_order` 排序） | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
-| GET    | `/srp/applications/fleet-options`         | 审核页舰队筛选项（按 SRP 申请聚合）                                                                                                                                                 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
-| GET    | `/srp/applications/:id`                   | 审核详情                                                                                                                                                                            | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
-| PUT    | `/srp/applications/:id/review`            | 审核申请                                                                                                                                                                            | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
-| PUT    | `/srp/applications/auto-approve`          | 对指定 `fleet_id` 自动审批符合规则的待审批申请                                                                                                                                      | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
-| GET    | `/srp/applications/batch-payout-summary`  | 批量发放汇总                                                                                                                                                                        | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
-| PUT    | `/srp/applications/fuxi-payout`           | 将全部已批准未发放的申请按 1,000,000 ISK : 1 伏羲币批量发放并结案                                                                                                                   | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
-| PUT    | `/srp/applications/:id/payout`            | 发放补损                                                                                                                                                                            | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
-| PUT    | `/srp/applications/users/:user_id/payout` | 按用户批量发放补损                                                                                                                                                                  | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
-
-## Tasks
-
-| Method | Path                    | 说明                                                                             | 权限                       |
-| ------ | ----------------------- | -------------------------------------------------------------------------------- | -------------------------- |
-| GET    | `/tasks`                | 任务列表；返回任务分类、类型、当前调度、默认调度、最近一次执行与是否支持手动触发 | `RequireRole(admin)`       |
-| GET    | `/tasks/history`        | 执行历史分页；支持按 `task_name` 与 `status` 过滤                                | `RequireRole(admin)`       |
-| POST   | `/tasks/:name/run`      | 手动触发通用任务；同名任务正在运行时返回 `409 Conflict`                          | `RequireRole(admin)`       |
-| PUT    | `/tasks/:name/schedule` | 更新周期任务调度（6 段 cron 或 `@every` 描述符），并立即重载运行时调度           | `RequireRole(super_admin)` |
-
-### ESI Task Operations
-
-| Method | Path                  | 说明                                                       | 权限                 |
-| ------ | --------------------- | ---------------------------------------------------------- | -------------------- |
-| GET    | `/tasks/esi/tasks`    | ESI 队列任务定义列表                                       | `RequireRole(admin)` |
-| GET    | `/tasks/esi/statuses` | ESI 队列人物状态汇总                                       | `RequireRole(admin)` |
-| GET    | `/tasks/esi/monitor`  | ESI 队列聚合监控快照（概览、任务健康、失败排行、超期排行） | `RequireRole(admin)` |
-| POST   | `/tasks/esi/run`      | 对指定人物执行单个 ESI 任务                                | `RequireRole(admin)` |
-| POST   | `/tasks/esi/run-task` | 对全部人物执行指定 ESI 任务                                | `RequireRole(admin)` |
-| POST   | `/tasks/esi/run-all`  | 对全部人物执行 ESI 全量刷新                                | `RequireRole(admin)` |
-
-## System
-
-所有 `/system/*` 路由默认要求 `RequireRole(admin)`。
-
-### Basic Config
-
-| Method | Path                                               | 说明                                                                                                          | 权限                       |
-| ------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| GET    | `/system/basic-config`                             | 获取固定系统标识（军团 ID / 网站标题）                                                                        | `RequireRole(super_admin)` |
-| GET    | `/system/basic-config/allow-corporations`          | 获取允许军团列表；返回 `allow_corporations` 及军团展示信息 `corporations[{corporation_id, corporation_name}]` | `RequireRole(super_admin)` |
-| PUT    | `/system/basic-config/allow-corporations`          | 更新允许军团列表                                                                                              | `RequireRole(super_admin)` |
-| GET    | `/system/basic-config/mumble`                      | 获取 Mumble 双向连接设置及昵称显示模板 `display_name_template`                                                 | `RequireRole(super_admin)` |
-| PUT    | `/system/basic-config/mumble`                      | 更新 Mumble 双向服务令牌、管理地址、重校验超时、昵称显示模板及对用户展示的服务器节点列表（`public_nodes`，每项 `name`/`description`/`address`/`port`，最多 10 项）；模板支持 `{alliance_ticker}`、`{corporation_ticker}`、`{nickname}`、`{character_name}`、`{roles}`，两个方向的令牌必须不同；旧单值 key 有一次性启动迁移 | `RequireRole(super_admin)` |
-| GET    | `/system/basic-config/corporation-access-policies` | 获取军团能力策略配置（`default_mode` 默认 `allow`）                                                           | `RequireRole(super_admin)` |
-| PUT    | `/system/basic-config/corporation-access-policies` | 更新军团能力策略配置（`default_mode` 允许 `allow` / `deny`）                                                  | `RequireRole(super_admin)` |
-| GET    | `/system/basic-config/character-esi-restriction`   | 获取任一绑定人物 ESI 失效时是否强制停留人物页的配置                                                           | `RequireRole(super_admin)` |
-| PUT    | `/system/basic-config/character-esi-restriction`   | 更新任一绑定人物 ESI 失效时是否强制停留人物页的配置                                                           | `RequireRole(super_admin)` |
-
-### Welfare Config
-
-| Method | Path                       | 说明                                                 | 权限                 |
-| ------ | -------------------------- | ---------------------------------------------------- | -------------------- |
-| GET    | `/system/welfare/settings` | 获取福利自动审批伏羲币阈值配置                       | `RequireRole(admin)` |
-| PUT    | `/system/welfare/settings` | 更新福利自动审批伏羲币阈值配置；`0` 表示关闭自动审批 | `RequireRole(admin)` |
-
-### SDE Config
-
-| Method | Path                        | 说明                                                   | 权限                       |
-| ------ | --------------------------- | ------------------------------------------------------ | -------------------------- |
-| GET    | `/system/sde-config`        | 获取 SDE 配置                                          | `RequireRole(super_admin)` |
-| PUT    | `/system/sde-config`        | 更新 SDE 配置                                          | `RequireRole(super_admin)` |
-| GET    | `/system/sde-config/status` | 获取 SDE 状态快照（当前版本、最新版本、检查/更新结果） | `RequireRole(super_admin)` |
-| POST   | `/system/sde-config/check`  | 手动检查 SDE 最新版本（不导入）                        | `RequireRole(super_admin)` |
-| POST   | `/system/sde-config/update` | 手动执行 SDE 更新导入                                  | `RequireRole(super_admin)` |
-
-### NPC Kills / Alliance PAP
-
-| Method | Path                 | 说明                | 权限                 |
-| ------ | -------------------- | ------------------- | -------------------- |
-| POST   | `/system/npc-kills`  | 公司级 NPC 刷怪报表 | `RequireRole(admin)` |
-| GET    | `/system/pap`        | 联盟 PAP 列表       | `RequireRole(admin)` |
-| POST   | `/system/pap/fetch`  | 手动抓取联盟 PAP    | `RequireRole(admin)` |
-| POST   | `/system/pap/import` | 导入联盟 PAP        | `RequireRole(admin)` |
-| POST   | `/system/pap/settle` | 月度归档            | `RequireRole(admin)` |
-
-### PAP 兑换汇率
-
-| Method | Path                         | 说明                      | 权限                 |
-| ------ | ---------------------------- | ------------------------- | -------------------- |
-| GET/PUT | `/system/salary-settings` | 六项统一工资配置（四类操作金额、FC 金额和月次数上限） | admin／super_admin；`system.manage` |
-| GET | `/operation-salary-rates` | 四类操作工资单价，供人工处理前确认，不含 FC 配置 | `RequireLoginUser`，guest 拒绝 |
-| GET    | `/system/pap-exchange/rates` | 获取 PAP 类型兑换汇率列表 | `RequireRole(admin)` |
-| PUT    | `/system/pap-exchange/rates` | 更新 PAP 类型兑换汇率     | `RequireRole(admin)` |
-
-### Tool Bookmarks
-
-| Method | Path                         | 说明                     | 权限                 |
-| ------ | ---------------------------- | ------------------------ | -------------------- |
-| GET    | `/system/tool-bookmarks`     | 管理端书签列表（含禁用） | `RequireRole(admin)` |
-| POST   | `/system/tool-bookmarks`     | 创建书签                 | `RequireRole(admin)` |
-| PUT    | `/system/tool-bookmarks/:id` | 更新书签                 | `RequireRole(admin)` |
-| DELETE | `/system/tool-bookmarks/:id` | 删除书签                 | `RequireRole(admin)` |
-
-### Blacklist
-
-| Method | Path | 说明 | 权限 |
-| ------ | ---- | ---- | ---- |
-| GET | `/system/blacklist` | 黑名单分页列表；`kind` 可选 `character`／`qq`／`discord`，非法值返回 `blacklist.errors.invalidQuery`；`keyword` 为纯数字时精确匹配人物 ID 与 QQ，否则模糊匹配人物名与 Discord | admin／super_admin；`system.manage` |
-| GET | `/system/blacklist/refresh` | 最近一次成功刷新摘要；从未刷新时 `data` 为 `null` | 同上 |
-| POST | `/system/blacklist/refresh` | 从联盟 Google Sheet 同步刷新，返回本次摘要；同时只允许一次刷新 | 同上 |
-
-刷新摘要含 `lookup_failed`：ESI 批次失败或超过 60 s 查询预算、延后至下次刷新的名字数。延后名字不写入无法解析缓存，其余条目在同一事务内对齐；若结果中没有任何人物，则仍中止并保留本地数据。
-摘要另含 `next_refresh_at`：完整刷新为完成时间加 24 小时，部分完成为 `null`。完整刷新后 24 小时内再次 POST 返回 `blacklist.errors.refreshCooldown`，不发起下载或 ESI 请求；部分完成可立即重试。
-
-### Mentor Admin
-
-| Method | Path                                  | 说明                                                  | 权限                 |
-| ------ | ------------------------------------- | ----------------------------------------------------- | -------------------- |
-| GET    | `/system/mentor/relationships`        | 全量导师关系列表                                      | `RequireRole(admin)` |
-| GET    | `/system/mentor/reward-distributions` | 导师奖励发放记录分页列表；关键字支持导师人物名 / 昵称 | `RequireRole(admin)` |
-| POST   | `/system/mentor/revoke`               | 撤销指定导师关系                                      | `RequireRole(admin)` |
-| GET    | `/system/mentor/reward-stages`        | 导师奖励阶段配置                                      | `RequireRole(admin)` |
-| PUT    | `/system/mentor/reward-stages`        | 更新导师奖励阶段配置                                  | `RequireRole(admin)` |
-| POST   | `/system/mentor/reward/process`       | 手动执行导师奖励处理                                  | `RequireRole(admin)` |
-
-### Role / User
-
-| Method | Path                           | 说明                                                                                                                                                                                            | 权限                                 |
-| ------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| GET    | `/system/role/definitions`     | 系统职权定义列表（只读）                                                                                                                                                                        | `RequireRole(admin)`                 |
-| GET    | `/system/user`                 | 用户列表；默认按 `last_login_at` 倒序，关键字支持昵称 / QQ / 已绑定人物名；职权字段仅返回有序 `roles[]`，不再返回历史单值 `role`，并附带已绑定人物与每个人物的 `total_sp`、`token_invalid` 快照 | `RequireRole(admin)`                 |
-| GET    | `/system/user/:id`             | 用户详情                                                                                                                                                                                        | `RequireRole(admin)`                 |
-| PUT    | `/system/user/:id`             | 更新用户昵称 / 状态；当操作者为 `super_admin` 且目标不是 `super_admin` 时，还可更新 QQ / Discord ID；`admin` 也不可编辑其他 `admin`                                                             | `RequireRole(admin)`                 |
-| DELETE | `/system/user/:id`             | 删除用户；`super_admin` 用户不可删除；`admin` 不可删除其他 `admin`，且已登记 QQ / Discord ID 的用户仅 `super_admin` 可删除                                                                      | `RequireRole(admin)`                 |
-| GET    | `/system/user/:id/roles`       | 获取用户职权                                                                                                                                                                                    | `RequireRole(admin)`                 |
-| PUT    | `/system/user/:id/roles`       | 设置用户职权；`super_admin` 职权不可通过 API 分配或修改（仅通过配置文件管理）；仅 `super_admin` 可分配 `admin`                                                                                  | `RequireRole(admin)`                 |
-| POST   | `/system/user/:id/impersonate` | 模拟登录，需 `super_admin`；若目标用户主人物 ESI 已失效则拒绝签发 token                                                                                                                         | `RequireRole(admin)` + `super_admin` |
-
-### Fuxi Coin
-
-| Method | Path                          | 说明                                                              | 权限                 |
-| ------ | ----------------------------- | ----------------------------------------------------------------- | -------------------- |
-| POST   | `/system/wallet/list`         | 钱包列表                                                          | `RequireRole(admin)` |
-| POST   | `/system/wallet/detail`       | 钱包详情                                                          | `RequireRole(admin)` |
-| POST   | `/system/wallet/adjust`       | 调整余额                                                          | `RequireRole(admin)` |
-| POST   | `/system/wallet/transactions` | 钱包流水                                                          | `RequireRole(admin)` |
-| POST   | `/system/wallet/logs`         | 调整日志                                                          | `RequireRole(admin)` |
-| POST   | `/system/wallet/analytics`    | 钱包分析概览（支持日期留空全量模式；summary 含实时存量/活跃钱包） | `RequireRole(admin)` |
-
-### Audit
-
-| Method | Path                            | 说明                             | 权限                 |
-| ------ | ------------------------------- | -------------------------------- | -------------------- |
-| POST   | `/system/audit/events`          | 审计事件分页查询                 | `RequireRole(admin)` |
-| POST   | `/system/audit/export`          | 创建审计导出任务                 | `RequireRole(admin)` |
-| GET    | `/system/audit/export/:task_id` | 查询审计导出任务状态             | `RequireRole(admin)` |
-| POST   | `/system/audit/export/list`     | 查询当前操作者的审计导出任务历史 | `RequireRole(admin)` |
-
-### Welfare Admin
-
-| Method | Path                                  | 说明                                                                                                                                                                                                    | 权限                          |
-| ------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| POST   | `/system/welfare/list`                | 福利列表                                                                                                                                                                                                | `RequireRole(admin, welfare)` |
-| POST   | `/system/welfare/add`                 | 创建福利                                                                                                                                                                                                | `RequireRole(admin)`          |
-| POST   | `/system/welfare/edit`                | 编辑福利                                                                                                                                                                                                | `RequireRole(admin)`          |
-| POST   | `/system/welfare/delete`              | 删除福利                                                                                                                                                                                                | `RequireRole(admin)`          |
-| POST   | `/system/welfare/reorder`             | 调整福利排序                                                                                                                                                                                            | `RequireRole(admin)`          |
-| POST   | `/system/welfare/import`              | 导入历史福利记录                                                                                                                                                                                        | `RequireRole(admin)`          |
-| POST   | `/system/welfare/applications`        | 福利申请列表（审批端）                                                                                                                                                                                  | `RequireRole(admin, welfare)` |
-| POST   | `/system/welfare/applications/delete` | 删除单条福利申请记录                                                                                                                                                                                    | `RequireRole(admin)`          |
-| POST   | `/system/welfare/review`              | 审批仍处于 `requested` 的福利申请（发放/拒绝；若当前福利配置 `pay_by_fuxi_coin > 0`，同步写入 `welfare_payout` 钱包流水；发放成功后尽力发送一封以发放福利官主人物名义发出的双语游戏内邮件，失败不回滚） | `RequireRole(admin, welfare)` |
-
-### Ticket Admin
-
-| Method | Path                                        | 说明                                                                                                                                            | 权限                 |
-| ------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| GET    | `/system/ticket/tickets`                    | 工单管理列表（分页，支持 `status`、`category_id`、`user_id`、`keyword`；`status` 可传单个状态或逗号分隔状态；返回提交人、处理人和分类展示名称） | `RequireRole(admin)` |
-| GET    | `/system/ticket/tickets/:id`                | 工单详情                                                                                                                                        | `RequireRole(admin)` |
-| PUT    | `/system/ticket/tickets/:id/status`         | 更新工单状态                                                                                                                                    | `RequireRole(admin)` |
-| POST   | `/system/ticket/tickets/:id/replies`        | 管理员回复（支持内部备注）                                                                                                                      | `RequireRole(admin)` |
-| GET    | `/system/ticket/tickets/:id/replies`        | 管理员查看回复（含内部备注，回复项包含回复人昵称）                                                                                              | `RequireRole(admin)` |
-| GET    | `/system/ticket/tickets/:id/status-history` | 状态变更历史（返回操作人昵称与可读名称）                                                                                                        | `RequireRole(admin)` |
-| GET    | `/system/ticket/categories`                 | 分类列表（含禁用）                                                                                                                              | `RequireRole(admin)` |
-| POST   | `/system/ticket/categories`                 | 创建分类                                                                                                                                        | `RequireRole(admin)` |
-| PUT    | `/system/ticket/categories/:id`             | 更新分类                                                                                                                                        | `RequireRole(admin)` |
-| DELETE | `/system/ticket/categories/:id`             | 删除分类                                                                                                                                        | `RequireRole(admin)` |
-| GET    | `/system/ticket/statistics`                 | 工单统计（总量、状态、分类、近 7/30 天）                                                                                                        | `RequireRole(admin)` |
-
-### Fuxi Hall Admin
-
-管理端页面基于以下接口实现页面/卡片编辑，并提供未保存草稿的实时预览能力。
-
-| Method | Path | 说明 | 权限 |
-| --- | --- | --- | --- |
-| GET | `/system/fuxi-hall/pages/:page_key` | 获取名人堂配置及楼层；`page_key` 仅支持 `hall-of-fame` | `RequireRole(admin)` |
-| PUT | `/system/fuxi-hall/pages/:page_key` | 更新标题、副标题、说明及楼层配置 | `RequireRole(admin)` |
-| GET | `/system/fuxi-hall/cards/:page_key` | 获取全部卡片、五项贡献快照、更新时间和历史 offset | `RequireRole(admin)` |
-| POST | `/system/fuxi-hall/cards` | 创建卡片，按主人物名称解析 ESI ID，配置楼层和管理状态 | `RequireRole(admin)` |
-| PUT | `/system/fuxi-hall/cards/:id` | 更新卡片、五项 offset；修改主人物会重新解析 ID 并清空原快照 | `RequireRole(admin)` |
-| PUT | `/system/fuxi-hall/cards/reorder` | 保存卡片排序 | `RequireRole(admin)` |
-| DELETE | `/system/fuxi-hall/cards/:id` | 删除卡片 | `RequireRole(admin)` |
-| POST | `/system/fuxi-hall/contributions/refresh` | 手动重算五项贡献快照，保留历史 offset | `RequireRole(admin)` |
-
-### Newbro Admin
-
-| Method | Path                                  | 说明                                                | 权限                          |
-| ------ | ------------------------------------- | --------------------------------------------------- | ----------------------------- |
-| GET    | `/system/newbro/recruit-settings`     | 获取招募链接设置（QQ 邀请链接、奖励金额、冷却天数） | `RequireRole(admin)`          |
-| PUT    | `/system/newbro/recruit-settings`     | 更新招募链接设置（QQ 邀请链接、奖励金额、冷却天数） | `RequireRole(admin)`          |
-
-### Captain Refunds
-
-| Method | Path | 说明 | 权限 |
-| ------ | ---- | ---- | ---- |
-| GET | `/newbro/captain/refunds/options` | 本人角色及退税配置 | 真实 captain |
-| POST | `/newbro/captain/refunds/preview` | 核算预览与冲突 | 真实 captain |
-| POST | `/newbro/captain/refunds` | 重新核算并提交 | 真实 captain |
-| GET | `/newbro/captain/refunds` | 本人申请分页 | 真实 captain |
-| GET | `/newbro/captain/refunds/:id` | 本人申请详情 | 真实 captain |
-| GET | `/system/newbro/refunds` | 全量申请分页 | admin / super_admin |
-| GET | `/system/newbro/refunds/:id` | 申请详情 | admin / super_admin |
-| POST | `/system/newbro/refunds/:id/approve` | 批准并发奖 | admin / super_admin |
-| POST | `/system/newbro/refunds/:id/reject` | 拒绝并释放占用，reason 必填 | admin / super_admin |
-| GET/PUT | `/system/config/newbro-refund` | 统一新人资格及退税配置 | admin / super_admin |
-
-申请契约、时间边界、快照和防重规则见 [新人资格与队长退税](../features/current/newbro-support.md)。
-
-### Shop Admin
-
-| Method | Path                          | 说明                                                                                   | 权限                                    |
-| ------ | ----------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------- |
-| POST   | `/system/shop/product/list`   | 商品列表                                                                               | `RequireRole(admin)`                    |
-| POST   | `/system/shop/product/add`    | 新增商品                                                                               | `RequireRole(admin)`                    |
-| POST   | `/system/shop/product/edit`   | 编辑商品                                                                               | `RequireRole(admin)`                    |
-| POST   | `/system/shop/product/delete` | 删除商品                                                                               | `RequireRole(admin)`                    |
-| POST   | `/system/shop/order/list`     | 订单列表                                                                               | `RequireRole(admin, shop_order_manage)` |
-| POST   | `/system/shop/order/deliver`  | 发放订单（成功后尽力发送一封以执行发放官员主人物名义发出的双语游戏内邮件，失败不回滚） | `RequireRole(admin, shop_order_manage)` |
-| POST   | `/system/shop/order/reject`   | 驳回订单                                                                               | `RequireRole(admin, shop_order_manage)` |
-
-### Auto Role / Webhook
-
-| Method | Path                                       | 说明                           | 权限                       |
-| ------ | ------------------------------------------ | ------------------------------ | -------------------------- |
-| GET    | `/system/auto-role/esi-roles`              | ESI corp roles 列表            | `RequireRole(super_admin)` |
-| GET    | `/system/auto-role/esi-role-mappings`      | ESI role 映射列表              | `RequireRole(super_admin)` |
-| POST   | `/system/auto-role/esi-role-mappings`      | 新增 ESI role 映射             | `RequireRole(super_admin)` |
-| DELETE | `/system/auto-role/esi-role-mappings/:id`  | 删除 ESI role 映射             | `RequireRole(super_admin)` |
-| GET    | `/system/auto-role/corp-titles`            | Corp titles 列表（含军团名称） | `RequireRole(super_admin)` |
-| GET    | `/system/auto-role/esi-title-mappings`     | Title 映射列表                 | `RequireRole(super_admin)` |
-| POST   | `/system/auto-role/esi-title-mappings`     | 新增 title 映射                | `RequireRole(super_admin)` |
-| DELETE | `/system/auto-role/esi-title-mappings/:id` | 删除 title 映射                | `RequireRole(super_admin)` |
-| POST   | `/system/auto-role/sync`                   | 手动触发同步                   | `RequireRole(super_admin)` |
-| GET    | `/system/webhook/config`                   | 获取 Webhook 配置              | `RequireRole(super_admin)` |
-| PUT    | `/system/webhook/config`                   | 保存 Webhook 配置              | `RequireRole(super_admin)` |
-| POST   | `/system/webhook/test`                     | 测试 Webhook                   | `RequireRole(super_admin)` |
-
-## QQ Bot 下线
-
-`/api/v1/system/qqbot/*` 和 `GET /internal/onebot/v11/ws` 已移除，无兼容接口。`/system/webhook` 仍仅支持 Discord、飞书和钉钉。见 [下线边界](../features/current/qq-group-governance.md)。
-
-工资配置详见 [工资管理](../features/current/operation-salaries.md)。`/system/pap-exchange/rates` 仅保留 rates 和三项 multichar 字段。`/badge-counts` 增加可审核军团范围内的 `admission_pending`，仅返回正数。
-
-### 技能规划导入和可见性
-
-技能规划创建与更新的 `skills_text` 接受技能列表或单份英文 EFT。请求可选 `disabled`，列表和详情响应包含 `disabled`。公共计划停用后，普通成员无法通过列表或详情接口读取，管理角色仍可读取。完成度检查排除已停用计划。具体规则参见 [技能规划](../features/current/skill-planning.md)。
-## 军团公告
-
-| 方法 | 路径 | 权限 | 契约 |
-| --- | --- | --- | --- |
-| GET | /api/v1/announcements?page=1 | Login | list、total，每页 20 条，仅管理者含隐藏项，列表省略 body_html |
-| GET | /api/v1/announcements/:id | Login | 公告详情和内嵌数据库图片，隐藏项仅管理者 |
-| POST | /api/v1/announcements | admin / senior_fc | title、body_html、hidden、remind、revision |
-| PUT | /api/v1/announcements/:id | admin / senior_fc | 同上，revision 必须匹配 |
-| POST | /api/v1/announcements/:id/read | Login | version 为实际显示版本，重复提交幂等 |
-
-super_admin 自动放行。详情包含 id、title、body_html、author_id、hidden、version、revision、created_at、updated_at，列表额外含 unread。
+站内 `/api/v1` 的接口只在 [OpenAPI 契约](../../contracts/openapi.yaml)里定义。路径、方法、参数、响应和访问链都以契约为准，服务启动时由生成路由注册；本文件不复制这些内容，只说明两件事：
+
+- 某个业务域的接口去哪个契约片段看；
+- 哪些入口不在 OpenAPI 里。
+
+业务规则以对应功能文档和 service 代码为准。文档与代码不一致时改文档，不要为了迁就旧文档改代码。
+
+## 接口定义在哪
+
+- [OpenAPI 根规范](../../contracts/openapi.yaml)：通用响应、安全方案、跨模块 schema，以及公告、SDE、`/me`、Mumble 凭据等接口。
+- [业务模块](../../contracts/modules/)：按业务域拆分的 `paths` 与 `components`，合并生成时不允许重复。
+- 生成：`pnpm -C contracts api:generate`；校验生成物：`pnpm -C contracts api:check`。
+- 访问链：每个操作用 `x-gin-access` 声明（`jwt`、`login`、`role:`、`cap:`），规则见[路由与绑定](conventions.md#路由与绑定)。所有权等业务授权在 service 内，不在这里重复。
+- 生成路由：[api.gen.go](../../server/internal/apicontract/api.gen.go)，请勿手改。
+
+## 不在 OpenAPI 里的入口
+
+### 私有 Mumble 身份接口
+
+以下入口位于 `/api/internal/mumble/v1`，仅接受 `mumble.service_token` 对应的 Bearer 服务凭据；普通 Seat JWT 一律拒绝。`/api/internal` 是服务间路由分类，不面向浏览器用户。生产部署还应使用私网 HTTPS，并推荐 mTLS。行为细节见 [Mumble 外部身份](../architecture/mumble-external-identity.md)。
+
+| Method | Path                                         | 说明                                                                                                                                                                             |
+| ------ | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/internal/mumble/v1/authenticate`       | 验证主人物名和 Mumble App Password；`server_instance_id` 可选且当前仅供调用方标识；成功返回稳定 Mumble User ID、canonical name 与 `fuxi_*` runtime groups；失败统一返回业务 deny |
+| POST   | `/api/internal/mumble/v1/identities/resolve` | 最多批量解析 500 个稳定 ID 和/或 canonical name，供在线会话重验与协议身份查找；返回当前资格、名称与 runtime groups                                                               |
+
+### 静态文件
+
+`GET /uploads/*filepath`（含 `HEAD`）由 [router.go](../../server/internal/router/router.go) 挂载，内容来自部署目录 `./uploads`，不经过 OpenAPI 契约。
+
+## 业务域索引
+
+| 业务域                           | 契约片段                                                                                                                                                                                                 | 行为文档                                                                                                                                                |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 登录、SSO、绑定人物、注册        | [sso.yaml](../../contracts/modules/sso.yaml)                                                                                                                                                             | [账号与人物](../features/current/auth-and-characters.md)                                                                                                |
+| 当前用户、Mumble 凭据            | [openapi.yaml](../../contracts/openapi.yaml)                                                                                                                                                             | [账号与人物](../features/current/auth-and-characters.md)、[Mumble 外部身份](../architecture/mumble-external-identity.md)                                |
+| 用户、职权、模拟登录             | [users.yaml](../../contracts/modules/users.yaml)                                                                                                                                                         | [系统管理](../features/current/administration.md)                                                                                                       |
+| 入团申请与审核                   | [admissions.yaml](../../contracts/modules/admissions.yaml)                                                                                                                                               | [军团申请](../features/current/corporation-admissions.md)                                                                                               |
+| 个人钱包、技能、资产、合同       | [info-character.yaml](../../contracts/modules/info-character.yaml)、[info-assets-contracts.yaml](../../contracts/modules/info-assets-contracts.yaml)                                                     | [信息与报表](../features/current/info-and-reporting.md)                                                                                                 |
+| 装配、NPC 刷怪                   | [info-fittings-npc.yaml](../../contracts/modules/info-fittings-npc.yaml)                                                                                                                                 | [信息与报表](../features/current/info-and-reporting.md)、[NPC 刷怪](../features/current/npc-kills.md)                                                   |
+| 舰队、舰队配置、联盟 PAP         | [fleets.yaml](../../contracts/modules/fleets.yaml)、[fleet-config-admin-pap.yaml](../../contracts/modules/fleet-config-admin-pap.yaml)                                                                   | [舰队行动](../features/current/operation.md)                                                                                                            |
+| PAP 兑换、工资、徽章计数         | [pap-exchange.yaml](../../contracts/modules/pap-exchange.yaml)、[badge-salary.yaml](../../contracts/modules/badge-salary.yaml)                                                                           | [PAP 兑换](../features/current/pap-exchange.md)、[工资管理](../features/current/operation-salaries.md)、[徽章计数](../features/current/badge-counts.md) |
+| 技能规划、技能达标查询           | [skill-plans.yaml](../../contracts/modules/skill-plans.yaml)、[dashboard-readiness.yaml](../../contracts/modules/dashboard-readiness.yaml)                                                               | [技能规划](../features/current/skill-planning.md)、[技能达标](../features/current/dashboard-skill-readiness.md)                                         |
+| 军团建筑、燃料官工资             | [corp-structures.yaml](../../contracts/modules/corp-structures.yaml)                                                                                                                                     | [军团建筑](../features/current/corporation-structures.md)                                                                                               |
+| 星系生产登记                     | [galaxy-registry.yaml](../../contracts/modules/galaxy-registry.yaml)                                                                                                                                     | [星系登记](../features/current/dashboard-galaxy-registry.md)                                                                                            |
+| 商店                             | [shop.yaml](../../contracts/modules/shop.yaml)                                                                                                                                                           | [商店与交易](../features/current/commerce.md)                                                                                                           |
+| 钱包与福利                       | [wallet-welfare.yaml](../../contracts/modules/wallet-welfare.yaml)                                                                                                                                       | [福利](../features/current/welfare.md)、[商店与交易](../features/current/commerce.md)                                                                   |
+| 新人招募、导师                   | [newbro.yaml](../../contracts/modules/newbro.yaml)、[mentor.yaml](../../contracts/modules/mentor.yaml)                                                                                                   | [新人帮扶](../features/current/newbro-support.md)、[导师系统](../features/current/mentor-system.md)                                                     |
+| 工单                             | [ticket.yaml](../../contracts/modules/ticket.yaml)                                                                                                                                                       | [工单系统](../features/current/ticket-system.md)                                                                                                        |
+| SRP                              | [srp.yaml](../../contracts/modules/srp.yaml)                                                                                                                                                             | [SRP](../features/current/srp.md)                                                                                                                       |
+| 公告                             | [openapi.yaml](../../contracts/openapi.yaml)                                                                                                                                                             | [军团公告](../features/current/announcements.md)                                                                                                        |
+| 伏羲大厅                         | [fuxi-hall.yaml](../../contracts/modules/fuxi-hall.yaml)                                                                                                                                                 | [伏羲大厅](../features/current/fuxi-hall.md)                                                                                                            |
+| 任务与审计、Webhook              | [tasks.yaml](../../contracts/modules/tasks.yaml)、[audit-webhook.yaml](../../contracts/modules/audit-webhook.yaml)                                                                                       | [任务管理](../features/current/task-manager.md)、[审计日志](../features/current/audit-log.md)                                                           |
+| 系统配置、自动职权、书签、黑名单 | [system-config.yaml](../../contracts/modules/system-config.yaml)、[auto-role.yaml](../../contracts/modules/auto-role.yaml)、[bookmarks-blacklist.yaml](../../contracts/modules/bookmarks-blacklist.yaml) | [系统管理](../features/current/administration.md)                                                                                                       |
+| SDE 查询与配置                   | [openapi.yaml](../../contracts/openapi.yaml)、[system-config.yaml](../../contracts/modules/system-config.yaml)                                                                                           | [SDE](../features/current/sde.md)                                                                                                                       |
+| 图片上传                         | [uploads.yaml](../../contracts/modules/uploads.yaml)                                                                                                                                                     | —（限制见契约 `x-gin-body` 与对应页面）                                                                                                                 |
+
+## 维护约定
+
+- 新增或调整接口：先改契约并重新生成；本文件只在业务域或阅读入口变化时同步，不新增路径和权限表。
+- 已移除的接口不在这里保留兼容登记；QQ Bot 相关路由见[下线边界](../features/current/qq-group-governance.md)。
+- 需要接口细节时直接打开契约片段或生成客户端，不要从本文件转抄。

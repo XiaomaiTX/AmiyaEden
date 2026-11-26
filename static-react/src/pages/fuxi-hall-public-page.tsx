@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchFuxiHall, updateOwnFuxiHallCard } from '@/api/fuxi-hall'
+import { getHall, updateHallOwnCard } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { FuxiHallMemberCard } from '@/components/fuxi-hall-member-card'
 import { FuxiHallBanner } from '@/components/fuxi-hall-banner'
 import { RichTextEditor } from '@/components/rich-text-editor'
@@ -28,7 +29,7 @@ export function FuxiHallPublicPage() {
   const load = useCallback(async () => {
     setError('')
     try {
-      setData(await fetchFuxiHall())
+      setData(await unwrapContract(getHall(), 'fuxiHall.errors.load'))
     } catch (caught) {
       setError(message(caught))
     }
@@ -50,10 +51,13 @@ export function FuxiHallPublicPage() {
     setSaving(true)
     setEditError('')
     try {
-      const card = await updateOwnFuxiHallCard(editing.id, {
-        nickname,
-        description_html: description,
-      })
+      const card = await unwrapContract(
+        updateHallOwnCard(editing.id, {
+          nickname,
+          description_html: description,
+        }),
+        'fuxiHall.errors.save'
+      )
       setData((previous) =>
         previous
           ? {

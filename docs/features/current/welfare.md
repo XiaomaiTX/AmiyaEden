@@ -7,7 +7,7 @@ source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/welfare.go
   - server/internal/service/sys_wallet.go
-  - static/src/api/welfare.ts
+  - static/src/api/generated/client.ts
   - static/src/views/welfare
 ---
 
@@ -76,28 +76,11 @@ source_of_truth:
   - 历史记录 tab：显示已发放/已拒绝的申请记录，并支持按人物名、昵称或 QQ 搜索
 - `static/src/views/welfare/settings` — 福利设置（福利官、管理员）；管理员额外可见“自动审批配置” tab，用于维护自动审批伏羲币阈值
 
-### 后端路由
+### 后端契约
 
-管理员端：
+[福利管理与申请 OpenAPI](../../../contracts/modules/wallet-welfare.yaml)、[证明图片上传 OpenAPI](../../../contracts/modules/uploads.yaml)。
 
-- `POST /api/v1/system/welfare/list`
-- `POST /api/v1/system/welfare/add`
-- `POST /api/v1/system/welfare/edit`
-- `POST /api/v1/system/welfare/delete`
-- `POST /api/v1/system/welfare/reorder`
-- `GET /api/v1/system/welfare/settings` — 读取自动审批配置（管理员）
-- `PUT /api/v1/system/welfare/settings` — 更新自动审批配置（管理员）
-- `POST /api/v1/system/welfare/import` — 导入历史福利记录
-- `POST /api/v1/system/welfare/applications` — 福利申请列表（审批端，支持按状态与人物名/昵称/QQ 关键词筛选）
-- `POST /api/v1/system/welfare/applications/delete` — 删除单条申请记录（仅 admin）
-- `POST /api/v1/system/welfare/review` — 审批福利申请（发放/拒绝）；响应 `outcome` 为 `delivered`、`rejected` 或 `auto_rejected`，后者附带稳定的 `eligibility_reason` 原因码供前端本地化展示
-
-用户端：
-
-- `POST /api/v1/welfare/eligible` — 获取可申请的福利列表
-- `POST /api/v1/welfare/apply` — 提交福利申请；当 `0 < pay_by_fuxi_coin < 当前自动审批阈值` 且资格校验通过时，申请会直接自动发放
-- `POST /api/v1/welfare/my-applications` — 查询我的申请记录
-- `POST /api/v1/welfare/upload-evidence` — 上传证明图片（multipart），返回 base64 data URL；最大 2MB，仅支持 jpeg/png/webp；不写入文件系统，直接存库
+审批使用稳定的资格原因码供前端本地化展示。证明图片不写入文件系统，随业务记录入库。
 
 ## 权限边界
 
@@ -134,8 +117,8 @@ source_of_truth:
 - `server/internal/service/welfare.go`
 - `server/internal/handler/welfare.go`
 - `server/internal/router/router.go`
-- `static/src/api/welfare.ts`
-- `static/src/types/api/api.d.ts` (Welfare namespace；React 使用 `static-react/src/types/api/welfare.ts`)
+- `static/src/api/generated/client.ts`
+- [React 生成客户端](../../../static-react/src/api/generated/client.ts) — 福利操作与契约类型
 - `static/src/views/welfare/`
 - `static/src/locales/langs/zh.json` (welfareMy, welfareApproval namespaces)
 - `static/src/locales/langs/en.json` (welfareMy, welfareApproval namespaces)

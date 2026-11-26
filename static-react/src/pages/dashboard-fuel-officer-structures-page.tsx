@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchMyAssignedCorporationStructures } from '@/api/corporation-structures'
+import { listMyAssignedCorpStructures } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { DataTable, type ColumnDef } from '@/components/ui/data-table'
 import { useI18n } from '@/i18n'
 import { formatTime, fuelExpiryMonthOffset } from '@/lib/format'
-import type { CorporationStructureRow } from '@/types/api/dashboard'
+import type { CorpStructureRow as CorporationStructureRow } from '@/api/generated/client'
 
 export function DashboardFuelOfficerStructuresPage() {
   const { t } = useI18n()
@@ -86,7 +87,10 @@ export function DashboardFuelOfficerStructuresPage() {
     const timer = window.setTimeout(() => {
       setLoading(true)
       setError(null)
-      void fetchMyAssignedCorporationStructures({ page, page_size: pageSize })
+      void unwrapContract(
+        listMyAssignedCorpStructures({ page, page_size: pageSize }),
+        'fetch assigned corporation structures failed'
+      )
         .then((response) => {
           if (!cancelled) {
             setRows(response.items ?? [])

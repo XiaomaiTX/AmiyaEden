@@ -14,7 +14,7 @@
   import { ref, watch, onBeforeUnmount } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { getAdmissionEvidence } from '@/api/admissions'
-  import type { EvidenceKind } from '@/types/api/admissions'
+  import type { AdmissionEvidenceKind as EvidenceKind } from '@/api/generated/client'
   const props = defineProps<{ id?: number; kind: EvidenceKind; blob?: Blob }>()
   const { t } = useI18n()
   const url = ref('')

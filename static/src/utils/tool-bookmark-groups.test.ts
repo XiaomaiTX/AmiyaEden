@@ -1,9 +1,10 @@
+import type { ToolBookmark } from '@/api/generated/client'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { groupToolBookmarks } from './tool-bookmark-groups'
 
 test('groups sites in API order, retaining ungrouped sites and relative order', () => {
-  const site = (id: number, group_name: string): Api.ToolBookmark.Bookmark => ({
+  const site = (id: number, group_name: string): ToolBookmark => ({
     id,
     group_name,
     name: String(id),

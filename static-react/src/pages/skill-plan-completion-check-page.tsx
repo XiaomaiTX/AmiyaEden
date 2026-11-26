@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchMyCharacters } from '@/api/auth'
+import { listMyEveCharacters } from '@/api/generated/client'
+import { listPersonalSkillPlans, listSkillPlans } from '@/api/generated/client'
 import {
-  fetchPersonalSkillPlanList,
-  fetchSkillPlanCheckPlanSelection,
-  fetchSkillPlanCheckSelection,
-  fetchSkillPlanList,
+  getSkillPlanCheckPlanSelection,
+  getSkillPlanCheckSelection,
   runSkillPlanCompletionCheck,
   saveSkillPlanCheckPlanSelection,
   saveSkillPlanCheckSelection,
-} from '@/api/skill-plan'
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useI18n } from '@/i18n'
 import { usePreferenceStore } from '@/stores'
 import type { EveCharacter } from '@/types/api/auth'
 import type {
-  CompletionCheckResult,
-  CompletionCharacter,
-  SkillPlanListItem,
-} from '@/types/api/skill-plan'
+  SkillPlanCheckResult as CompletionCheckResult,
+  SkillPlanCompletionCharacter as CompletionCharacter,
+  SkillPlanRecord as SkillPlanListItem,
+} from '@/api/generated/client'
 import { getErrorMessage, ShopBadge, ShopDialog } from './shop-page-utils'
 
 function scopeLabel(t: ReturnType<typeof useI18n>['t'], scope: 'corp' | 'personal') {
@@ -73,11 +73,19 @@ export function SkillPlanCompletionCheckPage() {
     try {
       const [characterList, corpPlans, personalPlans, savedSelection, savedPlanSelection] =
         await Promise.all([
-          fetchMyCharacters(),
-          fetchSkillPlanList({ current: 1, size: 200 }),
-          fetchPersonalSkillPlanList({ current: 1, size: 200 }),
-          fetchSkillPlanCheckSelection(),
-          fetchSkillPlanCheckPlanSelection(),
+          unwrapContract(listMyEveCharacters(), 'fetch characters failed').then(
+            (data) => data ?? []
+          ),
+          unwrapContract(listSkillPlans({ current: 1, size: 200 }), 'fetch skill plan list failed'),
+          unwrapContract(
+            listPersonalSkillPlans({ current: 1, size: 200 }),
+            'fetch skill plan list failed'
+          ),
+          unwrapContract(getSkillPlanCheckSelection(), 'fetch skill plan selection failed'),
+          unwrapContract(
+            getSkillPlanCheckPlanSelection(),
+            'fetch skill plan plan selection failed'
+          ),
         ])
 
       const nextPlans = [...(corpPlans.list ?? []), ...(personalPlans.list ?? [])].filter(
@@ -121,7 +129,10 @@ export function SkillPlanCompletionCheckPage() {
   const saveCharacters = async () => {
     setError(null)
     try {
-      const saved = await saveSkillPlanCheckSelection({ character_ids: draftCharacterIds })
+      const saved = await unwrapContract(
+        saveSkillPlanCheckSelection({ character_ids: draftCharacterIds }),
+        'save skill plan selection failed'
+      )
       setSelectedCharacterIds(saved.character_ids ?? [])
       setCharacterDialogOpen(false)
     } catch (caughtError) {
@@ -132,7 +143,10 @@ export function SkillPlanCompletionCheckPage() {
   const savePlans = async () => {
     setError(null)
     try {
-      const saved = await saveSkillPlanCheckPlanSelection({ plan_ids: draftPlanIds })
+      const saved = await unwrapContract(
+        saveSkillPlanCheckPlanSelection({ plan_ids: draftPlanIds }),
+        'save skill plan plan selection failed'
+      )
       setSelectedPlanIds(saved.plan_ids ?? [])
       setPlanDialogOpen(false)
     } catch (caughtError) {
@@ -149,10 +163,10 @@ export function SkillPlanCompletionCheckPage() {
     setRunning(true)
     setError(null)
     try {
-      const data = await runSkillPlanCompletionCheck({
-        character_ids: selectedCharacterIds,
-        language,
-      })
+      const data = await unwrapContract(
+        runSkillPlanCompletionCheck({ character_ids: selectedCharacterIds, language }),
+        'run skill plan completion check failed'
+      )
       setResult(data)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('httpMsg.requestFailed')))
@@ -162,7 +176,9 @@ export function SkillPlanCompletionCheckPage() {
   }
 
   const copyMissingSkills = async (plan: CompletionCharacter['plans'][number]) => {
-    const text = plan.missing_skills.map((skill) => `${skill.skill_name} ${skill.required_level}`).join('\n')
+    const text = plan.missing_skills
+      .map((skill) => `${skill.skill_name} ${skill.required_level}`)
+      .join('\n')
     if (!text) return
 
     try {
@@ -187,7 +203,11 @@ export function SkillPlanCompletionCheckPage() {
             <Button type="button" variant="outline" onClick={openCharacterDialog}>
               {t('skillPlanCheck.selectCharacters')}
             </Button>
-            <Button type="button" onClick={() => void runCheck()} isDisabled={running || !selectedCharacterIds.length}>
+            <Button
+              type="button"
+              onClick={() => void runCheck()}
+              isDisabled={running || !selectedCharacterIds.length}
+            >
               {t('skillPlanCheck.startCheck')}
             </Button>
           </div>
@@ -196,19 +216,27 @@ export function SkillPlanCompletionCheckPage() {
         <div className="mt-4 flex flex-wrap gap-2">
           {selectedCharacters.length ? (
             selectedCharacters.map((character) => (
-              <ShopBadge key={character.character_id} className="bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300">
+              <ShopBadge
+                key={character.character_id}
+                className="bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300"
+              >
                 {character.character_name}
               </ShopBadge>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground">{t('skillPlanCheck.noCharactersSelected')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t('skillPlanCheck.noCharactersSelected')}
+            </p>
           )}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           {selectedPlans.length ? (
             selectedPlans.map((plan) => (
-              <ShopBadge key={plan.id} className="bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300">
+              <ShopBadge
+                key={plan.id}
+                className="bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300"
+              >
                 {planLabel(t, plan)}
               </ShopBadge>
             ))
@@ -219,13 +247,17 @@ export function SkillPlanCompletionCheckPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('skillPlanCheck.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('skillPlanCheck.loading')}</p>
+      ) : null}
 
       <div className="rounded-lg border bg-card p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">{t('skillPlanCheck.resultTitle')}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t('skillPlanCheck.resultSubtitle')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t('skillPlanCheck.resultSubtitle')}
+            </p>
           </div>
           <ShopBadge className="bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300">
             {t('skillPlanCheck.planCount', { count: result?.plan_count ?? 0 })}
@@ -235,7 +267,11 @@ export function SkillPlanCompletionCheckPage() {
         <div className="mt-4 space-y-4">
           {result?.characters?.length ? (
             result.characters.map((character) => (
-              <details key={character.character_id} className="rounded-lg border bg-background p-3" open>
+              <details
+                key={character.character_id}
+                className="rounded-lg border bg-background p-3"
+                open
+              >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
                   <div>
                     <div className="font-medium">{character.character_name}</div>
@@ -258,7 +294,9 @@ export function SkillPlanCompletionCheckPage() {
                         <div className="min-w-0">
                           <div className="font-medium">{plan.plan_title}</div>
                           {plan.plan_description ? (
-                            <div className="mt-1 text-xs text-muted-foreground">{plan.plan_description}</div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {plan.plan_description}
+                            </div>
                           ) : null}
                         </div>
                         <ShopBadge
@@ -268,7 +306,9 @@ export function SkillPlanCompletionCheckPage() {
                               : 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
                           }
                         >
-                          {plan.fully_satisfied ? t('skillPlanCheck.planCompleted') : t('skillPlanCheck.planIncomplete')}
+                          {plan.fully_satisfied
+                            ? t('skillPlanCheck.planCompleted')
+                            : t('skillPlanCheck.planIncomplete')}
                         </ShopBadge>
                       </summary>
 
@@ -290,14 +330,24 @@ export function SkillPlanCompletionCheckPage() {
                         {plan.missing_skills.length ? (
                           <div className="rounded-lg border p-3">
                             <div className="flex items-center justify-between gap-3">
-                              <div className="font-medium">{t('skillPlanCheck.missingSkillsTitle')}</div>
-                              <Button type="button" variant="outline" size="sm" onClick={() => void copyMissingSkills(plan)}>
+                              <div className="font-medium">
+                                {t('skillPlanCheck.missingSkillsTitle')}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void copyMissingSkills(plan)}
+                              >
                                 {t('skillPlanCheck.copyMissingSkills')}
                               </Button>
                             </div>
                             <ul className="mt-3 space-y-2 text-sm">
                               {plan.missing_skills.map((skill) => (
-                                <li key={`${plan.plan_id}-${skill.skill_type_id}`} className="flex items-center justify-between gap-3">
+                                <li
+                                  key={`${plan.plan_id}-${skill.skill_type_id}`}
+                                  className="flex items-center justify-between gap-3"
+                                >
                                   <span>{skill.skill_name}</span>
                                   <span className="text-muted-foreground">
                                     {t('skillPlanCheck.requiredVsCurrent', {
@@ -340,7 +390,10 @@ export function SkillPlanCompletionCheckPage() {
       >
         <div className="space-y-2">
           {characters.map((character) => (
-            <label key={character.character_id} className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
+            <label
+              key={character.character_id}
+              className="flex cursor-pointer items-center gap-3 rounded-lg border p-3"
+            >
               <Checkbox
                 isSelected={draftCharacterIds.includes(character.character_id)}
                 onChange={(selected) => {
@@ -354,7 +407,11 @@ export function SkillPlanCompletionCheckPage() {
               <span>{character.character_name}</span>
             </label>
           ))}
-          {!characters.length ? <p className="text-sm text-muted-foreground">{t('skillPlanCheck.noAvailableCharacters')}</p> : null}
+          {!characters.length ? (
+            <p className="text-sm text-muted-foreground">
+              {t('skillPlanCheck.noAvailableCharacters')}
+            </p>
+          ) : null}
         </div>
       </ShopDialog>
 
@@ -376,19 +433,26 @@ export function SkillPlanCompletionCheckPage() {
       >
         <div className="space-y-2">
           {allPlans.map((plan) => (
-            <label key={plan.id} className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
+            <label
+              key={plan.id}
+              className="flex cursor-pointer items-center gap-3 rounded-lg border p-3"
+            >
               <Checkbox
                 isSelected={draftPlanIds.includes(plan.id)}
                 onChange={(selected) => {
                   setDraftPlanIds((current) =>
-                    selected === true ? [...current, plan.id] : current.filter((id) => id !== plan.id)
+                    selected === true
+                      ? [...current, plan.id]
+                      : current.filter((id) => id !== plan.id)
                   )
                 }}
               />
               <span>{planLabel(t, plan)}</span>
             </label>
           ))}
-          {!allPlans.length ? <p className="text-sm text-muted-foreground">{t('skillPlanCheck.noAvailablePlans')}</p> : null}
+          {!allPlans.length ? (
+            <p className="text-sm text-muted-foreground">{t('skillPlanCheck.noAvailablePlans')}</p>
+          ) : null}
         </div>
       </ShopDialog>
     </section>

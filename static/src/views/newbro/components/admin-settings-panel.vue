@@ -70,7 +70,9 @@
 </template>
 
 <script setup lang="ts">
-  import { fetchAdminNewbroRecruitSettings, updateAdminNewbroRecruitSettings } from '@/api/newbro'
+  import type { NewbroRecruitSettings } from '@/api/generated/client'
+  import { getRecruitSettings, updateRecruitSettings } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import {
     ElButton,
     ElCard,
@@ -93,7 +95,7 @@
   const saving = ref(false)
   const titleKey = 'newbro.recruitLink.settingsTab'
   const subtitleKey = 'newbro.recruitLink.settingsSubtitle'
-  const form = reactive<Api.Newbro.RecruitSettings>({
+  const form = reactive<NewbroRecruitSettings>({
     recruit_qq_url: '',
     recruit_reward_amount: 50,
     recruit_cooldown_days: 90
@@ -127,7 +129,7 @@
     ]
   }
 
-  const applyRecruitSettings = (data: Api.Newbro.RecruitSettings) => {
+  const applyRecruitSettings = (data: NewbroRecruitSettings) => {
     form.recruit_qq_url = data.recruit_qq_url
     form.recruit_reward_amount = data.recruit_reward_amount
     form.recruit_cooldown_days = data.recruit_cooldown_days
@@ -136,7 +138,7 @@
   async function loadSettings() {
     loading.value = true
     try {
-      const data = await fetchAdminNewbroRecruitSettings()
+      const data = await unwrapContract(getRecruitSettings())
       applyRecruitSettings(data)
     } finally {
       loading.value = false
@@ -148,11 +150,13 @@
 
     saving.value = true
     try {
-      const data = await updateAdminNewbroRecruitSettings({
-        recruit_qq_url: form.recruit_qq_url,
-        recruit_reward_amount: form.recruit_reward_amount,
-        recruit_cooldown_days: form.recruit_cooldown_days
-      })
+      const data = await unwrapContract(
+        updateRecruitSettings({
+          recruit_qq_url: form.recruit_qq_url,
+          recruit_reward_amount: form.recruit_reward_amount,
+          recruit_cooldown_days: form.recruit_cooldown_days
+        })
+      )
       applyRecruitSettings(data)
       ElMessage.success(t('system.newbroSettings.saveSuccess'))
     } finally {

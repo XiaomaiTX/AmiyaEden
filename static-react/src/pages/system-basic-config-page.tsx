@@ -5,21 +5,22 @@ import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import { notifyError, notifySuccess } from '@/feedback'
 import {
-  fetchAllowCorporations,
-  fetchBasicConfig,
-  fetchMumbleConfig,
-  fetchSDEConfig,
+  getAllowCorporations,
+  getBasicConfig,
+  getMumbleConfig,
+  getSDEConfig,
   updateAllowCorporations,
   updateMumbleConfig,
   updateSDEConfig,
-} from '@/api/sys-config'
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import type {
-  AllowCorporationsConfig,
-  BasicConfig,
-  MumbleConfig,
+  SystemAllowedCorporations as AllowCorporationsConfig,
+  SystemBasicConfig as BasicConfig,
+  SystemMumbleConfig as MumbleConfig,
   MumblePublicNode,
-  SDEConfig,
-} from '@/types/api/sys-config'
+  SystemSDEConfig as SDEConfig,
+} from '@/api/generated/client'
 
 const defaultSdeForm: SDEConfig = {
   api_key: '',
@@ -67,10 +68,10 @@ export function SystemBasicConfigPage() {
     setError(null)
     try {
       const [basic, allowCorps, sde, mumble] = await Promise.all([
-        fetchBasicConfig(),
-        fetchAllowCorporations(),
-        fetchSDEConfig(),
-        fetchMumbleConfig(),
+        unwrapContract(getBasicConfig(), 'fetch basic config failed'),
+        unwrapContract(getAllowCorporations(), 'fetch allow corporations failed'),
+        unwrapContract(getSDEConfig(), 'fetch sde config failed'),
+        unwrapContract(getMumbleConfig(), 'fetch mumble config failed'),
       ])
       setBasicConfig(basic)
       setAllowCorporationsInput(renderAllowCorporations(basic.corp_id, allowCorps))
@@ -108,7 +109,10 @@ export function SystemBasicConfigPage() {
     setAllowCorporationsSaving(true)
     try {
       const corps = normalizeCorporations(basicConfig.corp_id, allowCorporationsInput)
-      await updateAllowCorporations({ allow_corporations: corps })
+      await unwrapContract(
+        updateAllowCorporations({ allow_corporations: corps }),
+        'update allow corporations failed'
+      )
       setAllowCorporationsInput(corps.join('\n'))
       notifySuccess(t('systemBasicConfig.messages.saveSuccess'))
     } catch (caughtError) {
@@ -125,7 +129,7 @@ export function SystemBasicConfigPage() {
   const saveSdeConfig = async () => {
     setSdeSaving(true)
     try {
-      await updateSDEConfig(sdeForm)
+      await unwrapContract(updateSDEConfig(sdeForm), 'update sde config failed')
       notifySuccess(t('systemBasicConfig.messages.saveSuccess'))
     } catch {
       notifyError(t('systemBasicConfig.messages.saveFailed'))
@@ -137,7 +141,7 @@ export function SystemBasicConfigPage() {
   const saveMumbleConfig = async () => {
     setMumbleSaving(true)
     try {
-      await updateMumbleConfig(mumbleForm)
+      await unwrapContract(updateMumbleConfig(mumbleForm), 'update mumble config failed')
       notifySuccess(t('systemBasicConfig.messages.saveSuccess'))
     } catch {
       notifyError(t('systemBasicConfig.messages.saveFailed'))

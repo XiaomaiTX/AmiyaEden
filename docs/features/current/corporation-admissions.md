@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-11-23
+last_reviewed: 2026-11-26
 source_of_truth:
   - server/internal/model/admission.go
   - server/internal/repository/admission.go
@@ -21,7 +21,7 @@ source_of_truth:
 
 ## 当前入口
 
-Vue 和 React 均在“军团申请”提供 `/admissions/new`（新人）、`/admissions/alt`（小号）、`/admissions/history`（本人历史）、`/admissions/applications/:id`（详情）与 `/admissions/review`（招新管理）。完整 API 与鉴权边界见[路由索引](../../api/route-index.md#corporation-admissions)。
+Vue 和 React 均在“军团申请”提供 `/admissions/new`（新人）、`/admissions/alt`（小号）、`/admissions/history`（本人历史）、`/admissions/applications/:id`（详情）与 `/admissions/review`（招新管理）。完整 API 与鉴权边界见[入团申请 OpenAPI 定义](../../../contracts/modules/admissions.yaml)。
 
 ## 申请与人工检查
 

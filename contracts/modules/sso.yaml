@@ -1,0 +1,273 @@
+paths:
+  /sso/eve/login:
+    get:
+      operationId: getEveSsoLogin
+      x-gin-access: []
+      security: []
+      parameters:
+        - { name: redirect, in: query, schema: { type: string }, description: Allowed browser callback URL. }
+        - { name: scopes, in: query, schema: { type: string }, description: Additional scopes as a comma-separated string. }
+      responses:
+        '200':
+          description: Browser authorization URL or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EveSsoAuthorizationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /sso/eve/callback:
+    get:
+      operationId: eveSsoCallback
+      x-gin-access: []
+      security: []
+      parameters:
+        - { name: code, in: query, schema: { type: string } }
+        - { name: state, in: query, schema: { type: string } }
+        - { name: error, in: query, schema: { type: string } }
+        - { name: error_description, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: JSON result when no browser redirect is available.
+          headers:
+            Cache-Control: { schema: { type: string, enum: [no-store] } }
+            Referrer-Policy: { schema: { type: string, enum: [no-referrer] } }
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EveSsoCallbackSuccess'
+                  - $ref: '#/components/schemas/EveSsoRegistrationTicketSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '302':
+          description: Continue in the browser at the frontend callback or EVE authorization page.
+          headers:
+            Location: { schema: { type: string } }
+            Cache-Control: { schema: { type: string, enum: [no-store] } }
+            Referrer-Policy: { schema: { type: string, enum: [no-referrer] } }
+          content:
+            text/html:
+              schema: { type: string }
+  /sso/eve/scopes:
+    get:
+      operationId: listEveSsoScopes
+      x-gin-access: []
+      security: []
+      responses:
+        '200':
+          description: Registered ESI scopes.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EveSsoScopesSuccess' }
+  /sso/eve/registration:
+    get:
+      operationId: getEveRegistration
+      x-gin-access: []
+      security: []
+      parameters:
+        - name: X-Registration-Token
+          in: header
+          required: true
+          description: Short-lived registration ticket from the provider callback.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Registration character details or business error.
+          headers:
+            Cache-Control: { schema: { type: string, enum: [no-store] } }
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EveRegistrationInfoSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+    post:
+      operationId: completeEveRegistration
+      x-gin-access: []
+      security: []
+      parameters:
+        - name: X-Registration-Token
+          in: header
+          required: true
+          description: Short-lived registration ticket from the provider callback.
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EveRegistrationInput' }
+      responses:
+        '200':
+          description: Registration result or business error, including contact conflicts.
+          headers:
+            Cache-Control: { schema: { type: string, enum: [no-store] } }
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EveRegistrationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+                  - $ref: '#/components/schemas/ContactConflict'
+  /sso/eve/characters:
+    get:
+      operationId: listMyEveCharacters
+      x-gin-access: ["jwt"]
+      responses:
+        '200':
+          description: Owned EVE character list or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EveSsoCharactersSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /sso/eve/bind:
+    get:
+      operationId: getEveSsoBind
+      x-gin-access: ["jwt"]
+      parameters:
+        - { name: redirect, in: query, schema: { type: string }, description: Allowed browser callback URL. }
+        - { name: scopes, in: query, schema: { type: string }, description: Additional scopes as a comma-separated string. }
+      responses:
+        '200':
+          description: Browser authorization URL or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EveSsoAuthorizationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /sso/eve/primary/{character_id}:
+    parameters:
+      - { name: character_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    put:
+      operationId: setPrimaryEveCharacter
+      x-gin-access: ["jwt"]
+      responses:
+        '200':
+          description: Operation completed or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /sso/eve/characters/{character_id}:
+    parameters:
+      - { name: character_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    delete:
+      operationId: unbindEveCharacter
+      x-gin-access: ["jwt"]
+      responses:
+        '200':
+          description: Operation completed or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    EveSsoAuthorization:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string }
+    EveSsoCallbackData:
+      type: object
+      required: [token, user, character]
+      properties:
+        token: { type: string }
+        user: { $ref: '#/components/schemas/CurrentUser' }
+        character: { $ref: '#/components/schemas/EveCharacter' }
+    EveSsoRegistrationTicket:
+      type: object
+      required: [registration]
+      properties:
+        registration: { type: string }
+    EveSsoScope:
+      type: object
+      required: [module, scope, description, required]
+      properties:
+        module: { type: string }
+        scope: { type: string }
+        description: { type: string }
+        required: { type: boolean }
+    EveRegistrationInfo:
+      type: object
+      required: [character_id, character_name]
+      properties:
+        character_id: { type: integer, format: int64 }
+        character_name: { type: string }
+    EveRegistrationInput:
+      type: object
+      description: A nonblank nickname and at least one of QQ or Discord are required to complete registration.
+      required: [nickname]
+      properties:
+        nickname: { type: string }
+        qq: { type: string, x-go-type-skip-optional-pointer: true }
+        discord_id: { type: string, x-go-type-skip-optional-pointer: true }
+    EveRegistrationResult:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+    EveSsoAuthorizationSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/EveSsoAuthorization' }
+    EveSsoCallbackSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/EveSsoCallbackData' }
+    EveSsoRegistrationTicketSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/EveSsoRegistrationTicket' }
+    EveSsoScopesSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/EveSsoScope' } }
+    EveSsoCharactersSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/EveCharacter' } }
+    EveRegistrationInfoSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/EveRegistrationInfo' }
+    EveRegistrationSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/EveRegistrationResult' }

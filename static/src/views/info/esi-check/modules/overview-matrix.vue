@@ -35,12 +35,13 @@
 </template>
 
 <script setup lang="ts">
+  import type { EveSsoScope } from '@/api/generated/client'
   import { Loading } from '@element-plus/icons-vue'
 
   defineOptions({ name: 'OverviewMatrix' })
 
   const props = defineProps<{
-    scopes: Api.Auth.RegisteredScope[]
+    scopes: EveSsoScope[]
     characters: Api.Auth.EveCharacter[]
     loading: boolean
   }>()

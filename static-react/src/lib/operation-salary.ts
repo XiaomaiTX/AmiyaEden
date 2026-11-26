@@ -1,4 +1,5 @@
-import { fetchOperationSalaryRates } from '@/api/salary'
+import { operationRates } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import type { OperationSalaryCategory } from '@/types/api/salary'
 
 type Translate = (key: string, values?: Record<string, string | number>) => string
@@ -8,7 +9,7 @@ export async function operationSalaryMessage(
   count: number,
   t: Translate
 ) {
-  const rates = await fetchOperationSalaryRates()
+  const rates = await unwrapContract(operationRates(), 'fetch operation salary rates failed')
   const rate = rates[category]
   if (!Number.isFinite(rate) || rate < 0 || !Number.isSafeInteger(count) || count < 1) {
     throw new Error(t('salaryManagement.loadFailed'))

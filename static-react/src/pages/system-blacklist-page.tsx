@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchBlacklistEntries, fetchBlacklistSummary, refreshBlacklist } from '@/api/blacklist'
+import { latestRefresh, listBlacklist, refresh as refreshBlacklist } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DataTable, type ColumnDef } from '@/components/ui/data-table'
@@ -17,9 +18,13 @@ import { formatTime } from '@/lib/format'
 import type {
   BlacklistEntry,
   BlacklistKind,
-  BlacklistListParams,
+  ListBlacklistParams,
   BlacklistRefreshSummary,
-} from '@/types/api/blacklist'
+} from '@/api/generated/client'
+
+const blacklistError = 'blacklist.errors.internal'
+// The server allows a refresh up to 90 s (sheet download plus ESI lookups).
+const refreshTimeoutMs = 120_000
 
 const kinds: BlacklistKind[] = ['character', 'qq', 'discord']
 
@@ -27,11 +32,11 @@ const kinds: BlacklistKind[] = ['character', 'qq', 'discord']
 function errorKey(error: unknown) {
   return error instanceof Error && error.message.startsWith('blacklist.errors.')
     ? error.message
-    : 'blacklist.errors.internal'
+    : blacklistError
 }
 
 interface ListResult {
-  request: BlacklistListParams
+  request: ListBlacklistParams
   list: BlacklistEntry[]
   total: number
   error: string | null
@@ -41,7 +46,7 @@ export function SystemBlacklistPage() {
   const { t } = useI18n()
   const [kindDraft, setKindDraft] = useState('')
   const [keywordDraft, setKeywordDraft] = useState('')
-  const [filters, setFilters] = useState<Pick<BlacklistListParams, 'kind' | 'keyword'>>({})
+  const [filters, setFilters] = useState<Pick<ListBlacklistParams, 'kind' | 'keyword'>>({})
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [result, setResult] = useState<ListResult | null>(null)
@@ -62,7 +67,7 @@ export function SystemBlacklistPage() {
   }, [nextRefreshAt])
 
   // A new filters object (search or refresh) refetches even when the values are unchanged.
-  const request = useMemo<BlacklistListParams>(
+  const request = useMemo<ListBlacklistParams>(
     () => ({ current: page, size: pageSize, ...filters }),
     [page, pageSize, filters]
   )
@@ -70,7 +75,7 @@ export function SystemBlacklistPage() {
 
   useEffect(() => {
     let active = true
-    fetchBlacklistEntries(request)
+    unwrapContract(listBlacklist(request), blacklistError)
       .then((value) => {
         if (active)
           setResult({ request, list: value.list ?? [], total: value.total ?? 0, error: null })
@@ -85,7 +90,7 @@ export function SystemBlacklistPage() {
 
   useEffect(() => {
     let active = true
-    fetchBlacklistSummary()
+    unwrapContract(latestRefresh(), blacklistError)
       .then((value) => {
         if (active) setSummary(value ?? null)
       })
@@ -109,7 +114,10 @@ export function SystemBlacklistPage() {
   async function refresh() {
     setRefreshing(true)
     try {
-      const value = await refreshBlacklist()
+      const value = await unwrapContract(
+        refreshBlacklist({ signal: AbortSignal.timeout(refreshTimeoutMs) }),
+        blacklistError
+      )
       setSummary(value)
       const message = t('blacklist.refreshSuccess', {
         added: value.added,

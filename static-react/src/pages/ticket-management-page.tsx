@@ -16,10 +16,12 @@ import {
 } from '@/components/ui/table'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { adminListTickets, adminUpdateTicketPriority, adminUpdateTicketStatus } from '@/api/ticket'
+import { adminListTickets } from '@/api/generated/client'
+import { adminUpdateStatus } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
-import type { TicketItem, TicketPriority, TicketStatus } from '@/types/api/ticket'
+import type { TicketAdminItem, TicketStatus } from '@/api/generated/client'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -44,25 +46,12 @@ function statusTone(status: TicketStatus) {
   }
 }
 
-function priorityTone(priority: TicketPriority) {
-  switch (priority) {
-    case 'high':
-      return 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
-    case 'medium':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
-    case 'low':
-      return 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'
-    default:
-      return 'bg-muted text-muted-foreground'
-  }
-}
-
 export function TicketManagementPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tickets, setTickets] = useState<TicketItem[]>([])
+  const [tickets, setTickets] = useState<TicketAdminItem[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [total, setTotal] = useState(0)
@@ -79,12 +68,15 @@ export function TicketManagementPage() {
       setError(null)
 
       try {
-        const response = await adminListTickets({
-          current: page,
-          size: pageSize,
-          keyword: keyword.trim() || undefined,
-          status,
-        })
+        const response = await unwrapContract(
+          adminListTickets({
+            current: page,
+            size: pageSize,
+            keyword: keyword.trim() || undefined,
+            status: status || undefined,
+          }),
+          'admin list tickets failed'
+        )
 
         if (cancelled) return
 
@@ -117,26 +109,13 @@ export function TicketManagementPage() {
   const updateTicketStatus = async (ticketId: number, nextStatus: TicketStatus) => {
     setUpdatingId(ticketId)
     try {
-      await adminUpdateTicketStatus(ticketId, { status: nextStatus })
+      await unwrapContract(
+        adminUpdateStatus(ticketId, { status: nextStatus }),
+        'admin update ticket status failed'
+      )
       setTickets((current) =>
         current.map((ticket) =>
           ticket.id === ticketId ? { ...ticket, status: nextStatus } : ticket
-        )
-      )
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError, t('ticketManagement.updateFailed')))
-    } finally {
-      setUpdatingId(null)
-    }
-  }
-
-  const updateTicketPriority = async (ticketId: number, nextPriority: TicketPriority) => {
-    setUpdatingId(ticketId)
-    try {
-      await adminUpdateTicketPriority(ticketId, { priority: nextPriority })
-      setTickets((current) =>
-        current.map((ticket) =>
-          ticket.id === ticketId ? { ...ticket, priority: nextPriority } : ticket
         )
       )
     } catch (caughtError) {
@@ -174,10 +153,12 @@ export function TicketManagementPage() {
               </span>
               <Select
                 selectedKey={String(status ?? '')}
-                onSelectionChange={(key) => ((value) => {
-                  setStatus(value as TicketStatus | '')
-                  setPage(1)
-                })(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => {
+                    setStatus(value as TicketStatus | '')
+                    setPage(1)
+                  })(String(key))
+                }
               >
                 <SelectTrigger className="h-10">
                   <SelectValue />
@@ -188,9 +169,7 @@ export function TicketManagementPage() {
                   <SelectItem id="in_progress">
                     {t('ticketManagement.status.in_progress')}
                   </SelectItem>
-                  <SelectItem id="completed">
-                    {t('ticketManagement.status.completed')}
-                  </SelectItem>
+                  <SelectItem id="completed">{t('ticketManagement.status.completed')}</SelectItem>
                 </SelectContent>
               </Select>
             </label>
@@ -219,9 +198,6 @@ export function TicketManagementPage() {
                 <TableHead className="px-3 py-2">{t('ticketManagement.columns.title')}</TableHead>
                 <TableHead className="px-3 py-2">{t('ticketManagement.columns.status')}</TableHead>
                 <TableHead className="px-3 py-2">
-                  {t('ticketManagement.columns.priority')}
-                </TableHead>
-                <TableHead className="px-3 py-2">
                   {t('ticketManagement.columns.updatedAt')}
                 </TableHead>
                 <TableHead className="px-3 py-2">{t('ticketManagement.columns.actions')}</TableHead>
@@ -240,9 +216,11 @@ export function TicketManagementPage() {
                   <TableCell className="px-3 py-2">
                     <Select
                       selectedKey={String(ticket.status ?? '')}
-                      onSelectionChange={(key) => ((value) => {
-                        void updateTicketStatus(ticket.id, value as TicketStatus)
-                      })(String(key))}
+                      onSelectionChange={(key) =>
+                        ((value) => {
+                          void updateTicketStatus(ticket.id, value as TicketStatus)
+                        })(String(key))
+                      }
                     >
                       <SelectTrigger
                         className={`h-9 text-xs ${statusTone(ticket.status)}`}
@@ -251,37 +229,13 @@ export function TicketManagementPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem id="pending">
-                          {t('ticketManagement.status.pending')}
-                        </SelectItem>
+                        <SelectItem id="pending">{t('ticketManagement.status.pending')}</SelectItem>
                         <SelectItem id="in_progress">
                           {t('ticketManagement.status.in_progress')}
                         </SelectItem>
                         <SelectItem id="completed">
                           {t('ticketManagement.status.completed')}
                         </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="px-3 py-2">
-                    <Select
-                      selectedKey={String(ticket.priority ?? '')}
-                      onSelectionChange={(key) => ((value) => {
-                        void updateTicketPriority(ticket.id, value as TicketPriority)
-                      })(String(key))}
-                    >
-                      <SelectTrigger
-                        className={`h-9 text-xs ${priorityTone(ticket.priority)}`}
-                        isDisabled={updatingId === ticket.id}
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem id="low">{t('ticketManagement.priority.low')}</SelectItem>
-                        <SelectItem id="medium">
-                          {t('ticketManagement.priority.medium')}
-                        </SelectItem>
-                        <SelectItem id="high">{t('ticketManagement.priority.high')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
@@ -300,7 +254,7 @@ export function TicketManagementPage() {
               ))}
               {!loading && tickets.length === 0 ? (
                 <TableRow>
-                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={5}>
                     {t('ticketManagement.empty')}
                   </TableCell>
                 </TableRow>
@@ -336,10 +290,12 @@ export function TicketManagementPage() {
           <span>{t('ticketManagement.pageSize')}</span>
           <Select
             selectedKey={String(pageSize ?? '')}
-            onSelectionChange={(key) => ((value) => {
-              setPageSize(Number(value))
-              setPage(1)
-            })(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => {
+                setPageSize(Number(value))
+                setPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />

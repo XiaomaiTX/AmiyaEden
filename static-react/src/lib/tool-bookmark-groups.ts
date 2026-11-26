@@ -1,4 +1,4 @@
-import type { ToolBookmark } from '@/types/api/tool-bookmark'
+import type { ToolBookmark } from '@/api/generated/client'
 
 // Preserve API order: groups follow their first bookmark; bookmarks keep their relative order.
 export function groupToolBookmarks(bookmarks: ToolBookmark[]) {

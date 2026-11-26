@@ -1,24 +1,32 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { CaptainRefundPage } from '@/pages/captain-refund-page'
-import type { RefundCalculation, RefundApplication } from '@/types/api/captain-refund'
+import type {
+  CaptainRefundCalculation as RefundCalculation,
+  CaptainRefundApplication as RefundApplication,
+} from '@/api/generated/client'
 import {
-  refundOptions,
-  previewRefund,
-  createRefund,
-  listRefunds,
-  getRefund,
-  reviewRefund,
-} from '@/api/captain-refund'
+  getCaptainRefundOptions,
+  previewCaptainRefund,
+  createCaptainRefund,
+  listAdminCaptainRefunds,
+  listMyCaptainRefunds,
+  getAdminCaptainRefund,
+  rejectCaptainRefund,
+} from '@/api/generated/client'
+const success = <T,>(data: T) => ({ code: 200 as const, msg: 'ok', data })
 const translate = (key: string) => key
 vi.mock('@/i18n', () => ({ useI18n: () => ({ t: translate }) }))
-vi.mock('@/api/captain-refund', () => ({
-  refundOptions: vi.fn(),
-  previewRefund: vi.fn(),
-  createRefund: vi.fn(),
-  listRefunds: vi.fn(),
-  getRefund: vi.fn(),
-  reviewRefund: vi.fn(),
+vi.mock('@/api/generated/client', () => ({
+  getCaptainRefundOptions: vi.fn(),
+  previewCaptainRefund: vi.fn(),
+  createCaptainRefund: vi.fn(),
+  listAdminCaptainRefunds: vi.fn(),
+  listMyCaptainRefunds: vi.fn(),
+  getAdminCaptainRefund: vi.fn(),
+  getMyCaptainRefund: vi.fn(),
+  rejectCaptainRefund: vi.fn(),
+  approveCaptainRefund: vi.fn(),
 }))
 const calculation: RefundCalculation = {
   request: {
@@ -57,21 +65,27 @@ const application: RefundApplication = {
 }
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(refundOptions).mockResolvedValue({
-    characters: [{ character_id: 1, character_name: 'Captain' }],
-    settings: calculation.settings,
-  })
-  vi.mocked(listRefunds).mockResolvedValue({ list: [], total: 0, page: 1, page_size: 200 })
-  vi.mocked(previewRefund).mockResolvedValue(calculation)
-  vi.mocked(createRefund).mockResolvedValue(application)
-  vi.mocked(getRefund).mockResolvedValue(application)
-  vi.mocked(reviewRefund).mockResolvedValue({})
+  vi.mocked(getCaptainRefundOptions).mockResolvedValue(
+    success({
+      characters: [{ character_id: 1, character_name: 'Captain' }],
+      settings: calculation.settings,
+    })
+  )
+  vi.mocked(listMyCaptainRefunds).mockResolvedValue(
+    success({ list: [], total: 0, page: 1, pageSize: 200 })
+  )
+  vi.mocked(previewCaptainRefund).mockResolvedValue(success(calculation))
+  vi.mocked(createCaptainRefund).mockResolvedValue(success(application))
+  vi.mocked(getAdminCaptainRefund).mockResolvedValue(success(application))
+  vi.mocked(rejectCaptainRefund).mockResolvedValue(success({}))
 })
 describe('captain refund UI', () => {
   test('sends UTC request, invalidates changed preview and submits without client amounts', async () => {
     render(<CaptainRefundPage />)
     await screen.findByRole('option', { name: 'Captain' })
-    await waitFor(() => expect(listRefunds).toHaveBeenCalledWith(false, 1, 200))
+    await waitFor(() =>
+      expect(listMyCaptainRefunds).toHaveBeenCalledWith({ current: 1, size: 200 })
+    )
     fireEvent.change(screen.getByLabelText('refund.members'), {
       target: { value: 'New Member\nUnknown' },
     })
@@ -84,7 +98,7 @@ describe('captain refund UI', () => {
     fireEvent.click(screen.getByRole('button', { name: 'refund.preview' }))
     const submit = await screen.findByRole('button', { name: 'refund.submit' })
     await waitFor(() => expect(submit).toBeEnabled())
-    expect(previewRefund).toHaveBeenCalledWith({
+    expect(previewCaptainRefund).toHaveBeenCalledWith({
       captain_character_id: 1,
       system_id: 30000001,
       member_names: ['New Member', 'Unknown'],
@@ -97,18 +111,20 @@ describe('captain refund UI', () => {
     const refreshedSubmit = await screen.findByRole('button', { name: 'refund.submit' })
     await waitFor(() => expect(refreshedSubmit).toBeEnabled())
     fireEvent.click(refreshedSubmit)
-    await waitFor(() => expect(createRefund).toHaveBeenCalledOnce())
-    expect(createRefund).toHaveBeenCalledWith(
+    await waitFor(() => expect(createCaptainRefund).toHaveBeenCalledOnce())
+    expect(createCaptainRefund).toHaveBeenCalledWith(
       expect.not.objectContaining({ reward: expect.anything() })
     )
   })
   test('disables submission for conflict and requires reason for rejection', async () => {
-    vi.mocked(listRefunds).mockResolvedValue({
-      list: [application],
-      total: 1,
-      page: 1,
-      page_size: 200,
-    })
+    vi.mocked(listAdminCaptainRefunds).mockResolvedValue(
+      success({
+        list: [application],
+        total: 1,
+        page: 1,
+        pageSize: 200,
+      })
+    )
     render(<CaptainRefundPage admin />)
     const detailButton = await screen.findByRole('button', { name: 'refund.details' })
     fireEvent.click(detailButton)
@@ -118,26 +134,30 @@ describe('captain refund UI', () => {
       target: { value: 'incorrect members' },
     })
     fireEvent.click(reject)
-    await waitFor(() => expect(reviewRefund).toHaveBeenCalledWith(1, false, 'incorrect members'))
-    expect(refundOptions).not.toHaveBeenCalled()
+    await waitFor(() =>
+      expect(rejectCaptainRefund).toHaveBeenCalledWith(1, { reason: 'incorrect members' })
+    )
+    expect(getCaptainRefundOptions).not.toHaveBeenCalled()
   })
 
   test('refreshes the calculation after a concurrent claim conflict', async () => {
-    vi.mocked(previewRefund)
-      .mockResolvedValueOnce(calculation)
-      .mockResolvedValueOnce({
-        ...calculation,
-        can_submit: false,
-        conflicts: [
-          {
-            character_id: 2,
-            journal_id: 42,
-            journal_at: '2026-11-10T10:30:00Z',
-            refund_id: 9,
-          },
-        ],
-      })
-    vi.mocked(createRefund).mockRejectedValueOnce(new Error('claim conflict'))
+    vi.mocked(previewCaptainRefund)
+      .mockResolvedValueOnce(success(calculation))
+      .mockResolvedValueOnce(
+        success({
+          ...calculation,
+          can_submit: false,
+          conflicts: [
+            {
+              character_id: 2,
+              journal_id: 42,
+              journal_at: '2026-11-10T10:30:00Z',
+              refund_id: 9,
+            },
+          ],
+        })
+      )
+    vi.mocked(createCaptainRefund).mockRejectedValueOnce(new Error('claim conflict'))
     render(<CaptainRefundPage />)
     await screen.findByRole('option', { name: 'Captain' })
     fireEvent.change(screen.getByLabelText('refund.members'), {
@@ -155,6 +175,6 @@ describe('captain refund UI', () => {
     fireEvent.click(submit)
     await screen.findByText(/refund\.conflict: 2/)
     expect(screen.getByRole('button', { name: 'refund.submit' })).toBeDisabled()
-    expect(previewRefund).toHaveBeenCalledTimes(2)
+    expect(previewCaptainRefund).toHaveBeenCalledTimes(2)
   })
 })

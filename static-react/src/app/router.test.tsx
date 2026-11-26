@@ -6,28 +6,18 @@ import { dispatchUnauthorized } from '@/auth'
 import { I18nProvider } from '@/i18n'
 import { usePreferenceStore, useSessionStore } from '@/stores'
 
-vi.mock('@/api/auth', async () => {
-  const actual = await vi.importActual<typeof import('@/api/auth')>('@/api/auth')
-  return {
-    ...actual,
-    fetchMyCharacters: vi.fn().mockResolvedValue([]),
-  }
-})
-
-vi.mock('@/api/fleet', async () => {
-  const actual = await vi.importActual<typeof import('@/api/fleet')>('@/api/fleet')
-  return {
-    ...actual,
-    fetchFleetList: vi.fn().mockResolvedValue({ list: [], total: 0, page: 1, pageSize: 20 }),
-    fetchMyPapLogs: vi.fn().mockResolvedValue([]),
-    fetchFleetInvites: vi.fn().mockResolvedValue([]),
-    fetchMembersWithPap: vi.fn().mockResolvedValue({
-      list: [],
-      total: 0,
-      page: 1,
-      pageSize: 20,
-    }),
-    fetchCorporationPapSummary: vi.fn().mockResolvedValue({
+vi.mock('@/api/generated/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/api/generated/client')>()),
+  listMyEveCharacters: vi.fn().mockResolvedValue({ code: 200, msg: '', data: [] }),
+  listFleets: vi
+    .fn()
+    .mockResolvedValue({ code: 200, msg: '', data: { list: [], total: 0, page: 1, pageSize: 20 } }),
+  getMyPapLogs: vi.fn().mockResolvedValue({ code: 200, msg: '', data: [] }),
+  getInvites: vi.fn().mockResolvedValue({ code: 200, msg: '', data: [] }),
+  getCorporationPapSummary: vi.fn().mockResolvedValue({
+    code: 200,
+    msg: '',
+    data: {
       list: [],
       total: 0,
       page: 1,
@@ -39,26 +29,21 @@ vi.mock('@/api/fleet', async () => {
         filtered_user_count: 0,
         period: 'last_month',
       },
-    }),
-  }
-})
-
-vi.mock('@/api/fleet-config', async () => {
-  const actual = await vi.importActual<typeof import('@/api/fleet-config')>('@/api/fleet-config')
-  return {
-    ...actual,
-    fetchFleetConfigList: vi.fn().mockResolvedValue({ list: [], total: 0, page: 1, pageSize: 20 }),
-  }
-})
-
-vi.mock('@/api/tool-bookmark', async () => {
-  const actual = await vi.importActual<typeof import('@/api/tool-bookmark')>('@/api/tool-bookmark')
-  return {
-    ...actual,
-    fetchVisibleToolBookmarks: vi.fn().mockResolvedValue([]),
-    fetchAdminToolBookmarks: vi.fn().mockResolvedValue([]),
-  }
-})
+    },
+  }),
+  listVisible: vi.fn().mockResolvedValue({ code: 200, msg: '', data: [] }),
+  listToolBookmarks: vi.fn().mockResolvedValue({ code: 200, msg: '', data: [] }),
+  getMembersWithPap: vi.fn().mockResolvedValue({
+    code: 200,
+    msg: '',
+    data: { list: [], total: 0, page: 1, pageSize: 20 },
+  }),
+  listFleetConfigs: vi.fn().mockResolvedValue({
+    code: 200,
+    msg: '',
+    data: { list: [], total: 0, page: 1, pageSize: 20 },
+  }),
+}))
 
 describe('router auth and route meta access flow', () => {
   beforeEach(() => {

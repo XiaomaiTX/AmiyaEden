@@ -100,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { WebhookConfig } from '@/api/generated/client'
   import { computed } from 'vue'
   import { useI18n } from 'vue-i18n'
   import {
@@ -113,7 +114,8 @@
     ElButton,
     ElMessage
   } from 'element-plus'
-  import { fetchWebhookConfig, setWebhookConfig, testWebhook } from '@/api/webhook'
+  import { getWebhookConfig, setWebhookConfig, testWebhook } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineOptions({ name: 'WebhookSettings' })
 
@@ -123,7 +125,7 @@
   const saving = ref(false)
   const testing = ref(false)
 
-  const form = reactive<Api.Webhook.Config>({
+  const form = reactive<WebhookConfig>({
     url: '',
     enabled: false,
     type: 'discord',
@@ -141,7 +143,7 @@
   const loadConfig = async () => {
     loadingConfig.value = true
     try {
-      const cfg = await fetchWebhookConfig()
+      const cfg = await unwrapContract(getWebhookConfig())
       if (cfg) {
         form.url = cfg.url
         form.enabled = cfg.enabled
@@ -161,7 +163,7 @@
   const handleSave = async () => {
     saving.value = true
     try {
-      await setWebhookConfig({ ...form })
+      await unwrapContract(setWebhookConfig({ ...form }))
       ElMessage.success(t('webhook.saveSuccess'))
     } catch {
       /* handled */
@@ -173,11 +175,9 @@
   const handleTest = async () => {
     testing.value = true
     try {
-      await testWebhook({
-        url: testForm.url,
-        type: testForm.type,
-        content: testForm.content
-      })
+      await unwrapContract(
+        testWebhook({ url: testForm.url, type: testForm.type, content: testForm.content })
+      )
       ElMessage.success(t('webhook.test.success'))
     } catch {
       /* handled */

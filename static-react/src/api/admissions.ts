@@ -1,87 +1,41 @@
-import { requestJson, requestBlob } from '@/api/http-client'
-import { assertSuccess, type ApiResponse } from '@/api/response'
+import * as api from './generated/client'
 import type {
-  AdmissionApplication,
-  AdmissionContext,
-  AdmissionDetail,
-  AdmissionList,
   AdmissionWriteInput,
-  EvidenceKind,
-} from '@/types/api/admissions'
+  AdmissionEvidenceKind as EvidenceKind,
+} from '@/api/generated/client'
+import { unwrapContract } from './response'
 
-const base = '/api/v1/admissions'
-export async function getAdmissionContext() {
-  const context = assertSuccess(
-    await requestJson<ApiResponse<AdmissionContext>>(`${base}/context`),
-    'admissions.errors.internal'
-  )!
-  if (
-    !context ||
-    !Array.isArray(context.characters) ||
-    !Array.isArray(context.targets) ||
-    !Array.isArray(context.reviewable_corporation_ids)
-  )
-    throw new Error('admissions.errors.internal')
-  return context
+function unwrap<T>(request: Parameters<typeof unwrapContract<T>>[0]) {
+  return unwrapContract(request, 'admissions.errors.internal')
 }
-export async function listAdmissions(
-  reviewer: boolean,
-  page = 1,
-  status = '',
-  target = '',
-  kind = ''
-) {
-  const params = new URLSearchParams({
-    current: String(page),
-    size: '20',
-    status,
-    kind,
-    ...(target ? { target_corporation_id: target } : {}),
-  })
-  const path = reviewer ? '/api/v1/system/admissions/applications' : `${base}/applications/me`
-  return assertSuccess(
-    await requestJson<ApiResponse<AdmissionList>>(`${path}?${params}`),
-    'admissions.errors.internal'
-  )!
+
+export async function getAdmissionEvidence(id: number, kind: EvidenceKind): Promise<Blob> {
+  const result = await api.getAdmissionEvidence(id, kind)
+  if ('code' in result) throw new Error(result.msg || 'admissions.errors.evidence')
+  if (result.type !== 'image/jpeg') throw new Error('admissions.errors.evidence')
+  return result
 }
-export async function getAdmission(id: number) {
-  return assertSuccess(
-    await requestJson<ApiResponse<AdmissionDetail>>(`${base}/applications/${id}`),
-    'admissions.errors.internal'
-  )!
-}
-export function getAdmissionEvidence(id: number, kind: EvidenceKind) {
-  return requestBlob(`${base}/applications/${id}/evidence/${kind}`)
-}
-export async function saveAdmission(
+
+export function saveAdmission(
   input: AdmissionWriteInput,
   files: Partial<Record<EvidenceKind, Blob>>,
   id?: number,
   resubmit = false
 ) {
-  const data = new FormData()
-  data.append('payload', JSON.stringify(input))
-  for (const [kind, blob] of Object.entries(files)) data.append(kind, blob, `${kind}.jpg`)
-  const path = `${base}/applications${id ? `/${id}${resubmit ? '/resubmit' : ''}` : ''}`
-  return assertSuccess(
-    await requestJson<ApiResponse<AdmissionApplication>>(path, {
-      method: id && !resubmit ? 'PUT' : 'POST',
-      body: data,
-    }),
-    'admissions.errors.internal'
-  )!
-}
-export async function processAdmission(
-  id: number,
-  expected_version: number,
-  action: 'invited' | 'reject',
-  reason = ''
-) {
-  return assertSuccess(
-    await requestJson<ApiResponse<AdmissionApplication>>(
-      `/api/v1/system/admissions/applications/${id}/${action}`,
-      { method: 'POST', body: JSON.stringify({ expected_version, reason }) }
-    ),
-    'admissions.errors.internal'
-  )!
+  const data: api.AdmissionMultipartInput = { payload: JSON.stringify(input) }
+  if (files.launcher) {
+    data.launcher = new File([files.launcher], 'launcher.jpg', { type: files.launcher.type })
+  }
+  if (files.seat_profile) {
+    data.seat_profile = new File([files.seat_profile], 'seat_profile.jpg', {
+      type: files.seat_profile.type,
+    })
+  }
+  return unwrap(
+    id
+      ? resubmit
+        ? api.resubmitAdmission(id, data)
+        : api.editAdmission(id, data)
+      : api.createAdmission(data)
+  )
 }

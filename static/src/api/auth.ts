@@ -1,21 +1,7 @@
-import request from '@/utils/http'
 import { isUserProfileComplete } from './auth-helpers'
+import * as api from './generated/client'
 
-export function getRegistration(ticket: string) {
-  return request.get<Api.Auth.RegistrationInfo>({
-    url: '/api/v1/sso/eve/registration',
-    headers: { 'X-Registration-Token': ticket },
-    showErrorMessage: false
-  })
-}
-
-export function completeRegistration(ticket: string, data: Api.Auth.RegistrationInput) {
-  return request.post<{ token: string }>({
-    url: '/api/v1/sso/eve/registration',
-    headers: { 'X-Registration-Token': ticket },
-    data
-  })
-}
+import { unwrapContract } from './response'
 
 export {
   hasInvalidCharacterToken,
@@ -30,33 +16,13 @@ export {
 export async function getEveSSOLoginURL(scopes?: string[]): Promise<string> {
   // hash 模式下 callback 路径在 # 后面
   const callbackURL = window.location.origin + '/#/auth/callback'
-  const params: Record<string, string> = { redirect: callbackURL }
-  if (scopes && scopes.length > 0) {
-    params.scopes = scopes.join(',')
-  }
-  const data = await request.get<{ url: string }>({
-    url: '/api/v1/sso/eve/login',
-    params
-  })
+  const data = await unwrapContract(
+    api.getEveSsoLogin({
+      redirect: callbackURL,
+      scopes: scopes?.length ? scopes.join(',') : undefined
+    })
+  )
   return data.url
-}
-
-/**
- * 获取已注册的 ESI Scope 列表
- */
-export function fetchEveSSOScopes() {
-  return request.get<Api.Auth.RegisteredScope[]>({
-    url: '/api/v1/sso/eve/scopes'
-  })
-}
-
-/**
- * 获取当前登录用户的 EVE 人物列表
- */
-export function fetchMyCharacters() {
-  return request.get<Api.Auth.EveCharacter[]>({
-    url: '/api/v1/sso/eve/characters'
-  })
 }
 
 /**
@@ -65,51 +31,13 @@ export function fetchMyCharacters() {
  */
 export async function getEveBindURL(scopes?: string[]): Promise<string> {
   const callbackURL = window.location.origin + '/#/auth/callback'
-  const params: Record<string, string> = { redirect: callbackURL }
-  if (scopes && scopes.length > 0) {
-    params.scopes = scopes.join(',')
-  }
-  const data = await request.get<{ url: string }>({
-    url: '/api/v1/sso/eve/bind',
-    params
-  })
+  const data = await unwrapContract(
+    api.getEveSsoBind({
+      redirect: callbackURL,
+      scopes: scopes?.length ? scopes.join(',') : undefined
+    })
+  )
   return data.url
-}
-
-/**
- * 设置主人物
- * @param characterId EVE 人物 ID
- */
-export function setPrimaryCharacter(characterId: number) {
-  return request.put({
-    url: `/api/v1/sso/eve/primary/${characterId}`
-  })
-}
-
-/**
- * 解绑人物
- * @param characterId EVE 人物 ID
- */
-export function unbindCharacter(characterId: number) {
-  return request.del({
-    url: `/api/v1/sso/eve/characters/${characterId}`
-  })
-}
-
-/**
- * 更新当前登录用户的联系资料
- */
-export function updateMyProfile(data: { nickname?: string; qq?: string; discord_id?: string }) {
-  return request.put({
-    url: '/api/v1/me',
-    data
-  })
-}
-
-export function deleteMyAccount() {
-  return request.del({
-    url: '/api/v1/me'
-  })
 }
 
 /**
@@ -117,9 +45,7 @@ export function deleteMyAccount() {
  * @returns 用户信息
  */
 export async function fetchGetUserInfo(): Promise<Api.Auth.UserInfo> {
-  const data = await request.get<Api.Auth.MeResponse>({
-    url: '/api/v1/me'
-  })
+  const data = await unwrapContract(api.getMe())
 
   const { user, characters, roles: backendRoles } = data
 

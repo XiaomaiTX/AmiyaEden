@@ -289,25 +289,27 @@
 </template>
 
 <script setup lang="ts">
+  import type { NewbroDirectReferralStatus, NewbroDirectReferrer } from '@/api/generated/client'
   import { ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import {
-    deleteMyAccount,
-    fetchMyCharacters,
     getEveBindURL,
     hasInvalidCharacterToken as hasInvalidCharacterTokenInList,
     hasInvalidPrimaryCharacterToken as hasInvalidPrimaryCharacterTokenInList,
-    isUserProfileComplete,
-    setPrimaryCharacter,
-    updateMyProfile,
-    unbindCharacter
+    isUserProfileComplete
   } from '@/api/auth'
   import { fetchGetUserInfo } from '@/api/auth'
   import {
-    checkDirectReferrerQQ,
+    deleteMe,
+    listMyEveCharacters,
+    setPrimaryEveCharacter,
+    updateMe,
+    unbindEveCharacter,
+    checkDirectReferrer,
     confirmDirectReferrer,
-    fetchDirectReferralStatus
-  } from '@/api/newbro'
+    getDirectReferralStatus
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useUserStore } from '@/store/modules/user'
   import { isHttpError } from '@/utils/http/error'
   import { ApiStatus } from '@/utils/http/status'
@@ -339,11 +341,11 @@
   const directReferralConfirming = ref(false)
   const profileFormRef = ref<FormInstance>()
   const characters = ref<Api.Auth.EveCharacter[]>([])
-  const directReferralStatus = ref<Api.Newbro.DirectReferralStatus>({
+  const directReferralStatus = ref<NewbroDirectReferralStatus>({
     show_card: false,
     needs_profile_qq: false
   })
-  const directReferrerCandidate = ref<Api.Newbro.DirectReferrerCandidate | null>(null)
+  const directReferrerCandidate = ref<NewbroDirectReferrer | null>(null)
   const directReferrerQQ = ref('')
   const checkedDirectReferrerQQ = ref('')
   const primaryCharacterId = ref<number>(0)
@@ -450,7 +452,7 @@
     return `${list.length} ${t('characters.scopeCount')}`
   }
 
-  const buildDirectReferrerPortraitUrl = (candidate: Api.Newbro.DirectReferrerCandidate) => {
+  const buildDirectReferrerPortraitUrl = (candidate: NewbroDirectReferrer) => {
     if (!candidate.primary_character_id) {
       return ''
     }
@@ -461,7 +463,7 @@
   const loadCharacters = async () => {
     loading.value = true
     try {
-      characters.value = await fetchMyCharacters()
+      characters.value = await unwrapContract(listMyEveCharacters())
       // 同步主人物 ID
       primaryCharacterId.value = userStore.getUserInfo.primaryCharacterId ?? 0
     } finally {
@@ -480,7 +482,9 @@
   const loadDirectReferralStatus = async () => {
     directReferralLoading.value = true
     try {
-      directReferralStatus.value = await fetchDirectReferralStatus()
+      directReferralStatus.value = await unwrapContract(
+        getDirectReferralStatus({ showErrorMessage: false })
+      )
       if (!directReferralStatus.value.show_card || directReferralStatus.value.needs_profile_qq) {
         directReferrerCandidate.value = null
         checkedDirectReferrerQQ.value = ''
@@ -510,7 +514,9 @@
     directReferrerCandidate.value = null
     checkedDirectReferrerQQ.value = ''
     try {
-      directReferrerCandidate.value = await checkDirectReferrerQQ({ qq })
+      directReferrerCandidate.value = await unwrapContract(
+        checkDirectReferrer({ qq }, { showErrorMessage: false })
+      )
       checkedDirectReferrerQQ.value = qq
       ElMessage.success(t('characters.directReferral.checkSuccess'))
     } catch (error) {
@@ -527,9 +533,14 @@
 
     directReferralConfirming.value = true
     try {
-      await confirmDirectReferrer({
-        referrer_user_id: directReferrerCandidate.value.user_id
-      })
+      await unwrapContract(
+        confirmDirectReferrer(
+          {
+            referrer_user_id: directReferrerCandidate.value.user_id
+          },
+          { showErrorMessage: false }
+        )
+      )
       ElMessage.success(t('characters.directReferral.confirmSuccess'))
       directReferrerQQ.value = ''
       directReferrerCandidate.value = null
@@ -547,11 +558,13 @@
 
     profileSaving.value = true
     try {
-      await updateMyProfile({
-        nickname: profileForm.nickname.trim(),
-        qq: profileForm.qq.trim(),
-        discord_id: profileForm.discordId.trim()
-      })
+      await unwrapContract(
+        updateMe({
+          nickname: profileForm.nickname.trim(),
+          qq: profileForm.qq.trim(),
+          discord_id: profileForm.discordId.trim()
+        })
+      )
       await refreshUserInfo()
       directReferrerQQ.value = ''
       directReferrerCandidate.value = null
@@ -589,7 +602,7 @@
   const handleSetPrimary = async (char: Api.Auth.EveCharacter) => {
     switchingId.value = char.character_id
     try {
-      await setPrimaryCharacter(char.character_id)
+      await unwrapContract(setPrimaryEveCharacter(char.character_id))
       ElMessage.success(t('characters.setPrimarySuccess', { name: char.character_name }))
       await Promise.all([refreshUserInfo(), loadCharacters()])
     } catch {
@@ -617,7 +630,7 @@
 
     unbindingId.value = char.character_id
     try {
-      await unbindCharacter(char.character_id)
+      await unwrapContract(unbindEveCharacter(char.character_id))
       ElMessage.success(t('characters.unbindSuccess', { name: char.character_name }))
       await Promise.all([refreshUserInfo(), loadCharacters()])
     } catch {
@@ -642,7 +655,7 @@
 
     selfDeleting.value = true
     try {
-      await deleteMyAccount()
+      await unwrapContract(deleteMe())
       ElMessage.success(t('characters.deleteAccount.success'))
       userStore.logOut()
     } catch (error) {

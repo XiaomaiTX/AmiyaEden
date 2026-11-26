@@ -1,0 +1,132 @@
+paths:
+  /badge-counts:
+    get:
+      operationId: getBadgeCounts
+      x-gin-access: ["jwt", "login"]
+      responses:
+        '200':
+          description: Visible badge counts or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/BadgeCountsSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation-salary-rates:
+    get:
+      operationId: operationRates
+      x-gin-access: ["jwt", "login"]
+      responses:
+        '200':
+          description: Current rates or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/OperationSalaryRatesSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/salary-settings:
+    get:
+      operationId: getSalarySettings
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:admin,super_admin"]
+      responses:
+        '200': { $ref: '#/components/responses/SalarySettingsResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateSalarySettings
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:admin,super_admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SalarySettingsInput' }
+      responses:
+        '200': { $ref: '#/components/responses/SalarySettingsResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    BadgeCounts:
+      type: object
+      x-go-type: 'map[string]int64'
+      properties:
+        announcement_unread: { type: integer, format: int64 }
+        admission_pending: { type: integer, format: int64 }
+        welfare_eligible: { type: integer, format: int64 }
+        srp_pending: { type: integer, format: int64 }
+        welfare_pending: { type: integer, format: int64 }
+        order_pending: { type: integer, format: int64 }
+        mentor_pending_applications: { type: integer, format: int64 }
+        corporation_structures_attention: { type: integer, format: int64 }
+        ticket_attention: { type: integer, format: int64 }
+    BadgeCountsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/BadgeCounts' }
+    OperationSalaryRates:
+      type: object
+      required: [recruitment, welfare_delivery, shop_delivery, srp_payout]
+      properties:
+        recruitment: { type: number, format: double }
+        welfare_delivery: { type: number, format: double }
+        shop_delivery: { type: number, format: double }
+        srp_payout: { type: number, format: double }
+    OperationSalaryRatesSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/OperationSalaryRates' }
+    SalarySettings:
+      allOf:
+        - $ref: '#/components/schemas/OperationSalaryRates'
+        - type: object
+          required: [fc_salary, fc_salary_monthly_limit]
+          properties:
+            fc_salary: { type: number, format: double }
+            fc_salary_monthly_limit: { type: integer }
+    SalarySettingsInput:
+      type: object
+      required: [recruitment, welfare_delivery, shop_delivery, srp_payout, fc_salary, fc_salary_monthly_limit]
+      properties:
+        recruitment: &salaryAmount
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000000
+          x-go-type: '*float64'
+          x-oapi-codegen-extra-tags: { binding: 'required,gte=0,lte=1000000000000' }
+        welfare_delivery: *salaryAmount
+        shop_delivery: *salaryAmount
+        srp_payout: *salaryAmount
+        fc_salary: *salaryAmount
+        fc_salary_monthly_limit:
+          type: integer
+          minimum: 0
+          x-go-type: '*int'
+          x-oapi-codegen-extra-tags: { binding: 'required,gte=0' }
+    SalarySettingsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SalarySettings' }
+  responses:
+    SalarySettingsResult:
+      description: Salary settings or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/SalarySettingsSuccess'
+              - $ref: '#/components/schemas/BusinessError'

@@ -10,7 +10,7 @@ describe('login page', () => {
   test('starts eve sso login flow', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(
-        JSON.stringify({ code: 0, msg: 'ok', data: { url: 'https://example.com/sso' } }),
+        JSON.stringify({ code: 200, msg: 'ok', data: { url: 'https://example.com/sso' } }),
         {
           status: 200,
           headers: { 'Content-Type': 'application/json' },

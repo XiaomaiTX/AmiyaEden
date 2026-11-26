@@ -28,13 +28,6 @@ type StructureServiceSnapshot struct {
 	State string `json:"state"`
 }
 
-type FuelOfficerUserOption struct {
-	UserID        uint   `json:"user_id"`
-	DisplayName   string `json:"display_name"`
-	CharacterID   int64  `json:"character_id"`
-	CharacterName string `json:"character_name"`
-}
-
 func (r *CorporationStructureRepository) ListDirectorCharactersByCorporations(
 	corporationIDs []int64,
 ) ([]DirectorCharacterOption, error) {
@@ -111,8 +104,8 @@ func (r *CorporationStructureRepository) DeleteCorpStructuresNotInCorporationIDs
 
 func (r *CorporationStructureRepository) ListFuelOfficerUsersByCorporations(
 	corporationIDs []int64,
-) ([]FuelOfficerUserOption, error) {
-	options := make([]FuelOfficerUserOption, 0)
+) ([]model.FuelOfficerUserOption, error) {
+	options := make([]model.FuelOfficerUserOption, 0)
 	if len(corporationIDs) == 0 {
 		return options, nil
 	}

@@ -10,10 +10,10 @@ source_of_truth:
   - server/internal/repository/welfare.go
   - server/internal/repository/shop.go
   - server/internal/service/corporation_structure.go
-  - static/src/api/badge.ts
+  - static/src/api/generated/client.ts
   - static/src/store/modules/badge.ts
   - static/src/store/modules/badge.helpers.ts
-  - static-react/src/api/badge.ts
+  - static-react/src/api/generated/client.ts
   - static-react/src/stores/badge-store.ts
   - static-react/src/components/badge-bootstrap.tsx
   - static-react/src/layout/menu-config.ts

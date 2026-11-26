@@ -38,19 +38,25 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    ShopWallet,
+    ShopWalletTransaction,
+    ShopWalletTransactionListInput
+  } from '@/api/generated/client'
   import { walletReason } from '@/utils/wallet-reason'
   import { useI18n } from 'vue-i18n'
   import { Refresh } from '@element-plus/icons-vue'
   import { ElCard, ElButton, ElTag } from 'element-plus'
   import { formatFuxiCoinAmount, formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
-  import { fetchMyWallet, fetchMyWalletTransactions } from '@/api/sys-wallet'
+  import { getMyShopWallet, listMyShopWalletTransactions } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineOptions({ name: 'Wallet' })
 
   const { t } = useI18n()
 
-  type WalletTransaction = Api.SysWallet.WalletTransaction
+  type WalletTransaction = ShopWalletTransaction
 
   const getRefTypeLabel = (value: string) => {
     const key = `walletAdmin.refTypes.${value}`
@@ -59,7 +65,7 @@
   }
 
   // ─── 钱包余额 ───
-  const wallet = ref<Api.SysWallet.Wallet | null>(null)
+  const wallet = ref<ShopWallet | null>(null)
   const walletLoading = ref(false)
 
   const balanceColor = computed(() => {
@@ -70,7 +76,7 @@
   const loadWallet = async () => {
     walletLoading.value = true
     try {
-      wallet.value = await fetchMyWallet()
+      wallet.value = await unwrapContract(getMyShopWallet())
     } catch {
       wallet.value = null
     } finally {
@@ -90,7 +96,8 @@
     refreshData
   } = useTable({
     core: {
-      apiFn: fetchMyWalletTransactions,
+      apiFn: (params: ShopWalletTransactionListInput) =>
+        unwrapContract(listMyShopWalletTransactions(params ?? { current: 1, size: 200 })),
       apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },

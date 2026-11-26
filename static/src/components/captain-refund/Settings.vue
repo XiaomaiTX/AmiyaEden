@@ -28,8 +28,9 @@
 <script setup lang="ts">
   import { onMounted, ref } from 'vue'
   import { useI18n } from 'vue-i18n'
-  import { getRefundSettings, saveRefundSettings } from '@/api/captain-refund'
-  import type { RefundSettings } from '@/types/api/captain-refund'
+  import { getCaptainRefundSettings, updateCaptainRefundSettings } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
+  import type { CaptainRefundSettings as RefundSettings } from '@/api/generated/client'
 
   const { t } = useI18n()
   const cfg = ref<RefundSettings | null>(null)
@@ -42,7 +43,7 @@
 
   onMounted(async () => {
     try {
-      cfg.value = await getRefundSettings()
+      cfg.value = await unwrapContract(getCaptainRefundSettings())
       systems.value = cfg.value.allowed_system_ids.join('\n')
     } catch {
       messageType.value = 'error'
@@ -78,7 +79,9 @@
     busy.value = true
     try {
       const allowedSystemIDs = [...new Set(ids)]
-      cfg.value = await saveRefundSettings({ ...settings, allowed_system_ids: allowedSystemIDs })
+      cfg.value = await unwrapContract(
+        updateCaptainRefundSettings({ ...settings, allowed_system_ids: allowedSystemIDs })
+      )
       systems.value = cfg.value.allowed_system_ids.join('\n')
       messageType.value = 'success'
       message.value = t('refund.saved')

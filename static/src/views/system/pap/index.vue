@@ -45,13 +45,17 @@
   import { formatTime } from '@utils/common'
   import { useI18n } from 'vue-i18n'
   import {
-    fetchAllAlliancePAP,
-    triggerAlliancePAPFetch,
+    getAllAlliancePAP,
     importAlliancePAP,
-    type AlliancePAPSummary
-  } from '@/api/alliance-pap'
+    triggerFetch as triggerPAPFetch,
+    type FleetAlliancePAPSummary,
+    type GetAllAlliancePAPParams
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import PapSearch from './modules/pap-search.vue'
   import PapSettle from './modules/pap-settle.vue'
+
+  type AlliancePAPSummary = NonNullable<FleetAlliancePAPSummary>
 
   defineOptions({ name: 'AlliancePAP' })
 
@@ -84,7 +88,11 @@
     refreshData
   } = useTable({
     core: {
-      apiFn: fetchAllAlliancePAP,
+      apiFn: async (params?: GetAllAlliancePAPParams) => {
+        const page = await unwrapContract(getAllAlliancePAP(params))
+        // The shared summary schema permits null items, but the table needs real rows.
+        return { ...page, list: page.list?.filter((row) => row !== null) ?? null }
+      },
       apiParams: { current: 1, size: 200, ...parseMonth() },
       columnsFactory: () => [
         { type: 'index', width: 60, label: t('alliancePap.columns.rank') },
@@ -180,7 +188,7 @@
   async function triggerFetch() {
     fetching.value = true
     try {
-      await triggerAlliancePAPFetch(parseMonth())
+      await unwrapContract(triggerPAPFetch(parseMonth()))
       ElMessage.success(t('alliancePap.fetchTriggered'))
     } catch {
       ElMessage.error(t('alliancePap.fetchFailed'))
@@ -211,11 +219,13 @@
       for (const item of items) {
         const { primary_character_name, monthly_pap, calculated_at } = item
         try {
-          await importAlliancePAP({
-            year,
-            month,
-            data: { primary_character_name, monthly_pap, calculated_at }
-          })
+          await unwrapContract(
+            importAlliancePAP({
+              year,
+              month,
+              data: { primary_character_name, monthly_pap, calculated_at }
+            })
+          )
         } catch (err: any) {
           if (
             err.message == '主人物不存在' ||

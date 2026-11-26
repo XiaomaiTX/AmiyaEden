@@ -76,12 +76,22 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    ShopAdminOrderListInput,
+    ShopOrder,
+    ShopOrderReviewInput
+  } from '@/api/generated/client'
   import { ElButton, ElInput, ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatFuxiCoinWhole, formatIskSmart, formatTime } from '@utils/common'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtCopyButton from '@/components/core/forms/art-copy-button/index.vue'
-  import { adminListOrders, adminDeliverOrder, adminRejectOrder } from '@/api/shop'
+  import {
+    adminDeliverShopOrder,
+    adminListShopOrders,
+    adminRejectShopOrder
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
   import { showMailAttemptMessage } from '@/utils/mailAttempt'
   import { resolveOrderIskTotal } from './order-isk'
@@ -90,7 +100,7 @@
   defineOptions({ name: 'ManageOrders' })
   const { t } = useI18n()
 
-  type Order = Api.Shop.Order
+  type Order = ShopOrder
 
   const formatContact = (row: Order) => {
     if (row.qq) return `QQ: ${row.qq}`
@@ -115,7 +125,10 @@
     refreshData
   } = useTable({
     core: {
-      apiFn: adminListOrders,
+      apiFn: (data?: ShopAdminOrderListInput) =>
+        unwrapContract(
+          adminListShopOrders(data ?? { current: 1, size: 20, statuses: ['requested'] })
+        ),
       apiParams: { current: 1, size: 20, statuses: ['requested'] },
       immediate: false,
       columnsFactory: () => [
@@ -276,16 +289,16 @@
   async function submitReview() {
     reviewSubmitting.value = true
     try {
-      const params: Api.Shop.OrderReviewParams = {
+      const params: ShopOrderReviewInput = {
         order_id: reviewOrderId.value,
         remark: reviewRemark.value
       }
       if (reviewAction.value === 'deliver') {
-        const result = await adminDeliverOrder(params)
+        const result = await unwrapContract(adminDeliverShopOrder(params))
         ElMessage.success(t('shopAdmin.orders.messages.deliverSuccess'))
         showMailAttemptMessage(result, t)
       } else {
-        await adminRejectOrder(params)
+        await unwrapContract(adminRejectShopOrder(params))
         ElMessage.success(t('shopAdmin.orders.messages.rejectSuccess'))
       }
       reviewDialogVisible.value = false

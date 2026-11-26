@@ -69,3 +69,22 @@ type GalaxyRegistryEntry struct {
 func (GalaxyRegistryEntry) TableName() string {
 	return "galaxy_registry_entry"
 }
+
+// GalaxyRegistrySdeSystem is a read projection for the SDE solar system search.
+type GalaxyRegistrySdeSystem struct {
+	SolarSystemID     int64   `json:"solar_system_id"`
+	SolarSystemName   string  `json:"solar_system_name"`
+	RegionID          int64   `json:"region_id"`
+	RegionName        string  `json:"region_name"`
+	ConstellationID   int64   `json:"constellation_id"`
+	ConstellationName string  `json:"constellation_name"`
+	Security          float64 `json:"security"`
+}
+
+// GalaxyRegistryTopSystemStat is a read projection of registrations grouped by system.
+type GalaxyRegistryTopSystemStat struct {
+	SystemConfigID  uint   `json:"system_config_id"`
+	SolarSystemID   int64  `json:"solar_system_id"`
+	SolarSystemName string `json:"solar_system_name"`
+	RegisterCount   int64  `json:"register_count"`
+}

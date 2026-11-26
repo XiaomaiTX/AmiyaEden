@@ -11,7 +11,7 @@ source_of_truth:
   - server/internal/repository/killmail.go
   - server/jobs/auto_srp_schedule.go
   - server/pkg/eve/esi/task_corp_killmails.go
-  - static/src/api/srp.ts
+  - static/src/api/generated/client.ts
   - static/src/views/srp
 ---
 
@@ -48,21 +48,9 @@ source_of_truth:
 - `static/src/views/srp/manage`
 - `static/src/views/srp/prices`
 
-### 后端路由
+### 后端契约
 
-- `/api/v1/srp/prices`
-- `/api/v1/srp/applications`
-- `/api/v1/srp/applications/me`
-- `/api/v1/srp/killmails/me`
-- `/api/v1/srp/killmails/fleet/:fleet_id`
-- `/api/v1/srp/killmails/detail`
-- `/api/v1/srp/open-info-window`
-- `/api/v1/srp/applications/auto-approve`
-- `/api/v1/srp/applications/batch-payout-summary`
-- `/api/v1/srp/applications/fuxi-payout`
-- `/api/v1/srp/applications/:id/review`
-- `/api/v1/srp/applications/:id/payout`
-- `/api/v1/srp/applications/users/:user_id/payout`
+[舰损补偿 OpenAPI](../../../contracts/modules/srp.yaml)。
 
 ## 权限边界
 
@@ -243,7 +231,7 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
 - `server/internal/repository/srp.go` — SRP 申请数据访问
 - `server/internal/repository/killmail.go` — 击杀邮件数据访问（KM 主记录、物品、人物关联）
 - `server/internal/router/router.go`
-- `static/src/api/srp.ts`
+- `static/src/api/generated/client.ts`
 - `static/src/views/srp`
 
 ## SRP 推荐金额补充规则

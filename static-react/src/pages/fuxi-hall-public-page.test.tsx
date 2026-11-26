@@ -2,10 +2,10 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FuxiHallPublicPage } from '@/pages/fuxi-hall-public-page'
 import { I18nProvider } from '@/i18n'
-import { fetchFuxiHall, updateOwnFuxiHallCard } from '@/api/fuxi-hall'
-import type { FuxiHallCard } from '@/types/api/fuxi-hall'
+import { getHall, updateHallOwnCard } from '@/api/generated/client'
+import type { HallCard } from '@/api/generated/client'
 
-vi.mock('@/api/fuxi-hall', () => ({ fetchFuxiHall: vi.fn(), updateOwnFuxiHallCard: vi.fn() }))
+vi.mock('@/api/generated/client', () => ({ getHall: vi.fn(), updateHallOwnCard: vi.fn() }))
 vi.mock('@/components/rich-text-editor', () => ({
   RichTextEditor: ({
     value,
@@ -24,12 +24,16 @@ vi.mock('@/components/rich-text-editor', () => ({
   ),
 }))
 
-const card: FuxiHallCard = {
+const card: HallCard = {
   id: 1,
   page_key: 'hall-of-fame',
   nickname: 'Alpha',
   main_character_id: 10,
   main_character_name: 'Main',
+  qq: '',
+  avatar_image: '',
+  contributions: { corp_pap: 0, fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 },
+  contributions_updated_at: null,
   title_tags: ['Director'],
   description_html: '<p>Bio</p>',
   accent_color: '#3b82f6',
@@ -45,30 +49,34 @@ const card: FuxiHallCard = {
   updated_at: '',
 }
 beforeEach(() => {
-  vi.mocked(fetchFuxiHall).mockResolvedValue({
-    page: {
-      id: 1,
-      page_key: 'hall-of-fame',
-      title: '伏羲名人堂',
-      subtitle: '',
-      description_html: '',
-      floors: [
-        { key: 'top', name: '', capacity: 8 },
-        { key: 'first', name: '一楼', capacity: 33 },
+  vi.mocked(getHall).mockResolvedValue({
+    code: 200,
+    msg: 'ok',
+    data: {
+      page: {
+        id: 1,
+        page_key: 'hall-of-fame',
+        title: '伏羲名人堂',
+        subtitle: '',
+        description_html: '',
+        floors: [
+          { key: 'top', name: '', capacity: 8 },
+          { key: 'first', name: '一楼', capacity: 33 },
+        ],
+      },
+      cards: [
+        card,
+        {
+          ...card,
+          id: 2,
+          nickname: 'Beta',
+          floor_key: 'first',
+          can_edit: false,
+          is_current_management: false,
+          tenure_months: null,
+        },
       ],
     },
-    cards: [
-      card,
-      {
-        ...card,
-        id: 2,
-        nickname: 'Beta',
-        floor_key: 'first',
-        can_edit: false,
-        is_current_management: false,
-        tenure_months: null,
-      },
-    ],
   })
 })
 
@@ -108,9 +116,13 @@ test('opens a configured floor from the banner without changing routes', async (
 
 test('self edit submits only nickname and bio and retains draft on failure', async () => {
   const user = userEvent.setup()
-  vi.mocked(updateOwnFuxiHallCard)
-    .mockRejectedValueOnce(new Error('fuxiHall.errors.denied'))
-    .mockResolvedValueOnce({ ...card, nickname: 'New name', description_html: '<p>New bio</p>' })
+  vi.mocked(updateHallOwnCard)
+    .mockResolvedValueOnce({ code: 400, msg: 'fuxiHall.errors.denied', data: null })
+    .mockResolvedValueOnce({
+      code: 200,
+      msg: 'ok',
+      data: { ...card, nickname: 'New name', description_html: '<p>New bio</p>' },
+    })
   render(
     <I18nProvider>
       <FuxiHallPublicPage />
@@ -128,7 +140,7 @@ test('self edit submits only nickname and bio and retains draft on failure', asy
   await user.click(within(dialog).getByRole('button', { name: '保存' }))
   expect(await within(dialog).findByRole('alert')).toHaveTextContent('只能编辑')
   expect(within(dialog).getByLabelText('昵称')).toHaveValue('New name')
-  expect(updateOwnFuxiHallCard).toHaveBeenCalledWith(1, {
+  expect(updateHallOwnCard).toHaveBeenCalledWith(1, {
     nickname: 'New name',
     description_html: '<p>New bio</p>',
   })
@@ -138,7 +150,7 @@ test('self edit submits only nickname and bio and retains draft on failure', asy
 })
 
 test('owner cancels the inline popup without saving or navigating', async () => {
-  vi.mocked(updateOwnFuxiHallCard).mockClear()
+  vi.mocked(updateHallOwnCard).mockClear()
   const user = userEvent.setup()
   render(
     <I18nProvider>
@@ -154,5 +166,5 @@ test('owner cancels the inline popup without saving or navigating', async () => 
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   expect(screen.getByText('Alpha')).toBeInTheDocument()
   expect(screen.queryByText('Unsaved')).not.toBeInTheDocument()
-  expect(updateOwnFuxiHallCard).not.toHaveBeenCalled()
+  expect(updateHallOwnCard).not.toHaveBeenCalled()
 })

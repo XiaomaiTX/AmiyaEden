@@ -75,8 +75,9 @@
   } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { useRoute, useRouter } from 'vue-router'
-  import { fetchMyCharacters } from '@/api/auth'
-  import { joinFleet } from '@/api/fleet'
+
+  import { listMyEveCharacters, joinFleet } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
 
   defineOptions({ name: 'JoinFleet' })
@@ -105,7 +106,7 @@
   const loadCharacters = async () => {
     charLoading.value = true
     try {
-      const res = await fetchMyCharacters()
+      const res = await unwrapContract(listMyEveCharacters())
       characters.value = res ?? []
       // 默认选中第一个
       if (characters.value.length === 1) {
@@ -129,10 +130,12 @@
 
     submitLoading.value = true
     try {
-      await joinFleet({
-        code: inviteCode.value!,
-        character_id: formData.character_id!
-      })
+      await unwrapContract(
+        joinFleet({
+          code: inviteCode.value!,
+          character_id: formData.character_id!
+        })
+      )
       ElMessage.success(t('fleet.join.joinSuccess'))
       router.push({ name: 'MyPap' })
     } catch (e: any) {

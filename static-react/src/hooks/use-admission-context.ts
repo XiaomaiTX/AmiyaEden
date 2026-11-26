@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { create } from 'zustand'
-import { getAdmissionContext } from '@/api/admissions'
+import { getAdmissionContext } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useSessionStore } from '@/stores'
-import type { AdmissionContext } from '@/types/api/admissions'
+import type { AdmissionContext } from '@/api/generated/client'
 
 interface AdmissionContextState {
   key: string
@@ -27,7 +28,15 @@ const useAdmissionState = create<AdmissionContextState>((set, get) => ({
       return
     }
     try {
-      const context = await getAdmissionContext()
+      const context = await unwrapContract(getAdmissionContext(), 'admissions.errors.internal')
+      if (
+        !context ||
+        !Array.isArray(context.characters) ||
+        !Array.isArray(context.targets) ||
+        !Array.isArray(context.reviewable_corporation_ids)
+      ) {
+        throw new Error('admissions.errors.internal')
+      }
       if (get().generation === generation) set({ context, loading: false })
     } catch {
       if (get().generation === generation) set({ context: null, loading: false, error: true })

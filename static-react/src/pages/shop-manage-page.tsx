@@ -16,16 +16,17 @@ import {
 } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  adminCreateProduct,
-  adminDeleteProduct,
-  adminListProducts,
-  adminUpdateProduct,
-} from '@/api/shop'
+  adminCreateShopProduct,
+  adminDeleteShopProduct,
+  adminListShopProducts,
+  adminUpdateShopProduct,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usePermission } from '@/hooks/use-permission'
 import { useI18n } from '@/i18n'
-import type { Product } from '@/types/api/shop'
+import type { ShopProduct as Product } from '@/api/generated/client'
 import {
   formatCoin,
   formatDateTime,
@@ -44,7 +45,7 @@ type ProductFormState = {
   price: number
   stock: number
   max_per_user: number
-  limit_period: 'forever' | 'daily' | 'weekly' | 'monthly'
+  limit_period: Product['limit_period']
   status: number
   sort_order: number
 }
@@ -88,12 +89,15 @@ export function ShopManagePage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await adminListProducts({
-        current: page,
-        size: pageSize,
-        name: nameFilter.trim() || undefined,
-        status: statusFilter === '' ? undefined : Number(statusFilter),
-      })
+      const response = await unwrapContract(
+        adminListShopProducts({
+          current: page,
+          size: pageSize,
+          name: nameFilter.trim() || undefined,
+          status: statusFilter === '' ? undefined : Number(statusFilter),
+        }),
+        'list shop products failed'
+      )
       setProducts(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -163,9 +167,12 @@ export function ShopManagePage() {
       }
 
       if (form.id > 0) {
-        await adminUpdateProduct({ id: form.id, ...payload })
+        await unwrapContract(
+          adminUpdateShopProduct({ id: form.id, ...payload }),
+          'update shop product failed'
+        )
       } else {
-        await adminCreateProduct(payload)
+        await unwrapContract(adminCreateShopProduct(payload), 'create shop product failed')
       }
 
       setDialogOpen(false)
@@ -185,7 +192,7 @@ export function ShopManagePage() {
     setDeletingId(product.id)
     setError(null)
     try {
-      await adminDeleteProduct(product.id)
+      await unwrapContract(adminDeleteShopProduct({ id: product.id }), 'delete shop product failed')
       await loadData()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('shopManage.deleteFailed')))
@@ -394,11 +401,13 @@ export function ShopManagePage() {
           <span>{t('welfareMy.pageSize')}</span>
           <Select
             selectedKey={String(pageSize ?? '')}
-            onSelectionChange={(key) => ((value) => {
-              const nextSize = Number(value)
-              setPageSize(nextSize)
-              setPage(1)
-            })(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => {
+                const nextSize = Number(value)
+                setPageSize(nextSize)
+                setPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />
@@ -513,11 +522,13 @@ export function ShopManagePage() {
             </span>
             <Select
               selectedKey={String(form.limit_period ?? '')}
-              onSelectionChange={(key) => ((value) =>
-                setForm((current) => ({
-                  ...current,
-                  limit_period: value as ProductFormState['limit_period'],
-                })))(String(key))}
+              onSelectionChange={(key) =>
+                ((value) =>
+                  setForm((current) => ({
+                    ...current,
+                    limit_period: value as ProductFormState['limit_period'],
+                  })))(String(key))
+              }
             >
               <SelectTrigger className="h-10">
                 <SelectValue />
@@ -534,8 +545,11 @@ export function ShopManagePage() {
             <span className="text-sm text-muted-foreground">{t('shopManage.fields.status')}</span>
             <Select
               selectedKey={String(form.status ?? '')}
-              onSelectionChange={(key) => ((value) =>
-                setForm((current) => ({ ...current, status: Number(value) })))(String(key))}
+              onSelectionChange={(key) =>
+                ((value) => setForm((current) => ({ ...current, status: Number(value) })))(
+                  String(key)
+                )
+              }
             >
               <SelectTrigger className="h-10">
                 <SelectValue />

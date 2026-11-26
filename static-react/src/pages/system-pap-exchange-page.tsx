@@ -11,9 +11,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
-import { fetchPAPExchangeConfig, updatePAPExchangeConfig } from '@/api/pap-exchange'
+import { getPapExchangeRates, setPapExchangeRates } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { PermissionGate } from '@/auth'
-import type { ConfigResponse, RateItem } from '@/types/api/pap-exchange'
+import type {
+  PapExchangeConfig as ConfigResponse,
+  PapExchangeRate as RateItem,
+} from '@/api/generated/client'
 import { formatDateTime } from './shop-page-utils'
 
 const defaultConfig: ConfigResponse = {
@@ -34,7 +38,7 @@ export function SystemPAPExchangePage() {
     setLoading(true)
     setError(null)
     try {
-      setConfig(await fetchPAPExchangeConfig())
+      setConfig(await unwrapContract(getPapExchangeRates(), 'fetch pap exchange config failed'))
     } catch {
       setError(t('papExchange.messages.loadFailed'))
     } finally {
@@ -61,7 +65,10 @@ export function SystemPAPExchangePage() {
   const saveConfig = async () => {
     setSaving(true)
     try {
-      const nextConfig = await updatePAPExchangeConfig(config)
+      const nextConfig = await unwrapContract(
+        setPapExchangeRates(config),
+        'update pap exchange config failed'
+      )
       setConfig(nextConfig)
       notifySuccess(t('papExchange.messages.saveSuccess'))
     } catch {

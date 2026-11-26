@@ -84,15 +84,8 @@ func newTaskHandlerTestDeps(t *testing.T, reschedule ...func(taskName, cronExpr 
 func setupTaskHandlerTestRouter(h *TaskHandler, userID uint) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.Use(func(c *gin.Context) {
-		c.Set("userID", userID)
-		c.Next()
-	})
-	g := r.Group("/api/v1")
-	g.GET("/tasks", h.GetTasks)
-	g.GET("/tasks/history", h.GetHistory)
-	g.POST("/tasks/:name/run", h.RunTask)
-	g.PUT("/tasks/:name/schedule", h.UpdateSchedule)
+	r.Use(func(c *gin.Context) { c.Set("userID", userID) })
+	registerMigratedOperationRoutes(r, newMigratedOperationAdapter(migratedOperations{TaskHandler: h}), migratedOperationParamError)
 	return r
 }
 

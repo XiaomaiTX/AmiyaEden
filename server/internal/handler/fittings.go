@@ -2,12 +2,12 @@ package handler
 
 import (
 	"amiya-eden/global"
-	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"context"
 	"errors"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -22,42 +22,64 @@ func NewFittingsHandler() *FittingsHandler {
 	}
 }
 
-// GetFittings POST /info/fittings
-// 获取当前用户名下所有人物的装配列表
-func (h *FittingsHandler) GetFittings(c *gin.Context) {
-	userID := middleware.GetUserID(c)
-
-	var req service.FittingsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
-		return
+func infoFittingDTO(value service.FittingResponse) apicontract.InfoFitting {
+	return apicontract.InfoFitting{
+		FittingID: value.FittingID, CharacterID: value.CharacterID, Name: value.Name,
+		Description: value.Description, ShipTypeID: value.ShipTypeID, ShipName: value.ShipName,
+		GroupID: value.GroupID, GroupName: value.GroupName, RaceID: value.RaceID, RaceName: value.RaceName,
+		Slots: mapEveInfoRows(value.Slots, func(slot service.FittingSlotGroup) apicontract.InfoFittingSlot {
+			return apicontract.InfoFittingSlot{
+				FlagName: slot.FlagName, FlagText: slot.FlagText, OrderID: slot.OrderID,
+				Items: mapEveInfoRows(slot.Items, func(item service.FittingItemResponse) apicontract.InfoFittingItem {
+					return apicontract.InfoFittingItem(item)
+				}),
+			}
+		}),
 	}
-
-	result, err := h.svc.GetFittings(userID, &req)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, result)
 }
 
-// SaveFitting POST /info/fittings/save
-// 保存装配（如果传了 fitting_id 就先删后增，否则新增）
-func (h *FittingsHandler) SaveFitting(c *gin.Context) {
-	userID := middleware.GetUserID(c)
-
-	var req service.SaveFittingRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
-		return
+func mapEveInfoRows[S, T any](rows []S, mapper func(S) T) []T {
+	if rows == nil {
+		return nil
 	}
+	result := make([]T, len(rows))
+	for i, row := range rows {
+		result[i] = mapper(row)
+	}
+	return result
+}
 
-	result, err := h.svc.SaveFitting(c.Request.Context(), userID, &req)
+func (h *FittingsHandler) GetFittings(ctx context.Context, request apicontract.GetFittingsRequestObject) (apicontract.GetFittingsResponseObject, error) {
+	out := &apicontract.GetFittings200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "参数错误"))
+	}
+	_, userID := strictGinRequestDetails(ctx)
+	result, err := h.svc.GetFittings(userID, &service.FittingsRequest{Language: request.Body.Language})
 	if err != nil {
-		response.Fail(c, response.CodeBizError, fittingSaveErrorMessage(err))
-		return
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
 	}
-	response.OK(c, result)
+	data := apicontract.InfoFittings{Total: result.Total, Fittings: mapEveInfoRows(result.Fittings, infoFittingDTO)}
+	return out, out.FromInfoFittingsSuccess(apicontract.InfoFittingsSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *FittingsHandler) SaveFitting(ctx context.Context, request apicontract.SaveFittingRequestObject) (apicontract.SaveFittingResponseObject, error) {
+	out := &apicontract.SaveFitting200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "装配参数无效"))
+	}
+	requestCtx, userID := strictGinRequestDetails(ctx)
+	body := request.Body
+	input := service.SaveFittingRequest{
+		CharacterID: body.CharacterID, FittingID: body.FittingID, Name: body.Name,
+		Description: body.Description, ShipTypeID: body.ShipTypeID,
+		Items: mapEveInfoRows(body.Items, func(item apicontract.SaveFittingItem) service.SaveFittingItem { return service.SaveFittingItem(item) }),
+	}
+	data, err := h.svc.SaveFitting(requestCtx, userID, &input)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, fittingSaveErrorMessage(err)))
+	}
+	return out, out.FromInfoFittingSuccess(apicontract.InfoFittingSuccess{Code: response.CodeOK, Msg: "success", Data: infoFittingDTO(*data)})
 }
 
 func fittingSaveErrorMessage(err error) string {

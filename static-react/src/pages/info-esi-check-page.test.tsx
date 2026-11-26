@@ -20,7 +20,7 @@ describe('info esi check page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: [
               {
@@ -43,7 +43,7 @@ describe('info esi check page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: [
               {
@@ -75,7 +75,7 @@ describe('info esi check page', () => {
       )
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({ code: 0, msg: 'ok', data: { url: '#scope-authorization' } }),
+          JSON.stringify({ code: 200, msg: 'ok', data: { url: '#scope-authorization' } }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       )

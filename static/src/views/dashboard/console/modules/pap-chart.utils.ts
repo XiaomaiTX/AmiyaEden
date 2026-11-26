@@ -1,4 +1,5 @@
-export type PapMonthly = Api.Dashboard.PapMonthly
+import type { DashboardPapMonthly } from '@/api/generated/client'
+export type PapMonthly = DashboardPapMonthly
 
 export const PAP_TREND_MONTHS = 12
 

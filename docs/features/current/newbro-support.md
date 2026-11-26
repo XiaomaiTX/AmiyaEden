@@ -68,25 +68,9 @@ Vue 与 React 均提供申请预览、分页历史、详情、审批和独立系
 - 有效招募会发放伏羲币奖励，钱包流水 `ref_type = recruit_link_reward`
 - 管理员可在 `新人帮扶 -> 招新链接 -> 链接设置` 配置 QQ 群邀请链接、每次有效招募奖励金额与冷却天数
 
-### 入口
+### 后端契约
 
-用户侧：
-
-- `POST /api/v1/newbro/recruit/link` — 生成招募链接
-- `GET /api/v1/newbro/recruit/links` — 获取当前用户全部招募链接及其招募条目
-- `GET /api/v1/newbro/recruit/direct-referral` — 获取当前用户是否可补录推荐人
-- `POST /api/v1/newbro/recruit/direct-referral/check` — 按 QQ 检查推荐人是否有效
-- `POST /api/v1/newbro/recruit/direct-referral/confirm` — 按推荐人 `user_id` 确认直接推荐并立即发奖
-
-公开（无需登录）：
-
-- `POST /api/v1/recruit/:code/submit` — 提交 QQ 号码
-
-管理侧：
-
-- `GET /api/v1/system/newbro/recruit/links` — 分页获取全部用户的招募链接
-- `GET /api/v1/system/newbro/recruit-settings`
-- `PUT /api/v1/system/newbro/recruit-settings`
+[新人招募与舰长返还 OpenAPI](../../../contracts/modules/newbro.yaml)。公开招募提交不依赖登录态；直接推荐确认会立即处理奖励。
 
 ### 前端页面
 

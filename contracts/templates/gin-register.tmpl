@@ -1,0 +1,71 @@
+// GinOperationErrorHandler receives a status hint, not necessarily the HTTP
+// status of the response (AmiyaEden sends most business failures over HTTP 200).
+type GinOperationErrorHandler func(c *gin.Context, operation string, err error, statusCode int)
+
+const ginOperationErrorHandlerKey = "apicontract.ginOperationErrorHandler"
+
+func reportGinOperationError(c *gin.Context, operation string, err error, statusCode int, handler GinOperationErrorHandler) {
+    c.Abort()
+    if c.Writer.Written() {
+        // A visitor may fail while streaming an already committed response.
+        _ = c.Error(err)
+        return
+    }
+    if handler != nil {
+        handler(c, operation, err, statusCode)
+        return
+    }
+    if statusCode >= http.StatusInternalServerError {
+        _ = c.Error(err)
+        contractresponse.Fail(c, contractresponse.CodeBizError, "请求处理失败")
+        return
+    }
+    contractresponse.Fail(c, contractresponse.CodeParamError, "请求参数错误")
+}
+
+// GinServerOptions configures the generated Gin routes.
+type GinServerOptions struct {
+    BaseURL string
+    ErrorHandlerForOperation GinOperationErrorHandler
+
+    // MiddlewaresForOperation resolves x-gin-access in order. Its handlers run
+    // before the generated binder, including for legacy handlers. A protected
+    // operation cannot be registered without a nonempty resolved chain.
+    MiddlewaresForOperation func(operation string, chains []string) []gin.HandlerFunc
+}
+
+func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options GinServerOptions) {
+    {{- if . }}
+    errorHandler := options.ErrorHandlerForOperation
+    wrapper := ServerInterfaceWrapper{
+        Handler: si,
+        ErrorHandlerForOperation: errorHandler,
+    }
+    handlers := func(operation string, chains []string, endpoint gin.HandlerFunc) []gin.HandlerFunc {
+        var access []gin.HandlerFunc
+        if options.MiddlewaresForOperation != nil {
+            access = options.MiddlewaresForOperation(operation, chains)
+        }
+        if len(chains) != 0 && len(access) == 0 {
+            panic("apicontract: missing Gin access middleware for " + operation)
+        }
+        for _, fn := range access {
+            if fn == nil {
+                panic("apicontract: nil Gin access middleware for " + operation)
+            }
+        }
+        chain := make([]gin.HandlerFunc, len(access), len(access)+1)
+        copy(chain, access)
+        return append(chain, func(c *gin.Context) {
+            if errorHandler != nil {
+                c.Set(ginOperationErrorHandlerKey, errorHandler)
+            }
+            endpoint(c)
+        })
+    }
+    {{- end }}
+
+    {{range . -}}
+    router.{{.Method}}(options.BaseURL+{{printf "%q" (.Path | swaggerUriToGinUri)}}, handlers({{printf "%q" .Spec.OperationID}}, []string{ {{- range (index .Spec.Extensions "x-gin-access")}}{{printf "%q" .}}, {{end -}} }, wrapper.{{.OperationId}})...)
+    {{end -}}
+}

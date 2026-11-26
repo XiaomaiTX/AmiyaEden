@@ -1,6 +1,6 @@
 import { useI18n } from '@/i18n'
 import { formatTime } from '@/lib/format'
-import type { DashboardFleetItem } from '@/types/api/dashboard'
+import type { DashboardFleetItem } from '@/api/generated/client'
 import { cn } from '@/lib/utils'
 
 interface DashboardFleetListProps {

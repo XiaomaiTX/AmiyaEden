@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import type { ContactConflict } from '@/types/api/registration'
+import type { ContactConflictDetail as ContactConflict } from '@/api/generated/client'
 import { useI18n } from '@/i18n'
 
 export function ContactConflictDialog() {

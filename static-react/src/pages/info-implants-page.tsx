@@ -6,13 +6,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useEffect, useState } from 'react'
-import { fetchMyCharacters } from '@/api/auth'
-import { fetchInfoImplants } from '@/api/eve-info'
+import { listMyEveCharacters } from '@/api/generated/client'
+import { getCharacterImplants } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useI18n } from '@/i18n'
 import type { EveCharacter } from '@/types/api/auth'
-import type { ImplantsResponse } from '@/types/api/eve-info'
+import type { InfoImplantsResponse } from '@/api/generated/client'
 
-function formatDateTime(value: string | null) {
+function formatDateTime(value: string | null | undefined) {
   if (!value) return '-'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
@@ -25,7 +26,7 @@ export function InfoImplantsPage() {
   const [error, setError] = useState<string | null>(null)
   const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | null>(null)
-  const [implants, setImplants] = useState<ImplantsResponse | null>(null)
+  const [implants, setImplants] = useState<InfoImplantsResponse | null>(null)
   const [isFatigueExpired, setIsFatigueExpired] = useState(true)
 
   useEffect(() => {
@@ -34,7 +35,9 @@ export function InfoImplantsPage() {
       setLoading(true)
       setError(null)
       try {
-        const list = await fetchMyCharacters()
+        const list = await unwrapContract(listMyEveCharacters(), 'fetch characters failed').then(
+          (data) => data ?? []
+        )
         if (cancelled) return
         setCharacters(list)
         if (list.length > 0) {
@@ -62,7 +65,10 @@ export function InfoImplantsPage() {
       setLoading(true)
       setError(null)
       try {
-        const data = await fetchInfoImplants({ character_id: selectedCharacterId, language: 'en' })
+        const data = await unwrapContract(
+          getCharacterImplants({ character_id: selectedCharacterId, language: 'en' }),
+          'fetch implants failed'
+        )
         if (!cancelled) {
           setImplants(data)
           const expired =
@@ -95,7 +101,9 @@ export function InfoImplantsPage() {
         </label>
         <Select
           selectedKey={String(selectedCharacterId ?? '')}
-          onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
+          onSelectionChange={(key) =>
+            ((value) => setSelectedCharacterId(Number(value)))(String(key))
+          }
         >
           <SelectTrigger id="implants-character" className="h-8">
             <SelectValue />

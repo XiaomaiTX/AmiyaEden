@@ -113,19 +113,23 @@
   import { ElButton, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import {
-    refundOptions,
-    previewRefund,
-    createRefund,
-    listRefunds,
-    getRefund,
-    reviewRefund
-  } from '@/api/captain-refund'
+    approveCaptainRefund,
+    createCaptainRefund,
+    getAdminCaptainRefund,
+    getCaptainRefundOptions,
+    getMyCaptainRefund,
+    listAdminCaptainRefunds,
+    listMyCaptainRefunds,
+    previewCaptainRefund,
+    rejectCaptainRefund
+  } from '@/api/generated/client'
   import type {
-    RefundOptions,
-    RefundApplication,
-    RefundCalculation,
-    RefundRequest
-  } from '@/types/api/captain-refund'
+    CaptainRefundOptions as RefundOptions,
+    CaptainRefundApplication as RefundApplication,
+    CaptainRefundCalculation as RefundCalculation,
+    CaptainRefundInput as RefundRequest
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
   import { formatTime } from '@utils/common'
   import Calculation from './Calculation.vue'
@@ -156,7 +160,10 @@
     handleCurrentChange
   } = useTable({
     core: {
-      apiFn: (params: Api.Common.CommonSearchParams) => listRefunds(props.admin, params),
+      apiFn: (params: Api.Common.CommonSearchParams) =>
+        unwrapContract(
+          props.admin ? listAdminCaptainRefunds(params) : listMyCaptainRefunds(params)
+        ),
       apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { prop: 'id', label: t('refund.application'), width: 120 },
@@ -237,12 +244,14 @@
   }
 
   async function calculatePreview() {
-    preview.value = await previewRefund(request())
+    preview.value = await unwrapContract(previewCaptainRefund(request()))
   }
 
   function openDetail(row: RefundApplication) {
     void run(async () => {
-      selected.value = await getRefund(props.admin, row.id)
+      selected.value = await unwrapContract(
+        props.admin ? getAdminCaptainRefund(row.id) : getMyCaptainRefund(row.id)
+      )
       reason.value = ''
     })
   }
@@ -250,13 +259,13 @@
   async function submit() {
     const payload = request()
     try {
-      selected.value = await createRefund(payload)
+      selected.value = await unwrapContract(createCaptainRefund(payload))
       preview.value = null
       success.value = t('refund.submitted')
       await load()
     } catch {
       try {
-        preview.value = await previewRefund(payload)
+        preview.value = await unwrapContract(previewCaptainRefund(payload))
         error.value = t(preview.value.conflicts.length > 0 ? 'refund.conflict' : 'refund.failed')
       } catch {
         error.value = t('refund.failed')
@@ -266,15 +275,20 @@
 
   async function review(approve: boolean) {
     if (!selected.value) return
-    await reviewRefund(selected.value.id, approve, reason.value)
-    selected.value = await getRefund(true, selected.value.id)
+    const input = { reason: reason.value }
+    await unwrapContract(
+      approve
+        ? approveCaptainRefund(selected.value.id, input)
+        : rejectCaptainRefund(selected.value.id, input)
+    )
+    selected.value = await unwrapContract(getAdminCaptainRefund(selected.value.id))
     await load()
   }
 
   onMounted(() => {
     void run(async () => {
       if (!props.admin) {
-        options.value = await refundOptions()
+        options.value = await unwrapContract(getCaptainRefundOptions())
         form.captain_character_id = options.value.characters[0]?.character_id ?? 0
         form.system_id = options.value.settings.allowed_system_ids[0] ?? 0
       }

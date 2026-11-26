@@ -161,6 +161,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { InfoShipItem, InfoShipResponse } from '@/api/generated/client'
   import { Refresh, Search } from '@element-plus/icons-vue'
   import {
     ElCard,
@@ -173,8 +174,9 @@
     ElCheckbox,
     ElPopover
   } from 'element-plus'
-  import { fetchMyCharacters } from '@/api/auth'
-  import { fetchInfoShips } from '@/api/eve-info'
+
+  import { listMyEveCharacters, getCharacterShips } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useUserStore } from '@/store/modules/user'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
 
@@ -185,7 +187,7 @@
   // ---- 数据 ----
   const characters = ref<Api.Auth.EveCharacter[]>([])
   const selectedCharacterId = ref<number>()
-  const shipData = ref<Api.EveInfo.ShipResponse | null>(null)
+  const shipData = ref<InfoShipResponse | null>(null)
   const loading = ref(false)
   const searchKeyword = ref('')
   const selectedRace = ref<number | string>('')
@@ -250,14 +252,14 @@
     groupName: string
     total: number
     flyable: number
-    ships: Api.EveInfo.ShipItem[]
+    ships: InfoShipItem[]
   }
 
   const groupedShips = computed<GroupSection[]>(() => {
     const ships = filteredShips.value
     if (!ships.length) return []
 
-    const grpMap = new Map<string, Api.EveInfo.ShipItem[]>()
+    const grpMap = new Map<string, InfoShipItem[]>()
     for (const s of ships) {
       const grpName = s.group_name || 'Unknown'
       if (!grpMap.has(grpName)) grpMap.set(grpName, [])
@@ -296,7 +298,7 @@
 
   const loadCharacters = async () => {
     try {
-      characters.value = await fetchMyCharacters()
+      characters.value = await unwrapContract(listMyEveCharacters())
       if (characters.value.length > 0 && !selectedCharacterId.value) {
         selectedCharacterId.value = characters.value[0].character_id
         loadData()
@@ -310,10 +312,12 @@
     if (!selectedCharacterId.value) return
     loading.value = true
     try {
-      shipData.value = await fetchInfoShips({
-        character_id: selectedCharacterId.value,
-        language: userStore.language
-      })
+      shipData.value = await unwrapContract(
+        getCharacterShips({
+          character_id: selectedCharacterId.value,
+          language: userStore.language
+        })
+      )
     } catch {
       shipData.value = null
     } finally {

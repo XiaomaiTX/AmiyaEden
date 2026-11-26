@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import {
-  createMumbleCredential,
-  fetchMumbleCredential,
-  revokeMumbleCredential,
-  rotateMumbleCredential,
-} from '@/api/mumble'
+  deleteMumbleCredential,
+  getMumbleCredential,
+  issueMumbleCredential,
+  renewMumbleCredential,
+  type MumbleCredentialStatus,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
-import type { MumbleCredentialStatus } from '@/types/api/mumble'
+
+const requestFailed = 'Mumble 凭据请求失败'
 
 interface MumbleCredentialCardProps {
   canonicalName: string
@@ -29,7 +32,7 @@ export function MumbleCredentialCard({ canonicalName }: MumbleCredentialCardProp
     let active = true
     void (async () => {
       try {
-        const nextStatus = await fetchMumbleCredential()
+        const nextStatus = await unwrapContract(getMumbleCredential(), requestFailed)
         if (active) setStatus(nextStatus)
       } catch (error) {
         if (active) {
@@ -50,7 +53,10 @@ export function MumbleCredentialCard({ canonicalName }: MumbleCredentialCardProp
     setBusy(true)
     setNotice(null)
     try {
-      const result = rotate ? await rotateMumbleCredential() : await createMumbleCredential()
+      const result = await unwrapContract(
+        rotate ? renewMumbleCredential() : issueMumbleCredential(),
+        requestFailed
+      )
       setStatus(result.credential)
       setPassword(result.password)
       setNotice({ kind: 'success', text: t('mumble.credential.issued') })
@@ -69,7 +75,7 @@ export function MumbleCredentialCard({ canonicalName }: MumbleCredentialCardProp
     setBusy(true)
     setNotice(null)
     try {
-      await revokeMumbleCredential()
+      await unwrapContract(deleteMumbleCredential(), requestFailed)
       setStatus((current) => current && { ...current, enabled: false })
       setPassword('')
       setNotice({ kind: 'success', text: t('mumble.credential.revoked') })

@@ -8,19 +8,25 @@ import {
 } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  batchPayoutAsFuxiCoin,
-  batchPayoutByUser,
-  fetchApplicationList,
-  fetchBatchPayoutSummary,
-  payoutApplication,
-  reviewApplication,
-  runFleetAutoApproval,
-} from '@/api/srp'
+  listSrpApplications,
+  listSrpBatchPayoutSummary,
+  payoutSrpApplication,
+} from '@/api/generated/client'
+import {
+  batchPayoutSrpAsFuxiCoin,
+  batchPayoutSrpByUser,
+  reviewSrpApplication,
+  runSrpFleetAutoApproval,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import { operationSalaryMessage } from '@/lib/operation-salary'
-import type { Application, BatchPayoutSummary } from '@/types/api/srp'
+import type {
+  SrpApplication as Application,
+  SrpBatchPayoutSummary as BatchPayoutSummary,
+} from '@/api/generated/client'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -41,13 +47,18 @@ export function SrpManagePage() {
     setError(null)
     try {
       const [applications, batchSummary] = await Promise.all([
-        fetchApplicationList({
-          current: 1,
-          size: 200,
-          review_status: activeTab === 'pending' ? 'submitted' : filter.status || undefined,
-          keyword: filter.keyword.trim() || undefined,
-        }),
-        fetchBatchPayoutSummary(),
+        unwrapContract(
+          listSrpApplications({
+            current: 1,
+            size: 200,
+            review_status: activeTab === 'pending' ? 'submitted' : filter.status || undefined,
+            keyword: filter.keyword.trim() || undefined,
+          }),
+          'fetch srp application list failed'
+        ),
+        unwrapContract(listSrpBatchPayoutSummary(), 'fetch batch payout summary failed').then(
+          (data) => data ?? []
+        ),
       ])
       setItems(applications.list ?? [])
       setSummary(batchSummary ?? [])
@@ -77,10 +88,13 @@ export function SrpManagePage() {
   const approve = async (item: Application) => {
     setActionId(item.id)
     try {
-      await reviewApplication(item.id, {
-        action: 'approve',
-        final_amount: item.final_amount || item.recommended_amount,
-      })
+      await unwrapContract(
+        reviewSrpApplication(item.id, {
+          action: 'approve',
+          final_amount: item.final_amount || item.recommended_amount,
+        }),
+        'review srp application failed'
+      )
       await loadData()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('srpManage.actionFailed')))
@@ -92,7 +106,10 @@ export function SrpManagePage() {
   const reject = async (item: Application) => {
     setActionId(item.id)
     try {
-      await reviewApplication(item.id, { action: 'reject', review_note: 'Rejected in React' })
+      await unwrapContract(
+        reviewSrpApplication(item.id, { action: 'reject', review_note: 'Rejected in React' }),
+        'review srp application failed'
+      )
       await loadData()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('srpManage.actionFailed')))
@@ -107,9 +124,12 @@ export function SrpManagePage() {
     try {
       const salary = await operationSalaryMessage('srp_payout', 1, t)
       if (!window.confirm(`${t('srpManage.payoutBtn')}?\n\n${salary}`)) return
-      await payoutApplication(item.id, {
-        final_amount: item.final_amount || item.recommended_amount,
-      })
+      await unwrapContract(
+        payoutSrpApplication(item.id, {
+          final_amount: item.final_amount || item.recommended_amount,
+        }),
+        'payout srp application failed'
+      )
       await loadData()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('srpManage.actionFailed')))
@@ -121,7 +141,10 @@ export function SrpManagePage() {
   const autoApprove = async () => {
     const fleetId = window.prompt(t('srpManage.autoApprovePrompt')) ?? ''
     if (!fleetId.trim()) return
-    await runFleetAutoApproval({ fleet_id: fleetId.trim() })
+    await unwrapContract(
+      runSrpFleetAutoApproval({ fleet_id: fleetId.trim() }),
+      'run fleet auto approval failed'
+    )
     await loadData()
   }
 
@@ -129,12 +152,15 @@ export function SrpManagePage() {
     if (actionId !== null) return
     setActionId(-1)
     try {
-      const rows = await fetchBatchPayoutSummary()
+      const rows = await unwrapContract(
+        listSrpBatchPayoutSummary(),
+        'fetch batch payout summary failed'
+      ).then((data) => data ?? [])
       const count = rows.reduce((sum, row) => sum + row.application_count, 0)
       if (!count) return
       const salary = await operationSalaryMessage('srp_payout', 1, t)
       if (!window.confirm(`${t('srpManage.batchPayoutConfirm')}\n\n${salary}`)) return
-      await batchPayoutAsFuxiCoin()
+      await unwrapContract(batchPayoutSrpAsFuxiCoin({}), 'batch payout fuxi failed')
       await loadData()
     } catch (error) {
       setError(getErrorMessage(error, t('srpManage.actionFailed')))
@@ -147,12 +173,15 @@ export function SrpManagePage() {
     if (actionId !== null) return
     setActionId(-1)
     try {
-      const rows = await fetchBatchPayoutSummary()
+      const rows = await unwrapContract(
+        listSrpBatchPayoutSummary(),
+        'fetch batch payout summary failed'
+      ).then((data) => data ?? [])
       const count = rows.find((row) => row.user_id === userId)?.application_count ?? 0
       if (!count) return
       const salary = await operationSalaryMessage('srp_payout', 1, t)
       if (!window.confirm(`${t('srpManage.batchPayoutConfirm')}\n\n${salary}`)) return
-      await batchPayoutByUser(userId)
+      await unwrapContract(batchPayoutSrpByUser(userId, {}), 'batch payout by user failed')
       await loadData()
     } catch (error) {
       setError(getErrorMessage(error, t('srpManage.actionFailed')))

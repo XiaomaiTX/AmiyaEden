@@ -1,258 +1,163 @@
 package handler
 
 import (
-	"amiya-eden/pkg/response"
+	"context"
 	"encoding/json"
-	"math"
+	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
+
+	"amiya-eden/internal/apicontract"
+	"amiya-eden/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
-func TestNormalizeLedgerPaginationRejectsOversizedPageSize(t *testing.T) {
-	page, pageSize := normalizeLedgerPagination(0, 5000)
-
-	if page != 1 {
-		t.Fatalf("page = %d, want 1", page)
-	}
-	if pageSize != 1000 {
-		t.Fatalf("pageSize = %d, want 1000", pageSize)
-	}
-}
-
-func TestNormalizeFleetMembersPaginationUsesFixedPageSize(t *testing.T) {
-	page, pageSize := normalizePagination(0, 500, 260, 260)
-
-	if page != 1 {
-		t.Fatalf("page = %d, want 1", page)
-	}
-	if pageSize != 260 {
-		t.Fatalf("pageSize = %d, want 260", pageSize)
+func TestNormalizePagination(t *testing.T) {
+	for _, tc := range []struct {
+		name                                                 string
+		page, size, defaultSize, maxSize, wantPage, wantSize int
+	}{
+		{"standard defaults", -3, 101, 20, 100, 1, 20},
+		{"fleet member fixed size", 0, 500, 260, 260, 1, 260},
+		{"refund defaults", 0, 0, 200, 200, 1, 200},
+		{"explicit values", 2, 250, 20, 1000, 2, 250},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			page, size := normalizePagination(tc.page, tc.size, tc.defaultSize, tc.maxSize)
+			if page != tc.wantPage || size != tc.wantSize {
+				t.Fatalf("pagination = (%d, %d), want (%d, %d)", page, size, tc.wantPage, tc.wantSize)
+			}
+		})
 	}
 }
 
-func TestNormalizeStandardPaginationRejectsOversizedPageSize(t *testing.T) {
-	page, pageSize := normalizePagination(-3, 101, 20, 100)
-
-	if page != 1 {
-		t.Fatalf("page = %d, want 1", page)
-	}
-	if pageSize != 20 {
-		t.Fatalf("pageSize = %d, want 20", pageSize)
+func TestNormalizeLedgerPaginationCapsOversizedPageSize(t *testing.T) {
+	page, size := normalizeLedgerPagination(0, 5000)
+	if page != 1 || size != 1000 {
+		t.Fatalf("pagination = (%d, %d), want (1, 1000)", page, size)
 	}
 }
 
-func TestParsePaginationQueryUsesDefaultsForMissingAndInvalidValues(t *testing.T) {
-	t.Run("missing values", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("")
-		page, pageSize, err := parsePaginationQuery(ctx, 20, 100)
-		if err != nil {
-			t.Fatalf("parsePaginationQuery() error = %v, want nil", err)
-		}
+type paginationBindingProbe struct {
+	apicontract.StrictServerInterface
+	tickets *apicontract.AdminListTicketsRequestObject
+	fleet   *apicontract.GetFleetRequestObject
+	users   *apicontract.ListSystemUsersRequestObject
+}
 
-		if page != 1 {
-			t.Fatalf("page = %d, want 1", page)
-		}
-		if pageSize != 20 {
-			t.Fatalf("pageSize = %d, want 20", pageSize)
-		}
+func (p *paginationBindingProbe) AdminListTickets(_ context.Context, req apicontract.AdminListTicketsRequestObject) (apicontract.AdminListTicketsResponseObject, error) {
+	p.tickets = &req
+	return nil, nil
+}
+
+func (p *paginationBindingProbe) GetFleet(_ context.Context, req apicontract.GetFleetRequestObject) (apicontract.GetFleetResponseObject, error) {
+	p.fleet = &req
+	return nil, nil
+}
+
+func (p *paginationBindingProbe) ListSystemUsers(_ context.Context, req apicontract.ListSystemUsersRequestObject) (apicontract.ListSystemUsersResponseObject, error) {
+	p.users = &req
+	return nil, nil
+}
+
+func TestGeneratedPaginationAndFleetPathBinding(t *testing.T) {
+	p := &paginationBindingProbe{}
+	r := gin.New()
+	apicontract.RegisterHandlersWithOptions(r, apicontract.NewStrictHandler(p), apicontract.GinServerOptions{
+		BaseURL: "/api/v1",
+		MiddlewaresForOperation: func(_ string, policy []string) []gin.HandlerFunc {
+			// This test isolates parsing from authentication.
+			chain := make([]gin.HandlerFunc, len(policy))
+			for i := range chain {
+				chain[i] = func(c *gin.Context) { c.Next() }
+			}
+			return chain
+		},
 	})
+	get := func(path string) *httptest.ResponseRecorder {
+		t.Helper()
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1"+path, nil))
+		return rec
+	}
+	const tickets = "/system/ticket/tickets"
+	if code := get(tickets).Code; code != http.StatusOK || p.tickets == nil || p.tickets.Params.Current != nil || p.tickets.Params.Size != nil {
+		t.Fatalf("omitted pagination: HTTP %d, request %#v", code, p.tickets)
+	}
+	if code := get(tickets + "?current=2&size=40&user_id=42").Code; code != http.StatusOK || p.tickets == nil {
+		t.Fatalf("explicit pagination: HTTP %d, request %#v", code, p.tickets)
+	}
+	params := p.tickets.Params
+	if params.Current == nil || *params.Current != 2 || params.Size == nil || *params.Size != 40 || params.UserId == nil || *params.UserId != 42 {
+		t.Fatalf("unexpected parsed parameters: %#v", params)
+	}
+	for _, query := range []string{"?current=bad", "?size=oops", "?user_id=18446744073709551616"} {
+		p.tickets = nil
+		rec := get(tickets + query)
+		var body struct {
+			Code int `json:"code"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || rec.Code != http.StatusOK || body.Code != 400 || p.tickets != nil {
+			t.Errorf("query %s: HTTP %d, body %s, request %#v, decode error %v", query, rec.Code, rec.Body, p.tickets, err)
+		}
+	}
+	if code := get("/operation/fleets/abc-123").Code; code != http.StatusOK || p.fleet == nil || p.fleet.Id != "abc-123" {
+		t.Fatalf("fleet ID: HTTP %d, request %#v", code, p.fleet)
+	}
+	const users = "/system/user"
+	for _, query := range []string{"", "?status=", "?status=&status=2"} {
+		p.users = nil
+		if code := get(users + query).Code; code != http.StatusOK || p.users == nil || p.users.Params.Status != nil {
+			t.Fatalf("empty status %q: HTTP %d, request %#v", query, code, p.users)
+		}
+	}
+	for query, want := range map[string]int{"?status=abc": 0, "?status=2&status=1": 2, "?status=0": 0} {
+		p.users = nil
+		if code := get(users + query).Code; code != http.StatusOK || p.users == nil || p.users.Params.Status == nil || *p.users.Params.Status != want {
+			t.Fatalf("status %q: HTTP %d, request %#v, want status %d", query, code, p.users, want)
+		}
+	}
 
-	t.Run("invalid current returns error", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("?current=bad")
-		_, _, err := parsePaginationQuery(ctx, 20, 100)
-		if err == nil {
-			t.Fatal("expected error for invalid current query")
-		}
-	})
+}
 
-	t.Run("invalid size returns error", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("?current=bad&size=oops")
-		_, _, err := parsePaginationQuery(ctx, 20, 100)
-		if err == nil {
-			t.Fatal("expected error for invalid query")
-		}
-	})
+// Embed the fallback indirectly so the concrete operation methods take precedence.
+type migratedOperationFallback struct {
+	apicontract.StrictServerInterface
+}
 
-	t.Run("out of range values", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("?current=0&size=101")
-		page, pageSize, err := parsePaginationQuery(ctx, 20, 100)
-		if err != nil {
-			t.Fatalf("parsePaginationQuery() error = %v, want nil", err)
-		}
+type migratedOperations struct {
+	migratedOperationFallback
+	*MentorMentorHandler
+	*MeHandler
+	*SkillReadinessHandler
+	*SysConfigHandler
+	*TaskHandler
+	*ESIRefreshHandler
+	*ToolBookmarkHandler
+	*WebhookHandler
+	*UploadHandler
+}
 
-		if page != 1 {
-			t.Fatalf("page = %d, want 1", page)
-		}
-		if pageSize != 20 {
-			t.Fatalf("pageSize = %d, want 20", pageSize)
-		}
+func newMigratedOperationAdapter(operations migratedOperations) apicontract.ServerInterface {
+	return apicontract.NewStrictHandler(operations)
+}
+
+func registerMigratedOperationRoutes(r *gin.Engine, adapter apicontract.ServerInterface, onError apicontract.GinOperationErrorHandler) {
+	apicontract.RegisterHandlersWithOptions(r, adapter, apicontract.GinServerOptions{
+		BaseURL:                  "/api/v1",
+		ErrorHandlerForOperation: onError,
+		// Authentication is outside these handler tests; each test supplies caller state as needed.
+		MiddlewaresForOperation: func(_ string, chain []string) []gin.HandlerFunc {
+			if len(chain) == 0 {
+				return nil
+			}
+			return []gin.HandlerFunc{func(c *gin.Context) { c.Next() }}
+		},
 	})
 }
 
-func TestParsePaginationQuerySupportsUnboundedSize(t *testing.T) {
-	ctx := newPaginationQueryTestContext("?current=2&size=250")
-	page, pageSize, err := parseUnboundedPaginationQuery(ctx, 20)
-	if err != nil {
-		t.Fatalf("parseUnboundedPaginationQuery() error = %v, want nil", err)
-	}
-
-	if page != 2 {
-		t.Fatalf("page = %d, want 2", page)
-	}
-	if pageSize != 250 {
-		t.Fatalf("pageSize = %d, want 250", pageSize)
-	}
-}
-
-func TestCaptainRefundPaginationDefaultsToLedgerPageSize(t *testing.T) {
-	ctx := newPaginationQueryTestContext("")
-	page, pageSize, err := parsePaginationQuery(ctx, 200, 200)
-	if err != nil {
-		t.Fatalf("parsePaginationQuery() error = %v, want nil", err)
-	}
-	if page != 1 {
-		t.Fatalf("page = %d, want 1", page)
-	}
-	if pageSize != 200 {
-		t.Fatalf("pageSize = %d, want 200", pageSize)
-	}
-}
-
-func TestParseUnboundedPaginationQueryCapsOversizedPageSize(t *testing.T) {
-	ctx := newPaginationQueryTestContext("?current=1&size=5000")
-	page, pageSize, err := parseUnboundedPaginationQuery(ctx, 20)
-	if err != nil {
-		t.Fatalf("parseUnboundedPaginationQuery() error = %v, want nil", err)
-	}
-	if page != 1 {
-		t.Fatalf("page = %d, want 1", page)
-	}
-	if pageSize != 1000 {
-		t.Fatalf("pageSize = %d, want 1000 (capped)", pageSize)
-	}
-}
-
-func TestRequireFleetID(t *testing.T) {
-	t.Run("valid", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("")
-		ctx.Params = gin.Params{{Key: "id", Value: "abc-123"}}
-		id := requireFleetID(ctx)
-		if id != "abc-123" {
-			t.Fatalf("requireFleetID() = %q, want %q", id, "abc-123")
-		}
-	})
-
-	t.Run("missing", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("")
-		id := requireFleetID(ctx)
-		if id != "" {
-			t.Fatalf("requireFleetID() = %q, want empty", id)
-		}
-	})
-}
-
-func TestRequireUintID(t *testing.T) {
-	t.Run("valid", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("")
-		ctx.Params = gin.Params{{Key: "id", Value: "42"}}
-		id := requireUintID(ctx, "id")
-		if id != 42 {
-			t.Fatalf("requireUintID() = %d, want 42", id)
-		}
-	})
-
-	t.Run("overflow", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("")
-		ctx.Params = gin.Params{{Key: "id", Value: strconv.FormatUint(uint64(math.MaxUint32)+1, 10)}}
-		id := requireUintID(ctx, "id")
-		if id != 0 {
-			t.Fatalf("requireUintID() = %d, want 0 (overflow)", id)
-		}
-	})
-
-	t.Run("zero", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("")
-		ctx.Params = gin.Params{{Key: "id", Value: "0"}}
-		id := requireUintID(ctx, "id")
-		if id != 0 {
-			t.Fatalf("requireUintID() = %d, want 0 (invalid)", id)
-		}
-	})
-
-	t.Run("non-numeric", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("")
-		ctx.Params = gin.Params{{Key: "id", Value: "abc"}}
-		id := requireUintID(ctx, "id")
-		if id != 0 {
-			t.Fatalf("requireUintID() = %d, want 0 (invalid)", id)
-		}
-	})
-
-	t.Run("uses custom display name in error response", func(t *testing.T) {
-		ctx, recorder := newPaginationQueryTestContextWithRecorder("")
-		ctx.Params = gin.Params{{Key: "id", Value: "abc"}}
-		id := requireUintID(ctx, "id", "用户ID")
-		if id != 0 {
-			t.Fatalf("requireUintID() = %d, want 0 (invalid)", id)
-		}
-
-		var resp response.Response
-		if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
-			t.Fatalf("unmarshal response: %v", err)
-		}
-		if resp.Code != response.CodeParamError {
-			t.Fatalf("response code = %d, want %d", resp.Code, response.CodeParamError)
-		}
-		if resp.Msg != "无效的用户ID" {
-			t.Fatalf("response msg = %q, want %q", resp.Msg, "无效的用户ID")
-		}
-	})
-}
-
-func TestParseRequiredUintQueryParamRejectsOverflow(t *testing.T) {
-	raw := strconv.FormatUint(uint64(math.MaxUint32)+1, 10)
-	if _, err := parseRequiredUintQueryParam("user_id", raw); err == nil {
-		t.Fatal("expected overflow to return error")
-	}
-}
-
-func TestParseLedgerPaginationQueryUsesDefaultAndClampsOversizedValues(t *testing.T) {
-	t.Run("invalid size returns error", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("?size=oops")
-		_, _, err := parseLedgerPaginationQuery(ctx, 20)
-		if err == nil {
-			t.Fatal("expected error for invalid size query")
-		}
-	})
-
-	t.Run("oversized value clamps", func(t *testing.T) {
-		ctx := newPaginationQueryTestContext("?current=0&size=5000")
-		page, pageSize, err := parseLedgerPaginationQuery(ctx, 20)
-		if err != nil {
-			t.Fatalf("parseLedgerPaginationQuery() error = %v, want nil", err)
-		}
-
-		if page != 1 {
-			t.Fatalf("page = %d, want 1", page)
-		}
-		if pageSize != 1000 {
-			t.Fatalf("pageSize = %d, want 1000", pageSize)
-		}
-	})
-}
-
-func newPaginationQueryTestContext(rawQuery string) *gin.Context {
-	ctx, _ := newPaginationQueryTestContextWithRecorder(rawQuery)
-	return ctx
-}
-
-func newPaginationQueryTestContextWithRecorder(rawQuery string) (*gin.Context, *httptest.ResponseRecorder) {
-	gin.SetMode(gin.TestMode)
-	recorder := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Request = httptest.NewRequest("GET", "/test"+rawQuery, nil)
-	return ctx, recorder
+func migratedOperationParamError(c *gin.Context, _ string, _ error, _ int) {
+	c.Abort()
+	response.Fail(c, response.CodeParamError, "请求参数错误")
 }

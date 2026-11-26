@@ -22,7 +22,7 @@ describe('info contracts page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               list: [
@@ -58,7 +58,7 @@ describe('info contracts page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               items: [

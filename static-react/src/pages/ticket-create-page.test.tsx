@@ -31,7 +31,7 @@ describe('ticket create page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: [
               {
@@ -52,7 +52,7 @@ describe('ticket create page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               id: 99,
@@ -61,7 +61,6 @@ describe('ticket create page', () => {
               title: '需要帮助',
               description: '请帮我确认工单流程。',
               status: 'pending',
-              priority: 'medium',
               created_at: '2026-05-01T00:00:00Z',
               updated_at: '2026-05-01T00:00:00Z',
             },
@@ -72,7 +71,7 @@ describe('ticket create page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               list: [
@@ -83,7 +82,6 @@ describe('ticket create page', () => {
                   title: '需要帮助',
                   description: '请帮我确认工单流程。',
                   status: 'pending',
-                  priority: 'medium',
                   created_at: '2026-05-01T00:00:00Z',
                   updated_at: '2026-05-01T00:00:00Z',
                 },
@@ -120,11 +118,10 @@ describe('ticket create page', () => {
         String(input).includes('/api/v1/ticket/tickets') && init?.method === 'POST'
     )
     expect(createCall).toBeDefined()
-    expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
+    expect(JSON.parse(String(createCall?.[1]?.body))).toEqual({
       category_id: 10,
       title: '需要帮助',
       description: '请帮我确认工单流程。',
-      priority: 'medium',
     })
   })
 
@@ -138,7 +135,7 @@ describe('ticket create page', () => {
     const categoriesResponse = () =>
       new Response(
         JSON.stringify({
-          code: 0,
+          code: 200,
           msg: 'ok',
           data: [
             {
@@ -169,7 +166,7 @@ describe('ticket create page', () => {
 
     await waitFor(() => {
       const triggers = document.querySelectorAll('[data-slot="select-trigger"]')
-      expect(triggers).toHaveLength(2)
+      expect(triggers).toHaveLength(1)
       expect(triggers[0]).toBeEnabled()
     })
     const categorySelect = document.querySelector('[data-slot="select-trigger"]') as HTMLElement

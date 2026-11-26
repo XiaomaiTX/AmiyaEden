@@ -14,7 +14,8 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useEffect, useState } from 'react'
-import { fetchInfoContractDetail, fetchInfoContracts } from '@/api/eve-info'
+import { getContractDetail, getContracts } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import {
   Sheet,
@@ -25,11 +26,15 @@ import {
 } from '@/components/ui/sheet'
 import { formatIskPlain } from '@/lib/isk'
 import { useI18n } from '@/i18n'
-import type { ContractBidItem, ContractItem, ContractItemDetail } from '@/types/api/eve-info'
+import type {
+  InfoContractBid,
+  InfoContractListItem,
+  InfoContractItemDetail,
+} from '@/api/generated/client'
 
 type ContractDetailState = {
-  items: ContractItemDetail[]
-  bids: ContractBidItem[]
+  items: InfoContractItemDetail[]
+  bids: InfoContractBid[]
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -98,7 +103,7 @@ export function InfoContractsPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [contracts, setContracts] = useState<ContractItem[]>([])
+  const [contracts, setContracts] = useState<InfoContractListItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -106,7 +111,7 @@ export function InfoContractsPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [refreshToken, setRefreshToken] = useState(0)
   const [detailOpen, setDetailOpen] = useState(false)
-  const [selectedContract, setSelectedContract] = useState<ContractItem | null>(null)
+  const [selectedContract, setSelectedContract] = useState<InfoContractListItem | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
   const [detailData, setDetailData] = useState<ContractDetailState | null>(null)
@@ -119,13 +124,16 @@ export function InfoContractsPage() {
       setError(null)
 
       try {
-        const response = await fetchInfoContracts({
-          current: page,
-          size: pageSize,
-          type: filterType || undefined,
-          status: filterStatus || undefined,
-          language: 'en',
-        })
+        const response = await unwrapContract(
+          getContracts({
+            current: page,
+            size: pageSize,
+            type: filterType || undefined,
+            status: filterStatus || undefined,
+            language: 'en',
+          }),
+          'fetch contracts failed'
+        )
 
         if (cancelled) {
           return
@@ -168,11 +176,14 @@ export function InfoContractsPage() {
       setDetailData(null)
 
       try {
-        const response = await fetchInfoContractDetail({
-          character_id: selectedContract.character_id,
-          contract_id: selectedContract.contract_id,
-          language: 'en',
-        })
+        const response = await unwrapContract(
+          getContractDetail({
+            character_id: selectedContract.character_id,
+            contract_id: selectedContract.contract_id,
+            language: 'en',
+          }),
+          'fetch contract detail failed'
+        )
 
         if (!cancelled) {
           setDetailData(response)
@@ -214,10 +225,12 @@ export function InfoContractsPage() {
               </span>
               <Select
                 selectedKey={String(filterType ?? '')}
-                onSelectionChange={(key) => ((value) => {
-                  setFilterType(value)
-                  setPage(1)
-                })(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => {
+                    setFilterType(value)
+                    setPage(1)
+                  })(String(key))
+                }
               >
                 <SelectTrigger className="h-10">
                   <SelectValue />
@@ -240,10 +253,12 @@ export function InfoContractsPage() {
               </span>
               <Select
                 selectedKey={String(filterStatus ?? '')}
-                onSelectionChange={(key) => ((value) => {
-                  setFilterStatus(value)
-                  setPage(1)
-                })(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => {
+                    setFilterStatus(value)
+                    setPage(1)
+                  })(String(key))
+                }
               >
                 <SelectTrigger className="h-10">
                   <SelectValue />
@@ -393,10 +408,12 @@ export function InfoContractsPage() {
           <span>{t('infoContracts.pageSize')}</span>
           <Select
             selectedKey={String(pageSize ?? '')}
-            onSelectionChange={(key) => ((value) => {
-              setPageSize(Number(value))
-              setPage(1)
-            })(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => {
+                setPageSize(Number(value))
+                setPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />

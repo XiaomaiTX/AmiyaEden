@@ -63,17 +63,22 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    ShopWalletTransaction,
+    SystemWalletTransactionListInput
+  } from '@/api/generated/client'
   import { walletReason } from '@/utils/wallet-reason'
   import { ElTag, ElButton, ElInput, ElSelect, ElOption } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatFuxiCoinAmount, formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
-  import { adminListTransactions } from '@/api/sys-wallet'
+  import { adminListSystemWalletTransactions } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineOptions({ name: 'WalletTransactions' })
   const { t } = useI18n()
 
-  type WalletTransaction = Api.SysWallet.WalletTransaction
+  type WalletTransaction = ShopWalletTransaction
 
   const REF_TYPE_MAP: Record<string, { label: string; tag: string }> = {
     welfare_delivery_salary: {
@@ -127,7 +132,8 @@
     searchParams
   } = useTable({
     core: {
-      apiFn: adminListTransactions,
+      apiFn: (params: SystemWalletTransactionListInput) =>
+        unwrapContract(adminListSystemWalletTransactions(params ?? { current: 1, size: 200 })),
       apiParams: { current: 1, size: 200, sort_by: 'created_at', sort_order: 'desc' },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },

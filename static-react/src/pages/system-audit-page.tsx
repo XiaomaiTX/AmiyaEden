@@ -16,12 +16,16 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { fetchAuditEvents } from '@/api/audit'
+import { listAuditEvents } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { ShopDialog, formatDateTime, getErrorMessage } from './shop-page-utils'
 import { useI18n } from '@/i18n'
 import { getAuditActionLabel, getAuditCategoryLabel } from '@/lib/audit-labels'
-import type { AuditEvent, AuditEventSearchParams } from '@/types/api/audit'
+import type {
+  AuditEvent,
+  AuditEventSearchInput as AuditEventSearchParams,
+} from '@/api/generated/client'
 
 type AuditTab = 'events' | 'exports'
 
@@ -80,11 +84,10 @@ export function SystemAuditPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetchAuditEvents({
-        ...searchState,
-        current: page,
-        size: pageSize,
-      })
+      const response = await unwrapContract(
+        listAuditEvents({ ...searchState, current: page, size: pageSize }),
+        'fetch audit events failed'
+      )
       setRows(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)

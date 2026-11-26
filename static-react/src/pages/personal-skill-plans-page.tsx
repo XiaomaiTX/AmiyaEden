@@ -1,11 +1,10 @@
 import {
   createPersonalSkillPlan,
-  deletePersonalSkillPlan,
-  fetchPersonalSkillPlanDetail,
-  fetchPersonalSkillPlanList,
-  reorderPersonalSkillPlans,
+  getPersonalSkillPlan,
+  listPersonalSkillPlans,
   updatePersonalSkillPlan,
-} from '@/api/skill-plan'
+} from '@/api/generated/client'
+import { deletePersonalSkillPlan, reorderPersonalSkillPlans } from '@/api/generated/client'
 import { SkillPlanManagementPage } from './skill-plan-management-page'
 
 export function PersonalSkillPlansPage() {
@@ -15,8 +14,9 @@ export function PersonalSkillPlansPage() {
       subtitleKey="skillPlan.personalSubtitle"
       emptyKey="skillPlan.emptyList"
       canManage
-      fetchList={fetchPersonalSkillPlanList}
-      fetchDetail={fetchPersonalSkillPlanDetail}
+      personal
+      fetchList={listPersonalSkillPlans}
+      fetchDetail={getPersonalSkillPlan}
       createPlan={createPersonalSkillPlan}
       updatePlan={updatePersonalSkillPlan}
       deletePlan={deletePersonalSkillPlan}

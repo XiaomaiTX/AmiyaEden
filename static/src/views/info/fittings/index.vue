@@ -161,9 +161,11 @@
 </template>
 
 <script setup lang="ts">
+  import type { InfoFitting, InfoFittings } from '@/api/generated/client'
   import { Refresh, Search } from '@element-plus/icons-vue'
   import { ElCard, ElSelect, ElOption, ElButton, ElEmpty, ElInput, ElDialog } from 'element-plus'
-  import { fetchInfoFittings } from '@/api/eve-info'
+  import { getFittings } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'EveInfoFittings' })
@@ -171,14 +173,14 @@
   const userStore = useUserStore()
 
   // ---- 数据 ----
-  const fittingsData = ref<Api.EveInfo.FittingsListResponse | null>(null)
+  const fittingsData = ref<InfoFittings | null>(null)
   const loading = ref(false)
   const searchKeyword = ref('')
   const selectedRace = ref<number | string>('')
   const selectedGroup = ref('')
   const collapsedGroups = ref(new Set<string>())
   const detailVisible = ref(false)
-  const selectedFitting = ref<Api.EveInfo.FittingResponse | null>(null)
+  const selectedFitting = ref<InfoFitting | null>(null)
 
   // ---- 计算属性 ----
 
@@ -235,14 +237,14 @@
   /** 按 Group -> Race -> Ship 分组 */
   interface FittingGroupSection {
     groupName: string
-    fittings: Api.EveInfo.FittingResponse[]
+    fittings: InfoFitting[]
   }
 
   const groupedFittings = computed<FittingGroupSection[]>(() => {
     const fittings = filteredFittings.value
     if (!fittings.length) return []
 
-    const grpMap = new Map<string, Api.EveInfo.FittingResponse[]>()
+    const grpMap = new Map<string, InfoFitting[]>()
     for (const f of fittings) {
       const grpName = f.group_name || 'Unknown'
       if (!grpMap.has(grpName)) grpMap.set(grpName, [])
@@ -273,7 +275,7 @@
     collapsedGroups.value = new Set(collapsedGroups.value)
   }
 
-  const openDetail = (fitting: Api.EveInfo.FittingResponse) => {
+  const openDetail = (fitting: InfoFitting) => {
     selectedFitting.value = fitting
     detailVisible.value = true
   }
@@ -281,9 +283,11 @@
   const loadData = async () => {
     loading.value = true
     try {
-      fittingsData.value = await fetchInfoFittings({
-        language: userStore.language
-      })
+      fittingsData.value = await unwrapContract(
+        getFittings({
+          language: userStore.language
+        })
+      )
     } catch {
       fittingsData.value = null
     } finally {

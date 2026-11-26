@@ -7,21 +7,23 @@ import { I18nProvider } from '@/i18n'
 import { InfoToolBookmarksPage } from '@/pages/info-tool-bookmarks-page'
 import { useSessionStore } from '@/stores'
 
-vi.mock('@/api/tool-bookmark', () => ({
-  createToolBookmark: vi.fn(),
+vi.mock('@/api/generated/client', () => ({
+  adminCreate: vi.fn(),
   deleteToolBookmark: vi.fn(),
-  fetchAdminToolBookmarks: vi.fn(),
-  fetchVisibleToolBookmarks: vi.fn(),
+  listToolBookmarks: vi.fn(),
+  listVisible: vi.fn(),
   updateToolBookmark: vi.fn(),
 }))
 
 import {
-  createToolBookmark,
+  adminCreate,
   deleteToolBookmark,
-  fetchAdminToolBookmarks,
-  fetchVisibleToolBookmarks,
+  listToolBookmarks,
+  listVisible,
   updateToolBookmark,
-} from '@/api/tool-bookmark'
+} from '@/api/generated/client'
+
+const success = <T,>(data: T) => ({ code: 200 as const, msg: 'ok', data })
 
 const bookmark = {
   group_name: '',
@@ -61,12 +63,14 @@ function setRoles(roles: string[]) {
 describe('info tool bookmarks page', () => {
   test('groups interleaved bookmarks in API order and keeps ungrouped sites visible', async () => {
     setRoles(['user'])
-    vi.mocked(fetchVisibleToolBookmarks).mockResolvedValueOnce([
-      { ...bookmark, id: 1, group_name: 'Tools', name: 'Tool A' },
-      { ...bookmark, id: 2, group_name: 'Resources', name: 'Resource B' },
-      { ...bookmark, id: 3, group_name: 'Tools', name: 'Tool C' },
-      { ...bookmark, id: 4, group_name: '', name: 'Other' },
-    ])
+    vi.mocked(listVisible).mockResolvedValueOnce(
+      success([
+        { ...bookmark, id: 1, group_name: 'Tools', name: 'Tool A' },
+        { ...bookmark, id: 2, group_name: 'Resources', name: 'Resource B' },
+        { ...bookmark, id: 3, group_name: 'Tools', name: 'Tool C' },
+        { ...bookmark, id: 4, group_name: '', name: 'Other' },
+      ])
+    )
     renderPage()
     const tools = await screen.findByRole('heading', { name: 'Tools (2)' })
     expect(
@@ -81,8 +85,8 @@ describe('info tool bookmarks page', () => {
 
   test('allows moving a bookmark to another group and clearing its group', async () => {
     setRoles(['admin'])
-    vi.mocked(fetchAdminToolBookmarks).mockResolvedValue([{ ...bookmark, group_name: 'Tools' }])
-    vi.mocked(updateToolBookmark).mockResolvedValue(bookmark)
+    vi.mocked(listToolBookmarks).mockResolvedValue(success([{ ...bookmark, group_name: 'Tools' }]))
+    vi.mocked(updateToolBookmark).mockResolvedValue(success(bookmark))
     const user = userEvent.setup()
     renderPage()
     await screen.findByRole('link', { name: 'EVE Tools' })
@@ -110,9 +114,9 @@ describe('info tool bookmarks page', () => {
   })
 
   beforeEach(() => {
-    vi.mocked(fetchVisibleToolBookmarks).mockReset()
-    vi.mocked(fetchAdminToolBookmarks).mockReset()
-    vi.mocked(createToolBookmark).mockReset()
+    vi.mocked(listVisible).mockReset()
+    vi.mocked(listToolBookmarks).mockReset()
+    vi.mocked(adminCreate).mockReset()
     vi.mocked(updateToolBookmark).mockReset()
     vi.mocked(deleteToolBookmark).mockReset()
     useFeedbackStore.setState({
@@ -130,7 +134,7 @@ describe('info tool bookmarks page', () => {
 
   test('loads the visible bookmark list for regular users with safe external links', async () => {
     setRoles(['user'])
-    vi.mocked(fetchVisibleToolBookmarks).mockResolvedValueOnce([{ ...bookmark, is_enabled: true }])
+    vi.mocked(listVisible).mockResolvedValueOnce(success([{ ...bookmark, is_enabled: true }]))
 
     renderPage()
 
@@ -138,26 +142,26 @@ describe('info tool bookmarks page', () => {
     expect(link).toHaveAttribute('href', 'https://example.com')
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
-    expect(fetchVisibleToolBookmarks).toHaveBeenCalledOnce()
-    expect(fetchAdminToolBookmarks).not.toHaveBeenCalled()
+    expect(listVisible).toHaveBeenCalledOnce()
+    expect(listToolBookmarks).not.toHaveBeenCalled()
     expect(screen.queryByRole('button', { name: '新增书签' })).not.toBeInTheDocument()
   })
 
   test('loads the management list and marks disabled bookmarks for administrators', async () => {
     setRoles(['admin'])
-    vi.mocked(fetchAdminToolBookmarks).mockResolvedValueOnce([bookmark])
+    vi.mocked(listToolBookmarks).mockResolvedValueOnce(success([bookmark]))
 
     renderPage()
 
     expect(await screen.findByText('已禁用')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '新增书签' })).toBeInTheDocument()
-    expect(fetchAdminToolBookmarks).toHaveBeenCalledOnce()
-    expect(fetchVisibleToolBookmarks).not.toHaveBeenCalled()
+    expect(listToolBookmarks).toHaveBeenCalledOnce()
+    expect(listVisible).not.toHaveBeenCalled()
   })
 
   test('renders the bookmark editor as a single dialog surface', async () => {
     setRoles(['admin'])
-    vi.mocked(fetchAdminToolBookmarks).mockResolvedValueOnce([bookmark])
+    vi.mocked(listToolBookmarks).mockResolvedValueOnce(success([bookmark]))
     const user = userEvent.setup()
 
     renderPage()
@@ -173,7 +177,7 @@ describe('info tool bookmarks page', () => {
 
   test('shows the empty state', async () => {
     setRoles(['user'])
-    vi.mocked(fetchVisibleToolBookmarks).mockResolvedValueOnce([])
+    vi.mocked(listVisible).mockResolvedValueOnce(success([]))
 
     renderPage()
 
@@ -182,7 +186,7 @@ describe('info tool bookmarks page', () => {
 
   test('validates required name and URL before saving', async () => {
     setRoles(['admin'])
-    vi.mocked(fetchAdminToolBookmarks).mockResolvedValueOnce([])
+    vi.mocked(listToolBookmarks).mockResolvedValueOnce(success([]))
     const user = userEvent.setup()
 
     renderPage()
@@ -190,16 +194,16 @@ describe('info tool bookmarks page', () => {
     await user.click(screen.getByRole('button', { name: '新增书签' }))
     await user.click(screen.getByRole('button', { name: '保存' }))
 
-    expect(createToolBookmark).not.toHaveBeenCalled()
+    expect(adminCreate).not.toHaveBeenCalled()
     expect(screen.getByText('名称和 URL 为必填项')).toBeInTheDocument()
   })
 
   test('reloads after creating, updating, and deleting bookmarks', async () => {
     setRoles(['super_admin'])
-    vi.mocked(fetchAdminToolBookmarks).mockResolvedValue([bookmark])
-    vi.mocked(createToolBookmark).mockResolvedValue(bookmark)
-    vi.mocked(updateToolBookmark).mockResolvedValue(bookmark)
-    vi.mocked(deleteToolBookmark).mockResolvedValue(null)
+    vi.mocked(listToolBookmarks).mockResolvedValue(success([bookmark]))
+    vi.mocked(adminCreate).mockResolvedValue(success(bookmark))
+    vi.mocked(updateToolBookmark).mockResolvedValue(success(bookmark))
+    vi.mocked(deleteToolBookmark).mockResolvedValue(success(null))
     const user = userEvent.setup()
 
     renderPage()
@@ -210,10 +214,8 @@ describe('info tool bookmarks page', () => {
     await user.type(screen.getByLabelText('名称'), 'New Tool')
     await user.type(screen.getByLabelText('URL'), 'https://new.example.com')
     await user.click(screen.getByRole('button', { name: '保存' }))
-    await waitFor(() => expect(createToolBookmark).toHaveBeenCalledOnce())
-    expect(createToolBookmark).toHaveBeenCalledWith(
-      expect.objectContaining({ group_name: 'Resources' })
-    )
+    await waitFor(() => expect(adminCreate).toHaveBeenCalledOnce())
+    expect(adminCreate).toHaveBeenCalledWith(expect.objectContaining({ group_name: 'Resources' }))
 
     await user.click(screen.getByRole('button', { name: '编辑' }))
     await user.click(screen.getByRole('button', { name: '保存' }))
@@ -227,6 +229,6 @@ describe('info tool bookmarks page', () => {
     await user.click(screen.getByRole('button', { name: '删除' }))
     await user.click(screen.getAllByRole('button', { name: '删除' }).at(-1)!)
     await waitFor(() => expect(deleteToolBookmark).toHaveBeenCalledWith(1))
-    await waitFor(() => expect(fetchAdminToolBookmarks).toHaveBeenCalledTimes(4))
+    await waitFor(() => expect(listToolBookmarks).toHaveBeenCalledTimes(4))
   })
 })

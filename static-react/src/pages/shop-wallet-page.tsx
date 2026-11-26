@@ -15,10 +15,14 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchMyWallet, fetchMyWalletTransactions } from '@/api/shop'
+import { getMyShopWallet, listMyShopWalletTransactions } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
-import type { Wallet, WalletTransaction } from '@/types/api/shop'
+import type {
+  ShopWallet as Wallet,
+  ShopWalletTransaction as WalletTransaction,
+} from '@/api/generated/client'
 import {
   formatCoin,
   formatDateTime,
@@ -52,8 +56,11 @@ export function ShopWalletPage() {
     setError(null)
     try {
       const [walletResponse, transactionResponse] = await Promise.all([
-        fetchMyWallet(),
-        fetchMyWalletTransactions({ current: page, size: pageSize }),
+        unwrapContract(getMyShopWallet(), 'fetch shop wallet failed'),
+        unwrapContract(
+          listMyShopWalletTransactions({ current: page, size: pageSize }),
+          'fetch shop wallet transactions failed'
+        ),
       ])
       setWallet(walletResponse)
       setTransactions(transactionResponse.list ?? [])
@@ -107,11 +114,6 @@ export function ShopWalletPage() {
             >
               {wallet ? `${formatCoin(wallet.balance)} ${t('shop.currency')}` : '-'}
             </p>
-            {wallet?.character_name ? (
-              <p className="mt-2 text-sm text-muted-foreground">
-                {t('shopWallet.characterName')}: {wallet.character_name}
-              </p>
-            ) : null}
             {wallet?.updated_at ? (
               <p className="mt-1 text-xs text-muted-foreground">
                 {t('common.updatedAt')}: {formatDateTime(wallet.updated_at)}

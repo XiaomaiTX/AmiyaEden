@@ -14,15 +14,16 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchCorporationPapSummary } from '@/api/fleet'
+import { getCorporationPapSummary } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import type {
-  CorporationPapOverview,
-  CorporationPapSummaryItem,
-  PapSummaryPeriod,
-} from '@/types/api/fleet'
+  FleetCorporationPapOverview as CorporationPapOverview,
+  FleetCorporationPapItem as CorporationPapSummaryItem,
+  FleetCorporationPapOverviewPeriod as PapSummaryPeriod,
+} from '@/api/generated/client'
 import { getErrorMessage, ShopBadge } from './shop-page-utils'
 
 const defaultTickers = ['FUXI', 'FMA.1']
@@ -79,13 +80,16 @@ export function OperationCorporationPapPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetchCorporationPapSummary({
-        current: page,
-        size: pageSize,
-        period,
-        year: period === 'at_year' ? year : undefined,
-        corp_tickers: tickerList.join(','),
-      })
+      const response = await unwrapContract(
+        getCorporationPapSummary({
+          current: page,
+          size: pageSize,
+          period,
+          year: period === 'at_year' ? year : undefined,
+          corp_tickers: tickerList.join(',') || undefined,
+        }),
+        'fetch corporation pap summary failed'
+      )
       setRecords(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -161,10 +165,12 @@ export function OperationCorporationPapPage() {
               </span>
               <Select
                 selectedKey={String(period ?? '')}
-                onSelectionChange={(key) => ((value) => {
-                  setPeriod(value as PapSummaryPeriod)
-                  setPage(1)
-                })(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => {
+                    setPeriod(value as PapSummaryPeriod)
+                    setPage(1)
+                  })(String(key))
+                }
               >
                 <SelectTrigger className="h-10">
                   <SelectValue />
@@ -176,9 +182,7 @@ export function OperationCorporationPapPage() {
                   <SelectItem id="last_month">
                     {t('fleet.corporationPap.periods.lastMonth')}
                   </SelectItem>
-                  <SelectItem id="at_year">
-                    {t('fleet.corporationPap.periods.atYear')}
-                  </SelectItem>
+                  <SelectItem id="at_year">{t('fleet.corporationPap.periods.atYear')}</SelectItem>
                   <SelectItem id="all">{t('fleet.corporationPap.periods.all')}</SelectItem>
                 </SelectContent>
               </Select>
@@ -307,10 +311,12 @@ export function OperationCorporationPapPage() {
           <span>{t('welfareMy.pageSize')}</span>
           <Select
             selectedKey={String(pageSize ?? '')}
-            onSelectionChange={(key) => ((value) => {
-              setPageSize(Number(value))
-              setPage(1)
-            })(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => {
+                setPageSize(Number(value))
+                setPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />

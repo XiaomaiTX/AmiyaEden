@@ -1,12 +1,14 @@
 import { Textarea } from '@/components/ui/textarea'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { addMyTicketReply, getMyTicket, listMyTicketReplies } from '@/api/ticket'
+import { listMyReplies } from '@/api/generated/client'
+import { addMyReply, getMyTicket } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { notifyError, notifySuccess } from '@/feedback/service'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { useI18n } from '@/i18n'
-import type { TicketItem, TicketPriority, TicketReply, TicketStatus } from '@/types/api/ticket'
+import type { TicketRecord as TicketItem, TicketReply, TicketStatus } from '@/api/generated/client'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -34,25 +36,8 @@ function statusTone(status: TicketStatus) {
   }
 }
 
-function priorityTone(priority: TicketPriority) {
-  switch (priority) {
-    case 'high':
-      return 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
-    case 'medium':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
-    case 'low':
-      return 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'
-    default:
-      return 'bg-muted text-muted-foreground'
-  }
-}
-
 function statusLabel(t: ReturnType<typeof useI18n>['t'], status: TicketStatus) {
   return t(`ticketMyTickets.statuses.${status}`)
-}
-
-function priorityLabel(t: ReturnType<typeof useI18n>['t'], priority: TicketPriority) {
-  return t(`ticketMyTickets.priorities.${priority}`)
 }
 
 export function TicketDetailPage() {
@@ -84,8 +69,10 @@ export function TicketDetailPage() {
 
       try {
         const [ticketData, replyData] = await Promise.all([
-          getMyTicket(ticketId),
-          listMyTicketReplies(ticketId),
+          unwrapContract(getMyTicket(ticketId), 'get my ticket failed'),
+          unwrapContract(listMyReplies(ticketId), 'list my ticket replies failed').then(
+            (data) => data ?? []
+          ),
         ])
 
         if (!cancelled) {
@@ -119,9 +106,15 @@ export function TicketDetailPage() {
 
     setSubmitting(true)
     try {
-      await addMyTicketReply(ticket.id, { content: content.trim() })
+      await unwrapContract(
+        addMyReply(ticket.id, { content: content.trim() }),
+        'add my ticket reply failed'
+      )
       setContent('')
-      const replyData = await listMyTicketReplies(ticket.id)
+      const replyData = await unwrapContract(
+        listMyReplies(ticket.id),
+        'list my ticket replies failed'
+      ).then((data) => data ?? [])
       setReplies(replyData)
       notifySuccess(t('ticket.messages.replyAdded'))
     } catch (caughtError) {
@@ -163,13 +156,6 @@ export function TicketDetailPage() {
               >
                 {statusLabel(t, ticket.status)}
               </span>
-              {ticket.priority ? (
-                <span
-                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${priorityTone(ticket.priority)}`}
-                >
-                  {priorityLabel(t, ticket.priority)}
-                </span>
-              ) : null}
             </div>
           </div>
 

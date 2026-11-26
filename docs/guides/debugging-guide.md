@@ -93,11 +93,10 @@ After fixing, add a test that would have caught this bug. See `docs/standards/re
 
 **Investigation:**
 
-1. Compare backend handler/service response struct with the consuming Vue or React type
-2. Check JSON tags on backend structs match frontend field names
-3. Check if a recent backend change wasn't propagated to frontend
+1. For `/api/v1`, compare the OpenAPI operation and generated types with the actual HTTP response.
+2. Trace any mismatch through the Go handler and the consuming Vue or React wrapper and UI.
 
-**Prevention:** update all 5 layers when changing an endpoint (see "API Change Order" in `docs/ai/repo-rules.md`).
+**Prevention:** follow the [OpenAPI contract workflow](../api/conventions.md#契约同步顺序) for endpoint contract changes.
 
 ### Permission / Menu Visibility Issues
 

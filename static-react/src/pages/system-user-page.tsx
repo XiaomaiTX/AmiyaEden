@@ -18,24 +18,25 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchGetUserInfo } from '@/api/auth'
 import { toSessionSnapshot } from '@/auth'
 import {
-  fetchCharacterESIRestrictionConfig,
+  getCharacterESIRestrictionConfig,
   updateCharacterESIRestrictionConfig,
-} from '@/api/sys-config'
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import {
-  fetchDeleteUser,
-  fetchGetRoleDefinitions,
-  fetchGetUserList,
-  fetchGetUserRoles,
-  fetchImpersonateUser,
-  fetchSetUserRoles,
-  fetchUpdateUser,
-} from '@/api/system-manage'
+  deleteSystemUser,
+  listRoleDefinitions,
+  listSystemUsers,
+  getSystemUserRoles,
+  impersonateSystemUser,
+  setSystemUserRoles,
+  updateSystemUser,
+} from '@/api/generated/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
-import type { RoleDefinition, UserListItem } from '@/types/api/system-manage'
+import type { SystemRoleDefinition, SystemUserListItem } from '@/api/generated/client'
 import { getErrorMessage, ShopDialog } from './shop-page-utils'
 
 type SearchDraft = {
@@ -133,8 +134,8 @@ export function SystemUserPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [total, setTotal] = useState(0)
-  const [users, setUsers] = useState<UserListItem[]>([])
-  const [roleDefinitions, setRoleDefinitions] = useState<RoleDefinition[]>([])
+  const [users, setUsers] = useState<SystemUserListItem[]>([])
+  const [roleDefinitions, setRoleDefinitions] = useState<SystemRoleDefinition[]>([])
   const [searchDraft, setSearchDraft] = useState<SearchDraft>(defaultSearchDraft)
   const [searchState, setSearchState] = useState<SearchDraft>(defaultSearchDraft)
   const [expandedUserIds, setExpandedUserIds] = useState<number[]>([])
@@ -143,7 +144,7 @@ export function SystemUserPage() {
   const [restrictionSaving, setRestrictionSaving] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogSaving, setDialogSaving] = useState(false)
-  const [editingUser, setEditingUser] = useState<UserListItem | null>(null)
+  const [editingUser, setEditingUser] = useState<SystemUserListItem | null>(null)
   const [userRolesLoading, setUserRolesLoading] = useState(false)
   const [dialogForm, setDialogForm] = useState<EditFormState>(defaultEditForm)
 
@@ -151,7 +152,9 @@ export function SystemUserPage() {
 
   const loadRoleDefinitions = useCallback(async () => {
     try {
-      setRoleDefinitions(await fetchGetRoleDefinitions())
+      setRoleDefinitions(
+        await unwrapContract(listRoleDefinitions(), 'fetch role definitions failed')
+      )
     } catch {
       setRoleDefinitions([])
     }
@@ -164,7 +167,10 @@ export function SystemUserPage() {
 
     setRestrictionLoading(true)
     try {
-      const config = await fetchCharacterESIRestrictionConfig()
+      const config = await unwrapContract(
+        getCharacterESIRestrictionConfig(),
+        'fetch character esi restriction config failed'
+      )
       setRestrictionEnabled(config.enforce_character_esi_restriction)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('userAdmin.characterEsiRestriction.loadFailed')))
@@ -177,13 +183,16 @@ export function SystemUserPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetchGetUserList({
-        current: page,
-        size: pageSize,
-        keyword: searchState.keyword.trim() || undefined,
-        status: searchState.status === '' ? undefined : Number(searchState.status),
-        role: searchState.role || undefined,
-      })
+      const response = await unwrapContract(
+        listSystemUsers({
+          current: page,
+          size: pageSize,
+          keyword: searchState.keyword.trim() || undefined,
+          status: searchState.status === '' ? undefined : Number(searchState.status),
+          role: searchState.role || undefined,
+        }),
+        'fetch user list failed'
+      )
       setUsers(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -215,13 +224,16 @@ export function SystemUserPage() {
     return () => window.clearTimeout(timer)
   }, [loadRoleDefinitions, loadRestriction])
 
-  const canEditProfile = (user: UserListItem) => isSuperAdmin || !isProtectedRoleSet(user.roles)
-  const canEditContacts = (user: UserListItem) =>
+  const canEditProfile = (user: SystemUserListItem) =>
+    isSuperAdmin || !isProtectedRoleSet(user.roles)
+  const canEditContacts = (user: SystemUserListItem) =>
     isSuperAdmin && !user.roles.includes('super_admin')
-  const canEditRoles = (user: UserListItem) => isSuperAdmin || !user.roles.includes('super_admin')
-  const canDeleteUser = (user: UserListItem) => isSuperAdmin || !isProtectedRoleSet(user.roles)
+  const canEditRoles = (user: SystemUserListItem) =>
+    isSuperAdmin || !user.roles.includes('super_admin')
+  const canDeleteUser = (user: SystemUserListItem) =>
+    isSuperAdmin || !isProtectedRoleSet(user.roles)
 
-  const openEditDialog = async (user: UserListItem) => {
+  const openEditDialog = async (user: SystemUserListItem) => {
     if (!canEditProfile(user) && !canEditRoles(user)) {
       setError(t('userAdmin.editProtectedDenied'))
       return
@@ -239,7 +251,7 @@ export function SystemUserPage() {
     })
 
     try {
-      const roles = await fetchGetUserRoles(user.id)
+      const roles = await unwrapContract(getSystemUserRoles(user.id), 'fetch user roles failed')
       setDialogForm((current) => ({
         ...current,
         roleCodes: normalizeRoles(roles.map((role) => role.code)),
@@ -269,16 +281,22 @@ export function SystemUserPage() {
     setError(null)
     try {
       if (canEditProfile(editingUser)) {
-        await fetchUpdateUser(editingUser.id, {
-          nickname: dialogForm.nickname.trim(),
-          qq: canEditContacts(editingUser) ? dialogForm.qq.trim() : undefined,
-          discord_id: canEditContacts(editingUser) ? dialogForm.discordId.trim() : undefined,
-          status: dialogForm.status,
-        })
+        await unwrapContract(
+          updateSystemUser(editingUser.id, {
+            nickname: dialogForm.nickname.trim(),
+            qq: canEditContacts(editingUser) ? dialogForm.qq.trim() : undefined,
+            discord_id: canEditContacts(editingUser) ? dialogForm.discordId.trim() : undefined,
+            status: dialogForm.status,
+          }),
+          'update user failed'
+        )
       }
 
       if (canEditRoles(editingUser)) {
-        await fetchSetUserRoles(editingUser.id, normalizeRoles(dialogForm.roleCodes))
+        await unwrapContract(
+          setSystemUserRoles(editingUser.id, { role_codes: normalizeRoles(dialogForm.roleCodes) }),
+          'set user roles failed'
+        )
       }
 
       setDialogOpen(false)
@@ -291,7 +309,7 @@ export function SystemUserPage() {
     }
   }
 
-  const deleteUser = async (user: UserListItem) => {
+  const deleteUser = async (user: SystemUserListItem) => {
     if (!canDeleteUser(user)) {
       setError(t('userAdmin.deleteProtectedDenied'))
       return
@@ -303,21 +321,21 @@ export function SystemUserPage() {
 
     setError(null)
     try {
-      await fetchDeleteUser(user.id)
+      await unwrapContract(deleteSystemUser(user.id), 'delete user failed')
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('userAdmin.deleteFailed')))
     }
   }
 
-  const impersonateUser = async (user: UserListItem) => {
+  const impersonateUser = async (user: SystemUserListItem) => {
     if (!window.confirm(t('userAdmin.impersonateConfirm', { name: user.nickname || user.id }))) {
       return
     }
 
     setError(null)
     try {
-      const result = await fetchImpersonateUser(user.id)
+      const result = await unwrapContract(impersonateSystemUser(user.id), 'impersonate user failed')
       setSessionSnapshot({
         isLoggedIn: true,
         accessToken: result.token,
@@ -341,9 +359,10 @@ export function SystemUserPage() {
     const nextValue = !restrictionEnabled
     setRestrictionSaving(true)
     try {
-      await updateCharacterESIRestrictionConfig({
-        enforce_character_esi_restriction: nextValue,
-      })
+      await unwrapContract(
+        updateCharacterESIRestrictionConfig({ enforce_character_esi_restriction: nextValue }),
+        'update character esi restriction config failed'
+      )
       setRestrictionEnabled(nextValue)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('userAdmin.characterEsiRestriction.saveFailed')))
@@ -365,9 +384,10 @@ export function SystemUserPage() {
     setRefreshSeed((current) => current + 1)
   }
 
-  const getDisplayRoles = (user: UserListItem) => (user.roles?.length ? user.roles : ['guest'])
+  const getDisplayRoles = (user: SystemUserListItem) =>
+    user.roles?.length ? user.roles : ['guest']
 
-  const getUserCharacters = (user: UserListItem) => user.characters ?? []
+  const getUserCharacters = (user: SystemUserListItem) => user.characters ?? []
 
   return (
     <section className="space-y-4">

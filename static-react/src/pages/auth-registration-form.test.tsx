@@ -56,6 +56,7 @@ describe('contact registration', () => {
     )
     expect(screen.getByRole('dialog')).toHaveTextContent('绑定新人物')
     await user.keyboard('{Escape}')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'QQ' })).toHaveValue('123456')
     expect(completed).not.toHaveBeenCalled()
     expect(useSessionStore.getState().isLoggedIn).toBe(false)

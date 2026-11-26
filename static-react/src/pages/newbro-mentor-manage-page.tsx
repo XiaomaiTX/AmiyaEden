@@ -1,23 +1,28 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  fetchAdminMentorRelationships,
-  fetchAdminMentorRewardDistributions,
-  fetchMentorRewardStages,
-  revokeMentorRelationship,
-  runMentorRewardProcessing,
-} from '@/api/mentor'
+  adminListMentorRelationships,
+  adminListMentorRewardDistributions,
+  adminGetMentorRewardStages,
+  adminRevokeMentorRelationship,
+  adminProcessMentorRewards,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import { formatDateTime, formatNumber, getErrorMessage } from '@/pages/newbro-page-utils'
-import type { RelationshipView, RewardDistributionView, RewardStage } from '@/types/api/mentor'
+import type {
+  MentorRelationshipView,
+  MentorDistribution,
+  MentorRewardStage,
+} from '@/api/generated/client'
 
 export function NewbroMentorManagePage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [relationships, setRelationships] = useState<RelationshipView[]>([])
-  const [rewards, setRewards] = useState<RewardDistributionView[]>([])
-  const [stages, setStages] = useState<RewardStage[]>([])
+  const [relationships, setRelationships] = useState<MentorRelationshipView[]>([])
+  const [rewards, setRewards] = useState<MentorDistribution[]>([])
+  const [stages, setStages] = useState<MentorRewardStage[]>([])
   const [revokeId, setRevokeId] = useState<number | null>(null)
   const [processingRewards, setProcessingRewards] = useState(false)
   const [refreshSeed, setRefreshSeed] = useState(0)
@@ -27,13 +32,19 @@ export function NewbroMentorManagePage() {
     setError(null)
     try {
       const [relationshipData, rewardData, stageList] = await Promise.all([
-        fetchAdminMentorRelationships({ current: 1, size: 20 }),
-        fetchAdminMentorRewardDistributions({ current: 1, size: 20 }),
-        fetchMentorRewardStages(),
+        unwrapContract(
+          adminListMentorRelationships({ current: 1, size: 20 }),
+          'fetch admin mentor relationships failed'
+        ),
+        unwrapContract(
+          adminListMentorRewardDistributions({ current: 1, size: 20 }),
+          'fetch admin mentor reward distributions failed'
+        ),
+        unwrapContract(adminGetMentorRewardStages(), 'fetch admin mentor reward stages failed'),
       ])
       setRelationships(relationshipData.list ?? [])
       setRewards(rewardData.list ?? [])
-      setStages(stageList)
+      setStages(stageList ?? [])
     } catch (caughtError) {
       setRelationships([])
       setRewards([])
@@ -54,7 +65,10 @@ export function NewbroMentorManagePage() {
   const handleRevoke = async (relationshipId: number) => {
     setRevokeId(relationshipId)
     try {
-      await revokeMentorRelationship({ relationship_id: relationshipId })
+      await unwrapContract(
+        adminRevokeMentorRelationship({ relationship_id: relationshipId }),
+        'revoke mentor relationship failed'
+      )
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('newbroMentorManage.messages.revokeFailed')))
@@ -66,7 +80,7 @@ export function NewbroMentorManagePage() {
   const handleProcessRewards = async () => {
     setProcessingRewards(true)
     try {
-      await runMentorRewardProcessing()
+      await unwrapContract(adminProcessMentorRewards(), 'run mentor reward processing failed')
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('newbroMentorManage.messages.processFailed')))

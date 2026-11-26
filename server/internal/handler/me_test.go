@@ -229,7 +229,7 @@ func TestMeHandlerGetMeReusesAuthUserFromContext(t *testing.T) {
 	})
 	ctx.Set("roles", []string{model.RoleUser})
 
-	NewMeHandler().GetMe(ctx)
+	newMigratedOperationAdapter(migratedOperations{MeHandler: NewMeHandler()}).GetMe(ctx)
 
 	var result meHandlerResponse
 	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
@@ -343,7 +343,7 @@ func performGetMeRequest(t *testing.T, userID uint) (*httptest.ResponseRecorder,
 	ctx.Set("userID", userID)
 	ctx.Set("roles", []string{model.RoleUser})
 
-	NewMeHandler().GetMe(ctx)
+	newMigratedOperationAdapter(migratedOperations{MeHandler: NewMeHandler()}).GetMe(ctx)
 
 	var result meHandlerResponse
 	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
@@ -364,7 +364,7 @@ func performDeleteMeRequest(t *testing.T, userID uint, roles []string) (*httptes
 	}
 	ctx.Set("roles", roles)
 
-	NewMeHandler().DeleteMe(ctx)
+	newMigratedOperationAdapter(migratedOperations{MeHandler: NewMeHandler()}).DeleteMe(ctx)
 
 	var result meHandlerResponse
 	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {

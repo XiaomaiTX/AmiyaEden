@@ -48,7 +48,13 @@
 </template>
 
 <script setup lang="ts">
-  import { fetchTaskHistory, fetchTasks } from '@/api/task-manager'
+  import type {
+    ListManagedTaskHistoryParams,
+    ManagedTaskDefinition,
+    ManagedTaskExecution
+  } from '@/api/generated/client'
+  import { getManagedTasks, listManagedTaskHistory } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { getTaskDisplayName } from '../task-labels'
   import { formatTime } from '@utils/common'
   import { ElButton, ElCard, ElOption, ElSelect, ElTag, ElTooltip } from 'element-plus'
@@ -58,7 +64,7 @@
 
   const { t } = useI18n()
 
-  const taskOptions = ref<Api.TaskManager.TaskItem[]>([])
+  const taskOptions = ref<ManagedTaskDefinition[]>([])
   const filters = reactive({
     task_name: '',
     status: ''
@@ -66,7 +72,7 @@
 
   const taskDisplayName = (taskName: string) => getTaskDisplayName(t, taskName, taskName)
 
-  const triggerTagType = (trigger: Api.TaskManager.TaskExecutionItem['trigger']) => {
+  const triggerTagType = (trigger: ManagedTaskExecution['trigger']) => {
     const map = {
       cron: 'info',
       manual: 'warning'
@@ -75,7 +81,7 @@
     return map[trigger]
   }
 
-  const statusTagType = (status: Api.TaskManager.TaskExecutionItem['status']) => {
+  const statusTagType = (status: ManagedTaskExecution['status']) => {
     const map = {
       running: 'warning',
       success: 'success',
@@ -109,7 +115,7 @@
     return `${hours}h ${remainingMinutes}m`
   }
 
-  const triggeredByLabel = (row: Api.TaskManager.TaskExecutionItem) => {
+  const triggeredByLabel = (row: ManagedTaskExecution) => {
     return row.triggered_by_name || '-'
   }
 
@@ -124,9 +130,10 @@
     handleCurrentChange,
     getData,
     searchParams
-  } = useTable<typeof fetchTaskHistory>({
+  } = useTable({
     core: {
-      apiFn: fetchTaskHistory,
+      apiFn: (params?: ListManagedTaskHistoryParams) =>
+        unwrapContract(listManagedTaskHistory(params)),
       apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
@@ -135,13 +142,13 @@
           label: t('taskManager.columns.name'),
           minWidth: 180,
           showOverflowTooltip: true,
-          formatter: (row: Api.TaskManager.TaskExecutionItem) => taskDisplayName(row.task_name)
+          formatter: (row: ManagedTaskExecution) => taskDisplayName(row.task_name)
         },
         {
           prop: 'trigger',
           label: t('taskManager.columns.trigger'),
           width: 110,
-          formatter: (row: Api.TaskManager.TaskExecutionItem) =>
+          formatter: (row: ManagedTaskExecution) =>
             h(ElTag, { type: triggerTagType(row.trigger), size: 'small', effect: 'plain' }, () =>
               t(`taskManager.trigger.${row.trigger}`)
             )
@@ -150,20 +157,20 @@
           prop: 'triggered_by_name',
           label: t('taskManager.columns.triggeredBy'),
           width: 150,
-          formatter: (row: Api.TaskManager.TaskExecutionItem) => triggeredByLabel(row)
+          formatter: (row: ManagedTaskExecution) => triggeredByLabel(row)
         },
         {
           prop: 'triggered_by',
           label: t('taskManager.columns.triggeredById'),
           width: 120,
-          formatter: (row: Api.TaskManager.TaskExecutionItem) =>
+          formatter: (row: ManagedTaskExecution) =>
             row.triggered_by != null ? row.triggered_by : '-'
         },
         {
           prop: 'status',
           label: t('taskManager.columns.status'),
           width: 110,
-          formatter: (row: Api.TaskManager.TaskExecutionItem) =>
+          formatter: (row: ManagedTaskExecution) =>
             h(ElTag, { type: statusTagType(row.status), size: 'small', effect: 'plain' }, () =>
               t(`taskManager.status.${row.status}`)
             )
@@ -172,20 +179,20 @@
           prop: 'started_at',
           label: t('taskManager.columns.startedAt'),
           width: 190,
-          formatter: (row: Api.TaskManager.TaskExecutionItem) => formatTime(row.started_at)
+          formatter: (row: ManagedTaskExecution) => formatTime(row.started_at)
         },
         {
           prop: 'duration_ms',
           label: t('taskManager.columns.duration'),
           width: 120,
-          formatter: (row: Api.TaskManager.TaskExecutionItem) => formatDuration(row.duration_ms)
+          formatter: (row: ManagedTaskExecution) => formatDuration(row.duration_ms)
         },
         {
           prop: 'error',
           label: t('taskManager.columns.error'),
           minWidth: 220,
           showOverflowTooltip: true,
-          formatter: (row: Api.TaskManager.TaskExecutionItem) => {
+          formatter: (row: ManagedTaskExecution) => {
             if (!row.error) {
               return h('span', { class: 'text-gray-400' }, '-')
             }
@@ -204,7 +211,7 @@
           label: t('taskManager.columns.summary'),
           minWidth: 200,
           showOverflowTooltip: true,
-          formatter: (row: Api.TaskManager.TaskExecutionItem) => row.summary || '-'
+          formatter: (row: ManagedTaskExecution) => row.summary || '-'
         }
       ]
     }
@@ -212,7 +219,7 @@
 
   async function loadTaskOptions() {
     try {
-      taskOptions.value = (await fetchTasks()) ?? []
+      taskOptions.value = (await unwrapContract(getManagedTasks())) ?? []
     } catch {
       taskOptions.value = []
     }

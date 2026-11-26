@@ -43,7 +43,11 @@
           <ElInput v-model="formData.title" :placeholder="$t('fleet.fields.titlePlaceholder')" />
         </ElFormItem>
         <ElFormItem :label="$t('fleet.fields.importance')" prop="importance">
-          <ElSelect v-model="formData.importance" style="width: 100%">
+          <ElSelect
+            v-model="formData.importance"
+            :placeholder="editingFleet?.importance"
+            style="width: 100%"
+          >
             <ElOption label="Strat Op" value="strat_op" />
             <ElOption label="CTA" value="cta" />
             <ElOption label="Other" value="other" />
@@ -131,20 +135,25 @@
 </template>
 
 <script setup lang="ts">
+  import type { FleetConfigRecord, FleetListItem, ListFleetsParams } from '@/api/generated/client'
   import { useTable } from '@/hooks/core/useTable'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import FleetSearch from './modules/fleet-search.vue'
   import {
-    fetchFleetList,
     createFleet,
-    updateFleet,
     deleteFleet,
+    FleetCreateInputImportance,
+    issuePap,
+    listFleets,
     refreshFleetESI,
-    syncESIFleetMembers,
-    issuePap
-  } from '@/api/fleet'
-  import { fetchFleetConfigList } from '@/api/fleet-config'
-  import { fetchMyCharacters } from '@/api/auth'
+    syncESIMembers,
+    updateFleet,
+    listFleetConfigs,
+    listMyEveCharacters
+  } from '@/api/generated/client'
+
+  import { unwrapContract } from '@/api/response'
+
   import {
     ElTag,
     ElButton,
@@ -163,8 +172,6 @@
 
   defineOptions({ name: 'Fleets' })
 
-  type FleetItem = Api.Fleet.FleetItem
-
   const { t } = useI18n()
   const router = useRouter()
   const userStore = useUserStore()
@@ -178,7 +185,7 @@
     return roles.some((role) => ['super_admin', 'admin'].includes(role))
   })
   // FC users may only edit/issue PAP for fleets they created; privileged roles are unrestricted.
-  const canManageThisFleet = (row: FleetItem): boolean => {
+  const canManageThisFleet = (row: FleetListItem): boolean => {
     const roles = userStore.getUserInfo?.roles ?? []
     if (roles.some((r) => ['super_admin', 'admin', 'senior_fc'].includes(r))) return true
     if (roles.includes('fc')) return row.fc_user_id === userStore.getUserInfo?.userId
@@ -227,7 +234,7 @@
     refreshData
   } = useTable({
     core: {
-      apiFn: fetchFleetList,
+      apiFn: (params?: ListFleetsParams) => unwrapContract(listFleets(params)),
       apiParams: { current: 1, size: 20 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
@@ -236,7 +243,7 @@
           label: t('fleet.fields.title'),
           minWidth: 180,
           showOverflowTooltip: true,
-          formatter: (row: FleetItem) =>
+          formatter: (row: FleetListItem) =>
             h(
               ElButton,
               { type: 'primary', link: true, onClick: () => goDetail(row) },
@@ -247,7 +254,7 @@
           prop: 'importance',
           label: t('fleet.fields.importance'),
           width: 120,
-          formatter: (row: FleetItem) =>
+          formatter: (row: FleetListItem) =>
             h(
               ElTag,
               {
@@ -263,7 +270,7 @@
           label: t('fleet.fields.fc'),
           width: 160,
           showOverflowTooltip: true,
-          formatter: (row: FleetItem) => row.fc_display_name || row.fc_character_name || '-'
+          formatter: (row: FleetListItem) => row.fc_display_name || row.fc_character_name || '-'
         },
         {
           prop: 'pap_count',
@@ -274,7 +281,7 @@
           prop: 'start_at',
           label: t('fleet.fields.timeRange'),
           width: 320,
-          formatter: (row: FleetItem) =>
+          formatter: (row: FleetListItem) =>
             h(
               'span',
               { class: 'text-xs text-gray-500' },
@@ -285,14 +292,14 @@
           prop: 'created_at',
           label: t('common.createdAt'),
           width: 180,
-          formatter: (row: FleetItem) => h('span', {}, formatTime(row.created_at))
+          formatter: (row: FleetListItem) => h('span', {}, formatTime(row.created_at))
         },
         {
           prop: 'actions',
           label: t('common.operation'),
           width: 240,
           fixed: 'right',
-          formatter: (row: FleetItem) =>
+          formatter: (row: FleetListItem) =>
             h('div', { class: 'flex items-center gap-2' }, [
               ...(canManageThisFleet(row)
                 ? [
@@ -330,7 +337,7 @@
 
   const loadCharacters = async () => {
     try {
-      const res = await fetchMyCharacters()
+      const res = await unwrapContract(listMyEveCharacters())
       characters.value = res ?? []
     } catch {
       characters.value = []
@@ -338,7 +345,7 @@
   }
 
   // ─── 导航 ───
-  const goDetail = (row: FleetItem) => {
+  const goDetail = (row: FleetListItem) => {
     router.push({ name: 'FleetDetail', params: { id: row.id } })
   }
 
@@ -346,24 +353,36 @@
   const dialogVisible = ref(false)
   const submitLoading = ref(false)
   const formRef = ref<FormInstance>()
-  const editingFleet = ref<FleetItem | null>(null)
+  const editingFleet = ref<FleetListItem | null>(null)
   const autoSrpModeTouched = ref(false)
 
-  const formData = reactive({
+  const formData = reactive<{
+    title: string
+    description: string
+    importance: FleetCreateInputImportance | undefined
+    pap_count: number
+    character_id: number | undefined
+    time_range: [string, string] | null
+    send_ping: boolean
+    fleet_config_id: number | undefined
+    auto_srp_mode: FleetListItem['auto_srp_mode']
+  }>({
     title: '',
     description: '',
-    importance: 'other' as 'strat_op' | 'cta' | 'other',
+    importance: 'other',
     pap_count: 1,
-    character_id: undefined as number | undefined,
-    time_range: null as [string, string] | null,
+    character_id: undefined,
+    time_range: null,
     send_ping: true,
-    fleet_config_id: undefined as number | undefined,
-    auto_srp_mode: 'disabled' as 'disabled' | 'submit_only' | 'auto_approve'
+    fleet_config_id: undefined,
+    auto_srp_mode: 'disabled'
   })
 
-  const formRules: FormRules = {
+  const formRules = computed<FormRules>(() => ({
     title: [{ required: true, message: t('fleet.fields.titlePlaceholder'), trigger: 'blur' }],
-    importance: [{ required: true, message: t('fleet.fields.importance'), trigger: 'change' }],
+    importance: [
+      { required: !editingFleet.value, message: t('fleet.fields.importance'), trigger: 'change' }
+    ],
     pap_count: [
       { required: true, message: t('fleet.fields.papCount'), trigger: 'blur' },
       {
@@ -379,7 +398,7 @@
     ],
     character_id: [{ required: true, message: t('fleet.fields.fcPlaceholder'), trigger: 'change' }],
     time_range: [{ required: true, message: t('fleet.fields.timeRange'), trigger: 'change' }]
-  }
+  }))
 
   function resetForm() {
     formData.title = ''
@@ -401,11 +420,13 @@
     dialogVisible.value = true
   }
 
-  function openEditDialog(row: FleetItem) {
+  function openEditDialog(row: FleetListItem) {
     editingFleet.value = row
     formData.title = row.title
     formData.description = row.description
-    formData.importance = row.importance
+    formData.importance = Object.values(FleetCreateInputImportance).find(
+      (option) => option === row.importance
+    )
     formData.pap_count = row.pap_count
     formData.character_id = row.fc_character_id
     formData.time_range = [row.start_at, row.end_at]
@@ -435,31 +456,38 @@
     try {
       const [start_at, end_at] = formData.time_range || ['', '']
       if (editingFleet.value) {
-        await updateFleet(editingFleet.value.id, {
-          title: formData.title,
-          description: formData.description,
-          importance: formData.importance,
-          pap_count: formData.pap_count,
-          character_id: formData.character_id,
-          start_at,
-          end_at,
-          fleet_config_id: formData.fleet_config_id ?? null,
-          auto_srp_mode: formData.auto_srp_mode
-        })
+        await unwrapContract(
+          updateFleet(editingFleet.value.id, {
+            title: formData.title,
+            description: formData.description,
+            // Keep legacy importance values unless the user selects a new option.
+            importance: formData.importance ?? editingFleet.value.importance,
+            pap_count: formData.pap_count,
+            character_id: formData.character_id,
+            start_at,
+            end_at,
+            fleet_config_id: formData.fleet_config_id ?? null,
+            auto_srp_mode: formData.auto_srp_mode
+          })
+        )
         ElMessage.success(t('fleet.updateSuccess'))
       } else {
-        await createFleet({
-          title: formData.title,
-          description: formData.description,
-          importance: formData.importance,
-          pap_count: formData.pap_count,
-          character_id: formData.character_id!,
-          start_at,
-          end_at,
-          send_ping: formData.send_ping,
-          fleet_config_id: formData.fleet_config_id ?? null,
-          auto_srp_mode: formData.auto_srp_mode
-        })
+        const { importance, character_id } = formData
+        if (importance === undefined || character_id === undefined) return
+        await unwrapContract(
+          createFleet({
+            title: formData.title,
+            description: formData.description,
+            importance,
+            pap_count: formData.pap_count,
+            character_id,
+            start_at,
+            end_at,
+            send_ping: formData.send_ping,
+            fleet_config_id: formData.fleet_config_id ?? null,
+            auto_srp_mode: formData.auto_srp_mode
+          })
+        )
         ElMessage.success(t('fleet.createSuccess'))
       }
       dialogVisible.value = false
@@ -472,14 +500,14 @@
   }
 
   // ─── 删除 ───
-  async function handleDelete(row: FleetItem) {
+  async function handleDelete(row: FleetListItem) {
     await ElMessageBox.confirm(t('fleet.deleteConfirm', { name: row.title }), t('fleet.delete'), {
       confirmButtonText: t('common.confirm'),
       cancelButtonText: t('common.cancel'),
       type: 'warning'
     })
     try {
-      await deleteFleet(row.id)
+      await unwrapContract(deleteFleet(row.id))
       ElMessage.success(t('fleet.deleteSuccess'))
       refreshData()
     } catch (e: any) {
@@ -487,7 +515,7 @@
     }
   }
 
-  async function handleIssuePapFromList(row: FleetItem) {
+  async function handleIssuePapFromList(row: FleetListItem) {
     try {
       await ElMessageBox.confirm(
         t('fleet.pap.issueWithSyncConfirm', { name: row.title }),
@@ -505,12 +533,12 @@
     papActionFleetId.value = row.id
     try {
       if (!row.esi_fleet_id) {
-        const refreshedFleet = await refreshFleetESI(row.id)
+        const refreshedFleet = await unwrapContract(refreshFleetESI(row.id))
         row.esi_fleet_id = refreshedFleet.esi_fleet_id ?? row.esi_fleet_id
       }
 
-      await syncESIFleetMembers(row.id)
-      await issuePap(row.id)
+      await unwrapContract(syncESIMembers(row.id))
+      await unwrapContract(issuePap(row.id))
       ElMessage.success(t('fleet.pap.issueWithSyncSuccess'))
       refreshData()
     } catch (e: any) {
@@ -522,11 +550,11 @@
 
   // ─── 初始化 ───
   // ─── 舰队配置列表 ───
-  const fleetConfigs = ref<Api.FleetConfig.FleetConfigItem[]>([])
+  const fleetConfigs = ref<FleetConfigRecord[]>([])
 
   async function loadFleetConfigs() {
     try {
-      const res = await fetchFleetConfigList({ current: 1, size: 100 })
+      const res = await unwrapContract(listFleetConfigs({ current: 1, size: 100 }))
       fleetConfigs.value = res?.list ?? []
     } catch {
       fleetConfigs.value = []

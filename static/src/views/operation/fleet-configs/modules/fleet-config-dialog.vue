@@ -271,20 +271,21 @@
                     <template v-if="canManage">
                       <ElSelect
                         v-model="itemEdits[item.id].importance"
+                        :placeholder="item.importance"
                         size="small"
                         class="item-settings-inline-select"
                         @change="onImportanceChange(item.id)"
                       >
-                        <ElOption value="required" :label="$t('fleetConfig.importance.required')" />
-                        <ElOption value="optional" :label="$t('fleetConfig.importance.optional')" />
                         <ElOption
-                          value="replaceable"
-                          :label="$t('fleetConfig.importance.replaceable')"
+                          v-for="option in itemImportanceOptions"
+                          :key="option"
+                          :value="option"
+                          :label="$t(`fleetConfig.importance.${option}`)"
                         />
                       </ElSelect>
                     </template>
                     <ElTag v-else size="small" effect="plain">
-                      {{ importanceLabel(itemEdits[item.id].importance) }}
+                      {{ $t(`fleetConfig.importance.${item.importance}`, item.importance) }}
                     </ElTag>
                   </div>
 
@@ -295,15 +296,20 @@
                     <template v-if="canManage">
                       <ElSelect
                         v-model="itemEdits[item.id].penalty"
+                        :placeholder="item.penalty"
                         size="small"
                         class="item-settings-inline-select"
                       >
-                        <ElOption value="half" :label="$t('fleetConfig.penalty.half')" />
-                        <ElOption value="none" :label="$t('fleetConfig.penalty.none')" />
+                        <ElOption
+                          v-for="option in itemPenaltyOptions"
+                          :key="option"
+                          :value="option"
+                          :label="$t(`fleetConfig.penalty.${option}`)"
+                        />
                       </ElSelect>
                     </template>
                     <ElTag v-else size="small" effect="plain">
-                      {{ penaltyLabel(itemEdits[item.id].penalty) }}
+                      {{ $t(`fleetConfig.penalty.${item.penalty}`, item.penalty) }}
                     </ElTag>
                   </div>
 
@@ -311,25 +317,29 @@
                     <span class="item-setting-field__label">{{
                       $t('fleetConfig.itemColumns.replacementPenalty')
                     }}</span>
-                    <template v-if="itemEdits[item.id].importance === 'replaceable'">
+                    <template v-if="isReplaceable(item)">
                       <template v-if="canManage">
                         <ElSelect
-                          v-model="itemEdits[item.id].replacement_penalty"
+                          v-model="itemEdits[item.id].replacementPenalty"
+                          :placeholder="item.replacement_penalty"
                           size="small"
                           class="item-settings-inline-select"
                         >
                           <ElOption
-                            value="half"
-                            :label="$t('fleetConfig.replacementPenalty.half')"
-                          />
-                          <ElOption
-                            value="none"
-                            :label="$t('fleetConfig.replacementPenalty.none')"
+                            v-for="option in itemPenaltyOptions"
+                            :key="option"
+                            :value="option"
+                            :label="$t(`fleetConfig.replacementPenalty.${option}`)"
                           />
                         </ElSelect>
                       </template>
                       <ElTag v-else size="small" effect="plain">
-                        {{ replacementPenaltyLabel(itemEdits[item.id].replacement_penalty) }}
+                        {{
+                          $t(
+                            `fleetConfig.replacementPenalty.${item.replacement_penalty}`,
+                            item.replacement_penalty
+                          )
+                        }}
                       </ElTag>
                     </template>
                     <span v-else class="item-settings-empty">-</span>
@@ -339,7 +349,7 @@
                     <span class="item-setting-field__label">{{
                       $t('fleetConfig.itemColumns.replacements')
                     }}</span>
-                    <template v-if="itemEdits[item.id].importance === 'replaceable'">
+                    <template v-if="isReplaceable(item)">
                       <div class="item-setting-replacements">
                         <span
                           class="item-setting-replacements__summary"
@@ -441,34 +451,51 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    FleetConfigFittingItem,
+    FleetConfigFittingItems,
+    FleetConfigRecord,
+    InfoFitting
+  } from '@/api/generated/client'
   import {
+    type SdeSearchItem,
     createFleetConfig,
+    exportToESI,
+    getFittingEFT,
+    getFittingItems,
+    importFromUserFitting,
+    updateFittingItemsSettings,
     updateFleetConfig,
-    importFittingFromUser,
-    exportFittingToESI,
-    fetchFleetConfigEFT,
-    fetchFittingItems,
-    updateFittingItemsSettings
-  } from '@/api/fleet-config'
-  import { fetchMyCharacters } from '@/api/auth'
-  import { fetchInfoFittings } from '@/api/eve-info'
+    listMyEveCharacters,
+    getFittings
+  } from '@/api/generated/client'
+
+  import { unwrapContract } from '@/api/response'
+
   import type { FormInstance, FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { useClipboard } from '@vueuse/core'
   import { useUserStore } from '@/store/modules/user'
   import SdeSearchSelect from '@/components/business/SdeSearchSelect.vue'
   import { iskToMillionInput, millionInputToIsk } from '@/utils/common'
+  import {
+    itemImportanceOptions,
+    itemPenaltyOptions,
+    toItemSettingsEdit,
+    toItemSettingsUpdate,
+    type ItemSettingsEdit
+  } from './item-settings-edit'
 
   const props = defineProps<{
     visible: boolean
-    editing: Api.FleetConfig.FleetConfigItem | null
+    editing: FleetConfigRecord | null
     readonly?: boolean
   }>()
 
   const emit = defineEmits<{
     (e: 'update:visible', val: boolean): void
     (e: 'success'): void
-    (e: 'created', config: Api.FleetConfig.FleetConfigItem): void
+    (e: 'created', config: FleetConfigRecord): void
   }>()
 
   const { t, locale } = useI18n()
@@ -484,7 +511,12 @@
   const submitLoading = ref(false)
 
   // 内部使用的装配类型（视图模式下附带 id）
-  type InternalFitting = Api.FleetConfig.FittingReq & { id?: number }
+  type InternalFitting = {
+    id?: number
+    fitting_name: string
+    eft: string
+    srp_amount: number
+  }
 
   const formData = reactive({
     name: '',
@@ -502,7 +534,7 @@
   async function loadEFTs(lang: string) {
     if (!props.editing) return
     try {
-      const res = await fetchFleetConfigEFT(props.editing.id, lang)
+      const res = await unwrapContract(getFittingEFT(props.editing.id, lang ? { lang } : undefined))
       const map: Record<number, string> = {}
       for (const item of res?.fittings ?? []) {
         map[item.id] = item.eft
@@ -540,7 +572,9 @@
             id: f.id
           }))
           // 异步加载英文 EFT 填入编辑模式
-          const eftRes = await fetchFleetConfigEFT(props.editing.id, 'en').catch(() => null)
+          const eftRes = await unwrapContract(
+            getFittingEFT(props.editing.id, { lang: 'en' })
+          ).catch(() => null)
           if (eftRes) {
             const eftById: Record<number, string> = {}
             for (const item of eftRes.fittings) {
@@ -605,18 +639,22 @@
     submitLoading.value = true
     try {
       if (props.editing) {
-        await updateFleetConfig(props.editing.id, {
-          name: formData.name,
-          description: formData.description,
-          fittings: formData.fittings
-        })
+        await unwrapContract(
+          updateFleetConfig(props.editing.id, {
+            name: formData.name,
+            description: formData.description,
+            fittings: formData.fittings
+          })
+        )
         ElMessage.success(t('fleetConfig.updateSuccess'))
       } else {
-        const newConfig = await createFleetConfig({
-          name: formData.name,
-          description: formData.description,
-          fittings: formData.fittings
-        })
+        const newConfig = await unwrapContract(
+          createFleetConfig({
+            name: formData.name,
+            description: formData.description,
+            fittings: formData.fittings
+          })
+        )
         ElMessage.success(t('fleetConfig.createSuccess'))
         emit('created', newConfig)
         return
@@ -634,7 +672,7 @@
 
   async function loadCharacters() {
     try {
-      const res = await fetchMyCharacters()
+      const res = await unwrapContract(listMyEveCharacters())
       characters.value = res ?? []
     } catch {
       characters.value = []
@@ -647,7 +685,7 @@
   const importForm = reactive({
     selection: undefined as string | undefined
   })
-  const userFittings = ref<Api.EveInfo.FittingResponse[]>([])
+  const userFittings = ref<InfoFitting[]>([])
 
   function buildImportSelectionKey(characterID: number, fittingID: number) {
     return `${characterID}:${fittingID}`
@@ -660,7 +698,7 @@
 
   async function loadUserFittings() {
     try {
-      const res = await fetchInfoFittings({ language: locale.value })
+      const res = await unwrapContract(getFittings({ language: locale.value }))
       userFittings.value = res?.fittings ?? []
     } catch {
       userFittings.value = []
@@ -681,10 +719,12 @@
     }
     importLoading.value = true
     try {
-      const result = await importFittingFromUser({
-        character_id: selected.character_id,
-        fitting_id: selected.fitting_id
-      })
+      const result = await unwrapContract(
+        importFromUserFitting({
+          character_id: selected.character_id,
+          fitting_id: selected.fitting_id
+        })
+      )
       if (result) {
         formData.fittings.push({
           fitting_name: result.fitting_name ?? '',
@@ -707,8 +747,8 @@
   const itemSettingsLoading = ref(false)
   const itemSettingsSaving = ref(false)
   const itemSettingsFittingId = ref(0)
-  const itemSettingsData = ref<Api.FleetConfig.FittingItemsResponse | null>(null)
-  const itemEdits = ref<Record<number, Api.FleetConfig.ItemSettingUpdate>>({})
+  const itemSettingsData = ref<FleetConfigFittingItems | null>(null)
+  const itemEdits = ref<Record<number, ItemSettingsEdit>>({})
   const itemSettingsActiveGroup = ref('')
   const replacementSearchId = ref<number | null>(null)
   const replacementEditorVisible = ref(false)
@@ -738,18 +778,18 @@
     replacementNameCache.value = {}
     closeReplacementEditor()
     try {
-      const res = await fetchFittingItems(props.editing.id, fittingId, locale.value)
+      const res = await unwrapContract(
+        getFittingItems(
+          props.editing.id,
+          fittingId,
+          locale.value ? { lang: locale.value } : undefined
+        )
+      )
       itemSettingsData.value = res
       // 初始化编辑状态
-      const edits: Record<number, Api.FleetConfig.ItemSettingUpdate> = {}
+      const edits: Record<number, ItemSettingsEdit> = {}
       for (const item of res?.items ?? []) {
-        edits[item.id] = {
-          id: item.id,
-          importance: item.importance,
-          penalty: item.penalty,
-          replacement_penalty: item.replacement_penalty,
-          replacements: item.replacements?.map((r) => r.type_id) ?? []
-        }
+        edits[item.id] = toItemSettingsEdit(item)
         // 缓存已有替代品名称
         for (const r of item.replacements ?? []) {
           replacementNameCache.value[r.type_id] = r.type_name
@@ -776,18 +816,8 @@
     }
   }
 
-  function importanceLabel(value: Api.FleetConfig.ItemSettingUpdate['importance']) {
-    return t(`fleetConfig.importance.${value}`)
-  }
-
-  function penaltyLabel(value: Api.FleetConfig.ItemSettingUpdate['penalty']) {
-    return t(`fleetConfig.penalty.${value}`)
-  }
-
-  function replacementPenaltyLabel(
-    value: Api.FleetConfig.ItemSettingUpdate['replacement_penalty']
-  ) {
-    return t(`fleetConfig.replacementPenalty.${value}`)
+  function isReplaceable(item: FleetConfigFittingItem) {
+    return (itemEdits.value[item.id]?.importance ?? item.importance) === 'replaceable'
   }
 
   function getReplacementLabels(itemId: number) {
@@ -824,14 +854,13 @@
   function removeReplacement(itemId: number, typeId: number) {
     const edit = itemEdits.value[itemId]
     if (!edit) return
-    edit.replacements = edit.replacements?.filter((id) => id !== typeId) ?? []
+    edit.replacements = edit.replacements.filter((id) => id !== typeId)
   }
 
-  function onReplacementSelect(itemId: number, item: Api.Sde.FuzzySearchItem | null) {
+  function onReplacementSelect(itemId: number, item: SdeSearchItem | null) {
     if (!item) return
     const edit = itemEdits.value[itemId]
     if (!edit) return
-    if (!edit.replacements) edit.replacements = []
     if (!edit.replacements.includes(item.id)) {
       edit.replacements.push(item.id)
       replacementNameCache.value[item.id] = item.name
@@ -842,7 +871,7 @@
   /** 按 flag_group 分组 */
   const groupedItems = computed(() => {
     const items = itemSettingsItems.value
-    const groups: Record<string, Api.FleetConfig.FittingItemDetail[]> = {}
+    const groups: Record<string, FleetConfigFittingItem[]> = {}
     for (const item of items) {
       const g = item.flag_group || 'Other'
       if (!groups[g]) groups[g] = []
@@ -863,10 +892,14 @@
     if (!props.editing) return
     itemSettingsSaving.value = true
     try {
-      const items = Object.values(itemEdits.value)
-      await updateFittingItemsSettings(props.editing.id, itemSettingsFittingId.value, {
-        items
-      })
+      const items = itemSettingsItems.value.map((item) =>
+        toItemSettingsUpdate(item, itemEdits.value[item.id])
+      )
+      await unwrapContract(
+        updateFittingItemsSettings(props.editing.id, itemSettingsFittingId.value, {
+          items
+        })
+      )
       ElMessage.success(t('fleetConfig.itemSettingsSaved'))
       itemSettingsVisible.value = false
     } catch (e: any) {
@@ -913,11 +946,13 @@
     if (!props.editing) return
     saveToGameLoading.value = true
     try {
-      await exportFittingToESI({
-        character_id: saveToGameCharacterID.value,
-        fleet_config_id: props.editing.id,
-        fitting_item_id: saveToGameFittingID.value
-      })
+      await unwrapContract(
+        exportToESI({
+          character_id: saveToGameCharacterID.value,
+          fleet_config_id: props.editing.id,
+          fitting_item_id: saveToGameFittingID.value
+        })
+      )
       saveToGameVisible.value = false
       ElMessage.success(t('fleetConfig.saveToGameSuccess'))
     } catch (e: any) {

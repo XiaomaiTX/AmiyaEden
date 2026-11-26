@@ -20,7 +20,7 @@ describe('info npc kills page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: [
               { character_id: 1001, character_name: 'Amiya', corporation_id: 1 },
@@ -33,7 +33,7 @@ describe('info npc kills page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               summary: {

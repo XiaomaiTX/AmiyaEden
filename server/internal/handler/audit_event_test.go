@@ -2,6 +2,7 @@ package handler
 
 import (
 	"amiya-eden/global"
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/model"
 	"amiya-eden/pkg/response"
 	"bytes"
@@ -44,18 +45,17 @@ func setupAuditEventHandlerTestDB(t *testing.T) {
 
 func newAuditEventHandlerRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
-	h := NewAuditEventHandler()
+	adapter := apicontract.NewStrictHandler(struct {
+		migratedOperationFallback
+		*AuditEventHandler
+	}{AuditEventHandler: NewAuditEventHandler()})
+	wrapper := apicontract.ServerInterfaceWrapper{Handler: adapter}
 	r := gin.New()
-	r.POST("/api/v1/system/audit/events", h.AdminList)
-	r.POST("/api/v1/system/audit/export", func(c *gin.Context) {
-		c.Set("userID", uint(1))
-		h.CreateExportTask(c)
-	})
-	r.GET("/api/v1/system/audit/export/:task_id", h.GetExportTaskStatus)
-	r.POST("/api/v1/system/audit/export/list", func(c *gin.Context) {
-		c.Set("userID", uint(1))
-		h.ListExportTasks(c)
-	})
+	r.Use(func(c *gin.Context) { c.Set("userID", uint(1)) })
+	r.POST("/api/v1/system/audit/events", wrapper.ListAuditEvents)
+	r.POST("/api/v1/system/audit/export", wrapper.CreateAuditExportTask)
+	r.GET("/api/v1/system/audit/export/:task_id", wrapper.GetAuditExportTaskStatus)
+	r.POST("/api/v1/system/audit/export/list", wrapper.ListAuditExportTasks)
 	return r
 }
 

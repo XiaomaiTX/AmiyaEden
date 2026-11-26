@@ -1,4 +1,5 @@
-import type { FuxiHallCard, FuxiHallContributions, FuxiHallFloor } from '@/types/api/fuxi-hall'
+import type { FuxiHallCard, FuxiHallContributions } from '@/types/api/fuxi-hall'
+import type { HallFloor as FuxiHallFloor } from '@/api/generated/client'
 
 export const CONTRIBUTION_KEYS = [
   'fleets',

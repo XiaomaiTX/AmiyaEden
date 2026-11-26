@@ -14,11 +14,12 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useEffect, useMemo, useState } from 'react'
-import { fetchMyCharacters } from '@/api/auth'
-import { fetchInfoShips } from '@/api/eve-info'
+import { listMyEveCharacters } from '@/api/generated/client'
+import { getCharacterShips } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useI18n } from '@/i18n'
 import type { EveCharacter } from '@/types/api/auth'
-import type { ShipResponse } from '@/types/api/eve-info'
+import type { InfoShipResponse } from '@/api/generated/client'
 
 export function InfoShipsPage() {
   const { t } = useI18n()
@@ -27,7 +28,7 @@ export function InfoShipsPage() {
   const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | null>(null)
   const [selectedGroup, setSelectedGroup] = useState('')
-  const [ships, setShips] = useState<ShipResponse | null>(null)
+  const [ships, setShips] = useState<InfoShipResponse | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -36,7 +37,9 @@ export function InfoShipsPage() {
       setLoading(true)
       setError(null)
       try {
-        const list = await fetchMyCharacters()
+        const list = await unwrapContract(listMyEveCharacters(), 'fetch characters failed').then(
+          (data) => data ?? []
+        )
         if (cancelled) return
         setCharacters(list)
         if (list.length > 0) {
@@ -66,7 +69,10 @@ export function InfoShipsPage() {
       setLoading(true)
       setError(null)
       try {
-        const data = await fetchInfoShips({ character_id: selectedCharacterId, language: 'en' })
+        const data = await unwrapContract(
+          getCharacterShips({ character_id: selectedCharacterId, language: 'en' }),
+          'fetch ships failed'
+        )
         if (!cancelled) setShips(data)
       } catch {
         if (!cancelled) {
@@ -105,7 +111,9 @@ export function InfoShipsPage() {
         </label>
         <Select
           selectedKey={String(selectedCharacterId ?? '')}
-          onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
+          onSelectionChange={(key) =>
+            ((value) => setSelectedCharacterId(Number(value)))(String(key))
+          }
         >
           <SelectTrigger id="ships-character" className="h-8">
             <SelectValue />

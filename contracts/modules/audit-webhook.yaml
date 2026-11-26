@@ -1,0 +1,284 @@
+paths:
+  /system/audit/events:
+    post:
+      operationId: listAuditEvents
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.audit.read"]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuditEventSearchInput' }
+      responses:
+        '200':
+          description: Audit event page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AuditEventPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/audit/export:
+    post:
+      operationId: createAuditExportTask
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.audit.read", "cap:system.audit.export"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuditExportCreateInput' }
+      responses:
+        '200':
+          description: Pending audit export task or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AuditExportTaskSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/audit/export/{task_id}:
+    get:
+      operationId: getAuditExportTaskStatus
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.audit.read"]
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Audit export task status or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AuditExportTaskSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/audit/export/list:
+    post:
+      operationId: listAuditExportTasks
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.audit.read"]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuditExportListInput' }
+      responses:
+        '200':
+          description: Current operator's export task history or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AuditExportListSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/webhook/config:
+    get:
+      operationId: getWebhookConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      responses:
+        '200':
+          description: Current webhook configuration or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/WebhookConfigSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: setWebhookConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WebhookConfigInput' }
+      responses:
+        '200':
+          description: Webhook configuration saved or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/webhook/test:
+    post:
+      operationId: testWebhook
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WebhookTestInput' }
+      responses:
+        '200':
+          description: Test message sent or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    AuditResult:
+      type: string
+      enum: [success, failed]
+    AuditEvent:
+      type: object
+      required: [id, event_id, occurred_at, category, action, actor_user_id, target_user_id, resource_type, resource_id, result, request_id, ip, user_agent, details_json, created_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        event_id: { type: string }
+        occurred_at: { type: string, format: date-time }
+        category: { type: string }
+        action: { type: string }
+        actor_user_id: { type: integer, x-go-type: uint }
+        target_user_id: { type: integer, x-go-type: uint }
+        resource_type: { type: string }
+        resource_id: { type: string }
+        result: { $ref: '#/components/schemas/AuditResult' }
+        request_id: { type: string }
+        ip: { type: string }
+        user_agent: { type: string }
+        details_json: { type: string, description: Raw JSON stored as text. }
+        created_at: { type: string, format: date-time }
+    AuditEventFilter:
+      type: object
+      properties:
+        start_date: { type: string, description: 'Inclusive UTC date (YYYY-MM-DD).', x-go-type-skip-optional-pointer: true }
+        end_date: { type: string, description: 'Inclusive UTC date (YYYY-MM-DD).', x-go-type-skip-optional-pointer: true }
+        category: { type: string, x-go-type-skip-optional-pointer: true }
+        action: { type: string, x-go-type-skip-optional-pointer: true }
+        actor_user_id: { type: integer, x-go-type: uint }
+        target_user_id: { type: integer, x-go-type: uint }
+        result:
+          allOf:
+            - $ref: '#/components/schemas/AuditResult'
+          x-go-type-skip-optional-pointer: true
+        request_id: { type: string, x-go-type-skip-optional-pointer: true }
+        resource_id: { type: string, x-go-type-skip-optional-pointer: true }
+        keyword: { type: string, description: Case-insensitive search in details_json., x-go-type-skip-optional-pointer: true }
+    AuditEventSearchInput:
+      allOf:
+        - $ref: '#/components/schemas/AuditEventFilter'
+        - type: object
+          properties:
+            current: { type: integer, x-go-type-skip-optional-pointer: true }
+            size: { type: integer, x-go-type-skip-optional-pointer: true }
+    AuditEventPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/AuditEvent' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    AuditEventPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AuditEventPage' }
+    AuditExportFormat:
+      type: string
+      enum: [csv, json]
+    AuditExportStatus:
+      type: string
+      enum: [pending, running, done, failed, expired]
+    AuditExportCreateInput:
+      type: object
+      required: [format]
+      properties:
+        format: { $ref: '#/components/schemas/AuditExportFormat' }
+        filter: { $ref: '#/components/schemas/AuditEventFilter' }
+    AuditExportListInput:
+      type: object
+      properties:
+        limit:
+          type: integer
+          default: 20
+          description: Non-positive values use the default; values above 200 are capped at 200.
+          x-go-type-skip-optional-pointer: true
+    AuditExportTaskStatus:
+      type: object
+      required: [task_id, status]
+      properties:
+        task_id: { type: string }
+        status: { $ref: '#/components/schemas/AuditExportStatus' }
+        format:
+          allOf:
+            - $ref: '#/components/schemas/AuditExportFormat'
+          x-go-type-skip-optional-pointer: true
+        download_url: { type: string, x-go-type-skip-optional-pointer: true }
+        error_message: { type: string, x-go-type-skip-optional-pointer: true }
+        expire_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time }
+    AuditExportTaskSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AuditExportTaskStatus' }
+    AuditExportListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/AuditExportTaskStatus' } }
+    WebhookType:
+      type: string
+      description: Provider type (discord, feishu, or dingtalk). An empty request value defaults to discord.
+    WebhookConfig:
+      type: object
+      required: [url, enabled, type, fleet_template]
+      properties:
+        url: { type: string, x-go-name: URL }
+        enabled: { type: boolean }
+        type: { $ref: '#/components/schemas/WebhookType' }
+        fleet_template: { type: string }
+    WebhookConfigInput:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, x-go-name: URL }
+        enabled: { type: boolean, x-go-type-skip-optional-pointer: true }
+        type:
+          allOf:
+            - $ref: '#/components/schemas/WebhookType'
+          x-go-type-skip-optional-pointer: true
+        fleet_template: { type: string, x-go-type-skip-optional-pointer: true }
+    WebhookTestInput:
+      type: object
+      properties:
+        url: { type: string, description: A missing or empty URL produces a business error., x-go-name: URL, x-go-type-skip-optional-pointer: true }
+        type:
+          allOf:
+            - $ref: '#/components/schemas/WebhookType'
+          x-go-type-skip-optional-pointer: true
+        content: { type: string, x-go-type-skip-optional-pointer: true }
+    WebhookConfigSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/WebhookConfig' }

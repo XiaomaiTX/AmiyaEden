@@ -1,0 +1,416 @@
+paths:
+  /admissions/context:
+    get:
+      operationId: getAdmissionContext
+      x-gin-access: ["jwt"]
+      responses:
+        '200':
+          description: Admission eligibility and review context or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AdmissionContextSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admissions/applications/me:
+    get:
+      operationId: listMyAdmissions
+      x-gin-access: ["jwt"]
+      parameters:
+        - { name: current, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 }, description: Values outside 1–100 use 20. }
+        - { name: status, in: query, schema: { type: string }, description: Empty or omitted selects all statuses; processed includes invited and rejected. }
+        - { name: kind, in: query, schema: { type: string }, description: Empty or omitted selects all kinds; otherwise new_member or alt. }
+        - { name: target_corporation_id, in: query, schema: { type: string }, description: An optional positive decimal corporation ID. }
+      responses:
+        '200':
+          description: Scoped admission application page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AdmissionPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admissions/applications:
+    post:
+      operationId: createAdmission
+      x-gin-body: { maxBytes: 5242880 }
+      x-gin-access: ["jwt"]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/AdmissionMultipartInput' }
+            encoding:
+              payload: { contentType: text/plain }
+              launcher: { contentType: "image/jpeg, image/png" }
+              seat_profile: { contentType: "image/jpeg, image/png" }
+      responses:
+        '200':
+          description: Saved admission application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AdmissionApplicationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admissions/applications/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    get:
+      operationId: getAdmission
+      x-gin-access: ["jwt"]
+      responses:
+        '200':
+          description: Authorized application details or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AdmissionDetailSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: editAdmission
+      x-gin-body: { maxBytes: 5242880 }
+      x-gin-access: ["jwt"]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/AdmissionMultipartInput' }
+            encoding:
+              payload: { contentType: text/plain }
+              launcher: { contentType: "image/jpeg, image/png" }
+              seat_profile: { contentType: "image/jpeg, image/png" }
+      responses:
+        '200':
+          description: Saved admission application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AdmissionApplicationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admissions/applications/{id}/resubmit:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    post:
+      operationId: resubmitAdmission
+      x-gin-body: { maxBytes: 5242880 }
+      x-gin-access: ["jwt"]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/AdmissionMultipartInput' }
+            encoding:
+              payload: { contentType: text/plain }
+              launcher: { contentType: "image/jpeg, image/png" }
+              seat_profile: { contentType: "image/jpeg, image/png" }
+      responses:
+        '200':
+          description: Saved admission application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AdmissionApplicationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admissions/applications/{id}/evidence/{kind}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+      - name: kind
+        in: path
+        required: true
+        schema: { $ref: '#/components/schemas/AdmissionEvidenceKind' }
+    get:
+      operationId: getAdmissionEvidence
+      x-gin-access: ["jwt"]
+      responses:
+        '200':
+          description: Private JPEG or a business error if the image is unavailable.
+          headers:
+            Cache-Control:
+              schema: { type: string, enum: ["private, no-store"] }
+            X-Content-Type-Options:
+              schema: { type: string, enum: [nosniff] }
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            application/json:
+              schema: { $ref: '#/components/schemas/BusinessError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/admissions/applications:
+    get:
+      operationId: listAdmissionReviews
+      x-gin-access: ["jwt", "role:recruiter,admin"]
+      parameters:
+        - { name: current, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 }, description: Values outside 1–100 use 20. }
+        - { name: status, in: query, schema: { type: string }, description: Empty or omitted selects all statuses; processed includes invited and rejected. }
+        - { name: kind, in: query, schema: { type: string }, description: Empty or omitted selects all kinds; otherwise new_member or alt. }
+        - { name: target_corporation_id, in: query, schema: { type: string }, description: An optional positive decimal corporation ID. }
+      responses:
+        '200':
+          description: Scoped admission application page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AdmissionPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/admissions/applications/{id}/invited:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    post:
+      operationId: inviteAdmission
+      x-gin-access: ["jwt", "role:recruiter,admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdmissionProcessInput' }
+      responses:
+        '200':
+          description: Saved admission application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AdmissionApplicationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/admissions/applications/{id}/reject:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    post:
+      operationId: rejectAdmission
+      x-gin-access: ["jwt", "role:recruiter,admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdmissionProcessInput' }
+      responses:
+        '200':
+          description: Saved admission application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AdmissionApplicationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    AdmissionKind:
+      type: string
+      enum: [new_member, alt]
+    AdmissionStatus:
+      type: string
+      enum: [pending, invited, rejected]
+    AdmissionEvidenceKind:
+      type: string
+      enum: [launcher, seat_profile]
+    AdmissionTarget:
+      type: object
+      required: [corporation_id, name]
+      properties:
+        corporation_id: { type: integer, format: int64 }
+        name: { type: string }
+    AdmissionCharacterOption:
+      type: object
+      required: [character_id, character_name, corporation_id]
+      properties:
+        character_id: { type: integer, format: int64 }
+        character_name: { type: string }
+        corporation_id: { type: integer, format: int64 }
+    AdmissionContext:
+      type: object
+      required: [is_member, can_create_new_member, can_create_alt, qq, discord_id, targets, characters, reviewable_corporation_ids]
+      properties:
+        is_member: { type: boolean }
+        can_create_new_member: { type: boolean }
+        can_create_alt: { type: boolean }
+        qq: { type: string }
+        discord_id: { type: string }
+        targets: { type: array, items: { $ref: '#/components/schemas/AdmissionTarget' } }
+        characters: { type: array, items: { $ref: '#/components/schemas/AdmissionCharacterOption' } }
+        reviewable_corporation_ids: { type: array, items: { type: integer, format: int64 } }
+    AdmissionCharacter:
+      type: object
+      required: [application_id, character_id, character_name]
+      properties:
+        application_id: { type: integer, x-go-type: uint }
+        character_id: { type: integer, format: int64 }
+        character_name: { type: string }
+    AdmissionApplication:
+      type: object
+      required: [id, user_id, kind, target_corporation_id, status, version, applicant_name, primary_character_id, qq, discord_id, note, submitted_at, handled_by, handler_name, closed_at, rejection_reason, evidence_expires_at, characters, created_at, updated_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        user_id: { type: integer, x-go-type: uint }
+        kind: { $ref: '#/components/schemas/AdmissionKind' }
+        target_corporation_id: { type: integer, format: int64 }
+        status: { $ref: '#/components/schemas/AdmissionStatus' }
+        version: { type: integer, x-go-type: uint }
+        applicant_name: { type: string }
+        primary_character_id: { type: integer, format: int64 }
+        qq: { type: string }
+        discord_id: { type: string }
+        note: { type: string }
+        submitted_at: { type: string, format: date-time }
+        handled_by: { type: integer, nullable: true, x-go-type: uint }
+        handler_name: { type: string }
+        closed_at: { type: string, format: date-time, nullable: true }
+        rejection_reason: { type: string }
+        evidence_expires_at: { type: string, format: date-time, nullable: true }
+        characters: { type: array, items: { $ref: '#/components/schemas/AdmissionCharacter' } }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AdmissionListItem:
+      allOf:
+        - $ref: '#/components/schemas/AdmissionApplication'
+        - type: object
+          required: [blacklisted]
+          properties:
+            blacklisted: { type: boolean, description: Only pending applications the reader can review are screened. }
+    AdmissionPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/AdmissionListItem' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer, x-go-name: PageSize }
+    AdmissionEvidence:
+      type: object
+      required: [application_id, kind, width, height, byte_size, updated_at]
+      properties:
+        application_id: { type: integer, x-go-type: uint }
+        kind: { $ref: '#/components/schemas/AdmissionEvidenceKind' }
+        width: { type: integer }
+        height: { type: integer }
+        byte_size: { type: integer }
+        updated_at: { type: string, format: date-time }
+    AdmissionEvent:
+      type: object
+      required: [id, application_id, version, actor_id, actor_name, action, from_status, to_status, reason, snapshot, created_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        application_id: { type: integer, x-go-type: uint }
+        version: { type: integer, x-go-type: uint }
+        actor_id: { type: integer, x-go-type: uint }
+        actor_name: { type: string }
+        action: { type: string }
+        from_status: { type: string }
+        to_status: { $ref: '#/components/schemas/AdmissionStatus' }
+        reason: { type: string }
+        snapshot: { type: string }
+        created_at: { type: string, format: date-time }
+    AdmissionSalary:
+      type: object
+      nullable: true
+      required: [application_id, user_id, amount, wallet_transaction_id, created_at]
+      properties:
+        application_id: { type: integer, x-go-type: uint }
+        user_id: { type: integer, x-go-type: uint }
+        amount: { type: number, format: double }
+        wallet_transaction_id: { type: integer, x-go-type: uint }
+        created_at: { type: string, format: date-time }
+    AdmissionBlacklistHit:
+      type: object
+      required: [kind, value, display, reason]
+      properties:
+        kind: { $ref: '#/components/schemas/BlacklistKind' }
+        value: { type: string }
+        display: { type: string }
+        reason: { type: string }
+    AdmissionDetail:
+      type: object
+      required: [application, evidence, events, salary, can_review, is_owner, blacklist_hits]
+      properties:
+        application: { $ref: '#/components/schemas/AdmissionApplication' }
+        evidence: { type: array, items: { $ref: '#/components/schemas/AdmissionEvidence' } }
+        events: { type: array, items: { $ref: '#/components/schemas/AdmissionEvent' } }
+        salary: { $ref: '#/components/schemas/AdmissionSalary' }
+        can_review: { type: boolean }
+        is_owner: { type: boolean }
+        blacklist_hits:
+          type: array
+          description: Only for a pending application the reader can review; empty otherwise.
+          items: { $ref: '#/components/schemas/AdmissionBlacklistHit' }
+    AdmissionMultipartInput:
+      type: object
+      required: [payload]
+      description: Entire multipart body is limited to 5 MiB. Each image is limited to 2 MiB; evidence requirements depend on the application kind and any retained evidence.
+      properties:
+        payload:
+          type: string
+          description: A plain text field containing a JSON object conforming to AdmissionWriteInput.
+        launcher: { type: string, format: binary }
+        seat_profile: { type: string, format: binary }
+    AdmissionWriteInput:
+      type: object
+      required: [kind, target_corporation_id, character_ids]
+      properties:
+        kind: { $ref: '#/components/schemas/AdmissionKind' }
+        target_corporation_id: { type: integer, format: int64 }
+        character_ids: { type: array, minItems: 1, items: { type: integer, format: int64 } }
+        note: { type: string, maxLength: 2000, x-go-type-skip-optional-pointer: true }
+        expected_version:
+          type: integer
+          description: Required and positive when editing or resubmitting. Ignored when creating.
+          x-go-type: uint
+          x-go-type-skip-optional-pointer: true
+    AdmissionProcessInput:
+      type: object
+      required: [expected_version]
+      properties:
+        expected_version: { type: integer, minimum: 1, x-go-type: uint, x-oapi-codegen-extra-tags: { binding: required } }
+        reason: { type: string, description: Required when rejecting., x-go-type-skip-optional-pointer: true }
+    AdmissionContextSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AdmissionContext' }
+    AdmissionPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AdmissionPage' }
+    AdmissionApplicationSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AdmissionApplication' }
+    AdmissionDetailSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AdmissionDetail' }

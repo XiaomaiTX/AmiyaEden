@@ -74,7 +74,7 @@
 </template>
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
-  import type { RefundCalculation } from '@/types/api/captain-refund'
+  import type { CaptainRefundCalculation as RefundCalculation } from '@/api/generated/client'
   import { formatTime } from '@utils/common'
   defineProps<{ value: RefundCalculation }>()
   const { t } = useI18n()

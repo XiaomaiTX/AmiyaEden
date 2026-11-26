@@ -161,11 +161,13 @@
 </template>
 
 <script setup lang="ts">
+  import type { SystemWalletAnalytics, SystemWalletAnalyticsInput } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import { ElMessage } from 'element-plus'
   import { ColumnOption } from '@/types'
   import { formatFuxiCoinAmount } from '@utils/common'
-  import { adminGetWalletAnalytics } from '@/api/sys-wallet'
+  import { adminGetSystemWalletAnalytics } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import ArtLineChart from '@/components/core/charts/art-line-chart/index.vue'
   import ArtRingChart from '@/components/core/charts/art-ring-chart/index.vue'
 
@@ -176,7 +178,7 @@
   const refTypes = ref<string[]>([])
   const userKeyword = ref('')
   const loading = ref(false)
-  const analytics = ref<Api.SysWallet.WalletAnalytics | null>(null)
+  const analytics = ref<SystemWalletAnalytics | null>(null)
   type LocalSort = { prop: string; order: 'ascending' | 'descending' }
   const localSortState = reactive<{
     topInflow: LocalSort
@@ -448,7 +450,7 @@
   const loadData = async () => {
     loading.value = true
     try {
-      const payload: Api.SysWallet.AnalyticsParams = {
+      const payload: SystemWalletAnalyticsInput = {
         ref_types: refTypes.value.length ? refTypes.value : undefined,
         user_keyword: userKeyword.value.trim() || undefined,
         top_n: 10
@@ -457,9 +459,11 @@
         payload.start_date = dateRange.value[0]
         payload.end_date = dateRange.value[1]
       }
-      analytics.value = await adminGetWalletAnalytics({
-        ...payload
-      })
+      analytics.value = await unwrapContract(
+        adminGetSystemWalletAnalytics({
+          ...payload
+        })
+      )
     } catch (e: any) {
       ElMessage.error(e?.message ?? t('walletAdmin.messages.actionFailed'))
     } finally {

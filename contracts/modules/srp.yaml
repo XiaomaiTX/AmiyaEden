@@ -1,0 +1,707 @@
+paths:
+  /srp/prices:
+    get:
+      operationId: listSrpShipPrices
+      x-gin-access: ["jwt", "login", "cap:srp.user"]
+      parameters:
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Ship price list or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpShipPricesSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: upsertSrpShipPrice
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:admin,senior_fc"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SrpShipPriceInput' }
+      responses:
+        '200':
+          description: Saved ship price or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpShipPriceSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/prices/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    delete:
+      operationId: deleteSrpShipPrice
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:admin,senior_fc"]
+      responses:
+        '200':
+          description: Operation completed or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/config:
+    get:
+      operationId: getSrpConfig
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:admin"]
+      responses:
+        '200':
+          description: SRP configuration or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpConfigSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateSrpConfig
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SrpConfigInput' }
+      responses:
+        '200':
+          description: Operation completed or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/applications:
+    get:
+      operationId: listSrpApplications
+      x-gin-ignore-invalid-query: ["character_id", "corporation_id", "ship_type_id", "solar_system_id", "has_recommended_match"]
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:srp,senior_fc,admin"]
+      parameters:
+        - { name: current, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 }, description: Page size capped at 1000. }
+        - { name: fleet_id, in: query, schema: { type: string } }
+        - { name: review_status, in: query, schema: { type: string } }
+        - { name: payout_status, in: query, schema: { type: string } }
+        - { name: tab, in: query, schema: { type: string } }
+        - { name: keyword, in: query, schema: { type: string } }
+        - { name: sort_by, in: query, schema: { type: string } }
+        - { name: sort_order, in: query, schema: { type: string } }
+        - { name: character_id, in: query, schema: { type: integer, format: int64 }, description: Malformed values are ignored. }
+        - { name: corporation_id, in: query, schema: { type: integer, format: int64 }, description: Malformed values are ignored. }
+        - { name: ship_type_id, in: query, schema: { type: integer, format: int64 }, description: Malformed values are ignored. }
+        - { name: solar_system_id, in: query, schema: { type: integer, format: int64 }, description: Malformed values are ignored. }
+        - { name: has_recommended_match, in: query, schema: { type: boolean }, description: Malformed values are ignored. }
+      responses:
+        '200':
+          description: SRP application page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpApplicationPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: submitSrpApplication
+      x-gin-access: ["jwt", "login", "cap:srp.user"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SrpSubmitInput' }
+      responses:
+        '200':
+          description: SRP application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpApplicationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/applications/me:
+    get:
+      operationId: listMySrpApplications
+      x-gin-access: ["jwt", "login", "cap:srp.user"]
+      parameters:
+        - { name: current, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 }, description: Values outside 1–100 use 20. }
+      responses:
+        '200':
+          description: SRP application page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpApplicationPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/killmails/me:
+    get:
+      operationId: getMySrpKillmails
+      x-gin-ignore-invalid-query: ["character_id"]
+      x-gin-access: ["jwt", "login", "cap:srp.user"]
+      parameters:
+        - { name: character_id, in: query, schema: { type: integer, format: int64 }, description: Omitted and malformed values select all owned characters. }
+        - { name: limit, in: query, schema: { type: integer, default: 200 }, description: Nonpositive values use 200 and larger values are capped at 200. }
+        - { name: exclude_submitted, in: query, schema: { type: boolean, default: false } }
+      responses:
+        '200':
+          description: Eligible killmail list or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpKillmailsSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/killmails/fleet/{fleet_id}:
+    parameters:
+      - { name: fleet_id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getSrpFleetKillmails
+      x-gin-ignore-invalid-query: ["character_id"]
+      x-gin-access: ["jwt", "login", "cap:srp.user"]
+      parameters:
+        - { name: character_id, in: query, schema: { type: integer, format: int64 }, description: This filter is ignored for fleet loss lists. }
+        - { name: limit, in: query, schema: { type: integer, default: 200 }, description: Nonpositive values use 200 and larger values are capped at 200. }
+        - { name: exclude_submitted, in: query, schema: { type: boolean, default: false } }
+      responses:
+        '200':
+          description: Eligible killmail list or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpKillmailsSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/killmails/detail:
+    post:
+      operationId: getSrpKillmailDetail
+      x-gin-access: ["jwt", "login", "cap:srp.user"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SrpKillmailDetailInput' }
+      responses:
+        '200':
+          description: Killmail fitting or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpKillmailDetailSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/open-info-window:
+    post:
+      operationId: openSrpInfoWindow
+      x-gin-access: ["jwt", "login", "cap:srp.user"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SrpOpenInfoInput' }
+      responses:
+        '200':
+          description: Operation completed or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/applications/fleet-options:
+    get:
+      operationId: listSrpFleetOptions
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:srp,senior_fc,admin"]
+      responses:
+        '200':
+          description: Fleet filter options or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpFleetOptionsSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/applications/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    get:
+      operationId: getSrpApplication
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:srp,senior_fc,admin"]
+      responses:
+        '200':
+          description: SRP application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpApplicationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/applications/{id}/review:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    put:
+      operationId: reviewSrpApplication
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:srp,senior_fc,admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SrpReviewInput' }
+      responses:
+        '200':
+          description: SRP application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpApplicationSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/applications/auto-approve:
+    put:
+      operationId: runSrpFleetAutoApproval
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:srp,senior_fc,admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SrpAutoApproveInput' }
+      responses:
+        '200':
+          description: Automatic approval counts or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpAutoApproveSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/applications/batch-payout-summary:
+    get:
+      operationId: listSrpBatchPayoutSummary
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:srp,senior_fc,admin"]
+      responses:
+        '200':
+          description: Outstanding payout totals per user or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpBatchPayoutSummariesSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/applications/fuxi-payout:
+    put:
+      operationId: batchPayoutSrpAsFuxiCoin
+      x-gin-body: { ignored: true }
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:srp,senior_fc,admin"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SrpIgnoredBody' }
+      responses:
+        '200':
+          description: Fuxi Coin payout summary or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpFuxiPayoutSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/applications/{id}/payout:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    put:
+      operationId: payoutSrpApplication
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:srp,senior_fc,admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SrpPayoutInput' }
+      responses:
+        '200':
+          description: Paid application and any mail result or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpPayoutSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /srp/applications/users/{user_id}/payout:
+    parameters:
+      - { name: user_id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    put:
+      operationId: batchPayoutSrpByUser
+      x-gin-body: { ignored: true }
+      x-gin-access: ["jwt", "login", "cap:srp.manage", "role:srp,senior_fc,admin"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SrpIgnoredBody' }
+      responses:
+        '200':
+          description: User payout summary or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SrpBatchPayoutSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    SrpConfig:
+      type: object
+      required: [amount_limit]
+      properties:
+        amount_limit: { type: number, format: double }
+    SrpConfigInput:
+      type: object
+      required: [amount_limit]
+      properties:
+        amount_limit: { type: number, format: double, minimum: 0, x-go-type: '*float64', x-oapi-codegen-extra-tags: { binding: 'required,min=0' } }
+    SrpShipPriceInput:
+      type: object
+      required: [ship_type_id, ship_name, amount]
+      properties:
+        id: { type: integer, x-go-type: uint, x-go-type-skip-optional-pointer: true }
+        ship_type_id: { type: integer, format: int64, x-go-name: ShipTypeID, x-oapi-codegen-extra-tags: { binding: required } }
+        ship_name: { type: string, minLength: 1, x-oapi-codegen-extra-tags: { binding: required } }
+        amount: { type: number, format: double, minimum: 0, exclusiveMinimum: true, x-oapi-codegen-extra-tags: { binding: 'required,min=0' } }
+    SrpShipPrice:
+      type: object
+      required: [id, ship_type_id, ship_name, amount, created_by, updated_by, created_at, updated_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        ship_type_id: { type: integer, format: int64 }
+        ship_name: { type: string }
+        amount: { type: number, format: double }
+        created_by: { type: integer, x-go-type: uint }
+        updated_by: { type: integer, x-go-type: uint }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    SrpSubmitInput:
+      type: object
+      required: [character_id, killmail_id]
+      properties:
+        character_id: { type: integer, format: int64, x-go-name: CharacterID, x-oapi-codegen-extra-tags: { binding: required } }
+        killmail_id: { type: integer, format: int64, x-go-name: KillmailID, x-oapi-codegen-extra-tags: { binding: required } }
+        fleet_id: { type: string, nullable: true }
+        note: { type: string, x-go-type-skip-optional-pointer: true }
+    SrpReviewStatus:
+      type: string
+      enum: [submitted, approved, rejected]
+    SrpPayoutStatus:
+      type: string
+      enum: [notpaid, paid]
+    SrpApplication:
+      type: object
+      required: [id, user_id, character_id, character_name, killmail_id, note, ship_type_id, solar_system_id, killmail_time, corporation_id, alliance_id, recommended_amount, final_amount, review_status, review_note, payout_status, created_at, updated_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        user_id: { type: integer, x-go-type: uint }
+        character_id: { type: integer, format: int64 }
+        character_name: { type: string }
+        killmail_id: { type: integer, format: int64 }
+        fleet_id: { type: string }
+        note: { type: string }
+        ship_type_id: { type: integer, format: int64 }
+        ship_name: { type: string, x-go-type-skip-optional-pointer: true }
+        solar_system_id: { type: integer, format: int64 }
+        solar_system_name: { type: string, x-go-type-skip-optional-pointer: true }
+        killmail_time: { type: string, format: date-time }
+        corporation_id: { type: integer, format: int64 }
+        corporation_name: { type: string, x-go-type-skip-optional-pointer: true }
+        alliance_id: { type: integer, format: int64 }
+        alliance_name: { type: string, x-go-type-skip-optional-pointer: true }
+        recommended_amount: { type: number, format: double }
+        final_amount: { type: number, format: double }
+        review_status: { $ref: '#/components/schemas/SrpReviewStatus' }
+        reviewed_by: { type: integer, x-go-type: uint }
+        reviewed_at: { type: string, format: date-time }
+        review_note: { type: string }
+        payout_status: { $ref: '#/components/schemas/SrpPayoutStatus' }
+        paid_by: { type: integer, x-go-type: uint }
+        paid_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        fleet_title: { type: string, x-go-type-skip-optional-pointer: true }
+        fleet_fc_name: { type: string, x-go-type-skip-optional-pointer: true }
+        nickname: { type: string, x-go-type-skip-optional-pointer: true }
+        last_actor_nickname: { type: string, x-go-type-skip-optional-pointer: true }
+    SrpApplicationPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/SrpApplication' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer, x-go-name: PageSize }
+    SrpReviewInput:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [approve, reject], x-oapi-codegen-extra-tags: { binding: 'required,oneof=approve reject' } }
+        review_note: { type: string, x-go-type-skip-optional-pointer: true }
+        final_amount: { type: number, format: double, x-go-type-skip-optional-pointer: true }
+    SrpPayoutMode:
+      type: string
+      enum: [manual_transfer, fuxi_coin]
+    SrpPayoutInput:
+      type: object
+      properties:
+        final_amount: { type: number, format: double, x-go-type-skip-optional-pointer: true }
+        mode:
+          allOf:
+            - $ref: '#/components/schemas/SrpPayoutMode'
+          description: Defaults to manual transfer when omitted or empty.
+          x-go-type-skip-optional-pointer: true
+    SrpIgnoredBody:
+      type: object
+      description: An empty object may be sent; the server ignores the request body.
+      additionalProperties: true
+    SrpMailAttempt:
+      type: object
+      properties:
+        mail_error: { type: string, x-go-type-skip-optional-pointer: true }
+        mail_id: { type: integer, format: int64, x-go-type-skip-optional-pointer: true }
+        mail_sender_character_id: { type: integer, format: int64, x-go-type-skip-optional-pointer: true }
+        mail_sender_character_name: { type: string, x-go-type-skip-optional-pointer: true }
+        mail_recipient_character_id: { type: integer, format: int64, x-go-type-skip-optional-pointer: true }
+        mail_recipient_character_name: { type: string, x-go-type-skip-optional-pointer: true }
+    SrpPayoutResult:
+      allOf:
+        - $ref: '#/components/schemas/SrpApplication'
+        - $ref: '#/components/schemas/SrpMailAttempt'
+    SrpBatchPayoutSummary:
+      type: object
+      required: [user_id, main_character_id, main_character_name, total_amount, application_count]
+      properties:
+        user_id: { type: integer, x-go-type: uint }
+        nickname: { type: string, x-go-type-skip-optional-pointer: true }
+        main_character_id: { type: integer, format: int64 }
+        main_character_name: { type: string }
+        total_amount: { type: number, format: double }
+        application_count: { type: integer, format: int64 }
+    SrpBatchPayoutResult:
+      allOf:
+        - $ref: '#/components/schemas/SrpBatchPayoutSummary'
+        - $ref: '#/components/schemas/SrpMailAttempt'
+    SrpFuxiPayoutSummary:
+      type: object
+      required: [application_count, user_count, total_isk_amount, total_fuxi_coin]
+      properties:
+        application_count: { type: integer }
+        user_count: { type: integer }
+        total_isk_amount: { type: number, format: double }
+        total_fuxi_coin: { type: number, format: double }
+    SrpFuxiPayoutResult:
+      allOf:
+        - $ref: '#/components/schemas/SrpFuxiPayoutSummary'
+        - $ref: '#/components/schemas/SrpMailAttempt'
+    SrpAutoApproveInput:
+      type: object
+      required: [fleet_id]
+      properties:
+        fleet_id: { type: string, minLength: 1, x-go-name: FleetID, x-oapi-codegen-extra-tags: { binding: required } }
+    SrpAutoApproveSummary:
+      type: object
+      required: [checked_count, approved_count, skipped_count]
+      properties:
+        checked_count: { type: integer }
+        approved_count: { type: integer }
+        skipped_count: { type: integer }
+    SrpFleetOption:
+      type: object
+      required: [fleet_id]
+      properties:
+        fleet_id: { type: string }
+        fleet_title: { type: string, x-go-type-skip-optional-pointer: true }
+        fleet_fc_name: { type: string, x-go-type-skip-optional-pointer: true }
+    SrpKillmail:
+      type: object
+      required: [killmail_id, killmail_time, ship_type_id, solar_system_id, character_id, victim_name]
+      properties:
+        killmail_id: { type: integer, format: int64 }
+        killmail_time: { type: string, format: date-time }
+        ship_type_id: { type: integer, format: int64 }
+        solar_system_id: { type: integer, format: int64 }
+        character_id: { type: integer, format: int64 }
+        victim_name: { type: string }
+    SrpKillmailDetailInput:
+      type: object
+      required: [killmail_id]
+      properties:
+        killmail_id: { type: integer, format: int64, x-go-name: KillmailID, x-oapi-codegen-extra-tags: { binding: required } }
+        language: { type: string, x-go-type-skip-optional-pointer: true }
+    SrpKillmailSlotItem:
+      type: object
+      required: [item_id, item_name, quantity, dropped]
+      properties:
+        item_id: { type: integer }
+        item_name: { type: string }
+        quantity: { type: integer, format: int64 }
+        dropped: { type: boolean }
+    SrpKillmailSlotGroup:
+      type: object
+      required: [flag_id, flag_name, flag_text, order_id, items]
+      properties:
+        flag_id: { type: integer }
+        flag_name: { type: string }
+        flag_text: { type: string }
+        order_id: { type: integer }
+        items: { type: array, items: { $ref: '#/components/schemas/SrpKillmailSlotItem' } }
+    SrpKillmailDetail:
+      type: object
+      required: [killmail_id, killmail_time, ship_type_id, ship_name, solar_system_id, system_name, character_id, character_name, janice_amount, slots]
+      properties:
+        killmail_id: { type: integer, format: int64 }
+        killmail_time: { type: string, format: date-time }
+        ship_type_id: { type: integer, format: int64 }
+        ship_name: { type: string }
+        solar_system_id: { type: integer, format: int64 }
+        system_name: { type: string }
+        character_id: { type: integer, format: int64 }
+        character_name: { type: string }
+        janice_amount: { type: number, format: double, nullable: true }
+        slots: { type: array, items: { $ref: '#/components/schemas/SrpKillmailSlotGroup' } }
+    SrpOpenInfoInput:
+      type: object
+      required: [character_id, target_id]
+      properties:
+        character_id: { type: integer, format: int64, x-go-name: CharacterID, x-oapi-codegen-extra-tags: { binding: required } }
+        target_id: { type: integer, format: int64, x-go-name: TargetID, x-oapi-codegen-extra-tags: { binding: required } }
+    SrpShipPricesSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/SrpShipPrice' } }
+    SrpShipPriceSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SrpShipPrice' }
+    SrpConfigSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SrpConfig' }
+    SrpApplicationPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SrpApplicationPage' }
+    SrpApplicationSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SrpApplication' }
+    SrpKillmailsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/SrpKillmail' } }
+    SrpKillmailDetailSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SrpKillmailDetail' }
+    SrpFleetOptionsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/SrpFleetOption' } }
+    SrpAutoApproveSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SrpAutoApproveSummary' }
+    SrpBatchPayoutSummariesSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/SrpBatchPayoutSummary' } }
+    SrpFuxiPayoutSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SrpFuxiPayoutResult' }
+    SrpPayoutSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SrpPayoutResult' }
+    SrpBatchPayoutSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SrpBatchPayoutResult' }

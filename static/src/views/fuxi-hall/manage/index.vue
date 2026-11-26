@@ -303,20 +303,29 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    HallAvatarShape,
+    HallCardCreate,
+    HallCardUpdate,
+    HallFloor,
+    HallPage,
+    HallPageKey
+  } from '@/api/generated/client'
   import { computed, onActivated, onMounted, reactive, ref } from 'vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   import {
-    refreshFuxiHallContributions,
-    createFuxiHallCard,
-    deleteFuxiHallCard,
-    fetchFuxiHallCards,
-    fetchFuxiHallPage,
-    reorderFuxiHallCards,
-    updateFuxiHallCard,
-    updateFuxiHallPage
-  } from '@/api/fuxi-hall'
+    createCard,
+    deleteHallCard,
+    getHallPageConfig,
+    listHallCards,
+    refreshContributions as refreshHallContributions,
+    reorderCards,
+    updateHallCard,
+    updateHallPageConfig
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import FuxiHallMemberCard from '../components/FuxiHallMemberCard.vue'
   import FuxiHallBanner from '../components/FuxiHallBanner.vue'
 
@@ -327,8 +336,8 @@
   const loading = ref(false)
   const savingPage = ref(false)
   const savingCard = ref(false)
-  const currentPageKey = ref<Api.FuxiHall.PageKey>('hall-of-fame')
-  const pageConfig = ref<Api.FuxiHall.PageConfig | null>(null)
+  const currentPageKey = ref<HallPageKey>('hall-of-fame')
+  const pageConfig = ref<HallPage | null>(null)
   const cards = ref<Api.FuxiHall.Card[]>([])
 
   const cardDialogOpen = ref(false)
@@ -339,17 +348,17 @@
     title: string
     subtitle: string
     description_html: string
-    floors: Api.FuxiHall.Floor[]
+    floors: HallFloor[]
   }
 
   type CardFormState = {
-    page_key: Api.FuxiHall.PageKey
+    page_key: HallPageKey
     nickname: string
     main_character_name: string
     title_tags: string[]
     description_html: string
     accent_color: string
-    avatar_shape: Api.FuxiHall.AvatarShape
+    avatar_shape: HallAvatarShape
     font_scale: number
     visible: boolean
     floor_key: string
@@ -479,8 +488,8 @@
     loading.value = true
     try {
       const [nextPage, nextCards] = await Promise.all([
-        fetchFuxiHallPage(currentPageKey.value),
-        fetchFuxiHallCards(currentPageKey.value)
+        unwrapContract(getHallPageConfig(currentPageKey.value, { showErrorMessage: false })),
+        unwrapContract(listHallCards(currentPageKey.value, { showErrorMessage: false }))
       ])
       pageConfig.value = nextPage
       cards.value = nextCards
@@ -509,12 +518,18 @@
 
     savingPage.value = true
     try {
-      const saved = await updateFuxiHallPage(currentPageKey.value, {
-        title: pageForm.title.trim(),
-        subtitle: pageForm.subtitle?.trim() || '',
-        floors: pageForm.floors,
-        description_html: pageForm.description_html || ''
-      })
+      const saved = await unwrapContract(
+        updateHallPageConfig(
+          currentPageKey.value,
+          {
+            title: pageForm.title.trim(),
+            subtitle: pageForm.subtitle?.trim() || '',
+            floors: pageForm.floors,
+            description_html: pageForm.description_html || ''
+          },
+          { showErrorMessage: false }
+        )
+      )
       pageConfig.value = saved
       ElMessage.success(t('fuxiHall.manage.saveSuccess'))
     } catch (error) {
@@ -587,7 +602,7 @@
       return
     }
 
-    const payload: Api.FuxiHall.CreateCardParams = {
+    const payload: HallCardCreate = {
       page_key: currentPageKey.value,
       nickname: cardForm.nickname.trim(),
       main_character_name: cardForm.main_character_name.trim(),
@@ -605,10 +620,12 @@
     savingCard.value = true
     try {
       if (editingCardId.value) {
-        const updatePayload: Api.FuxiHall.UpdateCardParams = { ...payload }
-        await updateFuxiHallCard(editingCardId.value, updatePayload)
+        const updatePayload: HallCardUpdate = { ...payload }
+        await unwrapContract(
+          updateHallCard(editingCardId.value, updatePayload, { showErrorMessage: false })
+        )
       } else {
-        await createFuxiHallCard(payload)
+        await unwrapContract(createCard(payload, { showErrorMessage: false }))
       }
       await loadCards()
       cardFormSnapshot = ''
@@ -630,7 +647,7 @@
   async function refreshContributions() {
     refreshing.value = true
     try {
-      await refreshFuxiHallContributions()
+      await unwrapContract(refreshHallContributions({ showErrorMessage: false }))
       await loadCards()
       ElMessage.success(t('fuxiHall.contributions.refreshed'))
     } catch (error) {
@@ -646,7 +663,9 @@
     }
   }
   async function loadCards() {
-    cards.value = await fetchFuxiHallCards(currentPageKey.value)
+    cards.value = await unwrapContract(
+      listHallCards(currentPageKey.value, { showErrorMessage: false })
+    )
   }
 
   async function removeCard(card: Api.FuxiHall.Card) {
@@ -661,7 +680,7 @@
     }
 
     try {
-      await deleteFuxiHallCard(card.id)
+      await unwrapContract(deleteHallCard(card.id, { showErrorMessage: false }))
       await loadCards()
       ElMessage.success(t('fuxiHall.manage.deleteSuccess'))
     } catch (error) {
@@ -692,10 +711,15 @@
     cards.value = reordered
 
     try {
-      await reorderFuxiHallCards({
-        page_key: currentPageKey.value,
-        ordered_ids: reordered.map((card) => card.id)
-      })
+      await unwrapContract(
+        reorderCards(
+          {
+            page_key: currentPageKey.value,
+            ordered_ids: reordered.map((card) => card.id)
+          },
+          { showErrorMessage: false }
+        )
+      )
     } catch (error) {
       cards.value = previous
       ElMessage.error(

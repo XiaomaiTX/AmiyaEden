@@ -1,66 +1,43 @@
-import request from '@/utils/http'
+import * as api from './generated/client'
 import type {
-  AdmissionApplication,
-  AdmissionContext,
-  AdmissionDetail,
-  AdmissionList,
   AdmissionWriteInput,
-  EvidenceKind
-} from '@/types/api/admissions'
+  AdmissionEvidenceKind as EvidenceKind
+} from '@/api/generated/client'
+import { unwrapContract } from './response'
 
-const base = '/api/v1/admissions'
 const options = { showErrorMessage: false }
-export function getAdmissionContext() {
-  return request.get<AdmissionContext>({ url: `${base}/context`, ...options })
+
+function unwrap<T>(request: Parameters<typeof unwrapContract<T>>[0]) {
+  return unwrapContract(request, 'admissions.errors.internal')
 }
-export function listAdmissions(reviewer: boolean, page = 1, status = '', target = '', kind = '') {
-  return request.get<AdmissionList>({
-    url: reviewer ? '/api/v1/system/admissions/applications' : `${base}/applications/me`,
-    params: {
-      current: page,
-      size: 20,
-      status,
-      kind,
-      ...(target ? { target_corporation_id: target } : {})
-    },
-    ...options
-  })
+
+export async function getAdmissionEvidence(id: number, kind: EvidenceKind): Promise<Blob> {
+  const result = await api.getAdmissionEvidence(id, kind, options)
+  if ('code' in result) throw new Error(result.msg || 'admissions.errors.evidence')
+  if (result.type !== 'image/jpeg') throw new Error('admissions.errors.evidence')
+  return result
 }
-export function getAdmission(id: number) {
-  return request.get<AdmissionDetail>({ url: `${base}/applications/${id}`, ...options })
-}
-export function getAdmissionEvidence(id: number, kind: EvidenceKind) {
-  return request.get<Blob>({
-    url: `${base}/applications/${id}/evidence/${kind}`,
-    responseType: 'blob',
-    ...options
-  })
-}
+
 export function saveAdmission(
   input: AdmissionWriteInput,
   files: Partial<Record<EvidenceKind, Blob>>,
   id?: number,
   resubmit = false
 ) {
-  const data = new FormData()
-  data.append('payload', JSON.stringify(input))
-  for (const [kind, blob] of Object.entries(files)) data.append(kind, blob, `${kind}.jpg`)
-  return request.request<AdmissionApplication>({
-    url: `${base}/applications${id ? `/${id}${resubmit ? '/resubmit' : ''}` : ''}`,
-    method: id && !resubmit ? 'PUT' : 'POST',
-    data,
-    ...options
-  })
-}
-export function processAdmission(
-  id: number,
-  expected_version: number,
-  action: 'invited' | 'reject',
-  reason = ''
-) {
-  return request.post<AdmissionApplication>({
-    url: `/api/v1/system/admissions/applications/${id}/${action}`,
-    data: { expected_version, reason },
-    ...options
-  })
+  const data: api.AdmissionMultipartInput = { payload: JSON.stringify(input) }
+  if (files.launcher) {
+    data.launcher = new File([files.launcher], 'launcher.jpg', { type: files.launcher.type })
+  }
+  if (files.seat_profile) {
+    data.seat_profile = new File([files.seat_profile], 'seat_profile.jpg', {
+      type: files.seat_profile.type
+    })
+  }
+  return unwrap(
+    id
+      ? resubmit
+        ? api.resubmitAdmission(id, data, options)
+        : api.editAdmission(id, data, options)
+      : api.createAdmission(data, options)
+  )
 }

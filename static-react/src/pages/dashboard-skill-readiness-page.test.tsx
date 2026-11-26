@@ -5,18 +5,21 @@ import { I18nProvider } from '@/i18n'
 import { DashboardSkillReadinessPage } from '@/pages/dashboard-skill-readiness-page'
 import { usePreferenceStore, useSessionStore } from '@/stores'
 import {
-  fetchSkillReadinessCharacterSkills,
-  fetchSkillReadinessOptions,
-  fetchSkillReadinessUserCharacters,
+  getSkillReadinessCharacterSkills,
+  getSkillReadinessOptions,
+  getSkillReadinessUserCharacters,
   querySkillReadiness,
-} from '@/api/skill-readiness'
+} from '@/api/generated/client'
 
-vi.mock('@/api/skill-readiness', () => ({
-  fetchSkillReadinessOptions: vi.fn(),
+vi.mock('@/api/generated/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/api/generated/client')>()),
+  getSkillReadinessOptions: vi.fn(),
   querySkillReadiness: vi.fn(),
-  fetchSkillReadinessUserCharacters: vi.fn(),
-  fetchSkillReadinessCharacterSkills: vi.fn(),
+  getSkillReadinessUserCharacters: vi.fn(),
+  getSkillReadinessCharacterSkills: vi.fn(),
 }))
+
+const success = <T,>(data: T) => ({ code: 200 as const, msg: '', data })
 
 const requestResult = {
   summary: {
@@ -42,92 +45,98 @@ const requestResult = {
 
 describe('dashboard skill readiness page', () => {
   beforeEach(() => {
-    vi.mocked(fetchSkillReadinessOptions)
+    vi.mocked(getSkillReadinessOptions)
       .mockReset()
-      .mockResolvedValue({
-        corporations: [{ corporation_id: 10, corporation_name: 'Corp X' }],
-        plans: [{ id: 7, title: 'Logistics', description: '', ship_type_id: null }],
-      })
-    vi.mocked(querySkillReadiness).mockReset().mockResolvedValue(requestResult)
-    vi.mocked(fetchSkillReadinessUserCharacters)
+      .mockResolvedValue(
+        success({
+          corporations: [{ corporation_id: 10, corporation_name: 'Corp X' }],
+          plans: [{ id: 7, title: 'Logistics', description: '', ship_type_id: null }],
+        })
+      )
+    vi.mocked(querySkillReadiness).mockReset().mockResolvedValue(success(requestResult))
+    vi.mocked(getSkillReadinessUserCharacters)
       .mockReset()
-      .mockResolvedValue([
-        {
-          user_id: 31,
-          character_id: 1001,
-          character_name: 'Pilot One',
-          corporation_id: 10,
-          corporation_name: 'Corp X',
-          status: 'satisfied',
-          matched_skills: 2,
-          total_skills: 2,
-          skill_updated_at: 1710000000,
-          token_invalid: false,
-        },
-        {
-          user_id: 31,
-          character_id: 1002,
-          character_name: 'Pilot Two',
-          corporation_id: 10,
-          corporation_name: 'Corp X',
-          status: 'unknown',
-          matched_skills: 0,
-          total_skills: 2,
-          skill_updated_at: null,
-          token_invalid: false,
-        },
-      ])
-    vi.mocked(fetchSkillReadinessCharacterSkills)
-      .mockReset()
-      .mockResolvedValue({
-        character: {
-          user_id: 31,
-          character_id: 1001,
-          character_name: 'Pilot One',
-          corporation_id: 10,
-          corporation_name: 'Corp X',
-          status: 'satisfied',
-          matched_skills: 1,
-          total_skills: 1,
-          skill_updated_at: 1710000000,
-          token_invalid: true,
-        },
-        requirements: [
+      .mockResolvedValue(
+        success([
           {
-            skill_type_id: 3300,
-            skill_name: 'Damage Control',
-            group_name: 'Engineering',
-            active_level: 4,
-            trained_level: 4,
-            skillpoints_in_skill: 1000,
-            required_level: 4,
-            current_level: 4,
-            satisfied: true,
+            user_id: 31,
+            character_id: 1001,
+            character_name: 'Pilot One',
+            corporation_id: 10,
+            corporation_name: 'Corp X',
+            status: 'satisfied',
+            matched_skills: 2,
+            total_skills: 2,
+            skill_updated_at: 1710000000,
+            token_invalid: false,
           },
           {
-            skill_type_id: 3301,
-            skill_name: 'Hull Upgrades',
-            group_name: 'Mechanics',
-            active_level: 2,
-            trained_level: 2,
-            skillpoints_in_skill: 200,
-            required_level: 4,
-            current_level: 2,
-            satisfied: false,
+            user_id: 31,
+            character_id: 1002,
+            character_name: 'Pilot Two',
+            corporation_id: 10,
+            corporation_name: 'Corp X',
+            status: 'unknown',
+            matched_skills: 0,
+            total_skills: 2,
+            skill_updated_at: null,
+            token_invalid: false,
           },
-        ],
-        skills: [
-          {
-            skill_type_id: 3300,
-            skill_name: 'Damage Control',
-            group_name: 'Engineering',
-            active_level: 4,
-            trained_level: 4,
-            skillpoints_in_skill: 1000,
-            current_level: 4,
+        ])
+      )
+    vi.mocked(getSkillReadinessCharacterSkills)
+      .mockReset()
+      .mockResolvedValue(
+        success({
+          character: {
+            user_id: 31,
+            character_id: 1001,
+            character_name: 'Pilot One',
+            corporation_id: 10,
+            corporation_name: 'Corp X',
+            status: 'satisfied',
+            matched_skills: 1,
+            total_skills: 1,
+            skill_updated_at: 1710000000,
+            token_invalid: true,
           },
-        ],
-      })
+          requirements: [
+            {
+              skill_type_id: 3300,
+              skill_name: 'Damage Control',
+              group_name: 'Engineering',
+              active_level: 4,
+              trained_level: 4,
+              skillpoints_in_skill: 1000,
+              required_level: 4,
+              current_level: 4,
+              satisfied: true,
+            },
+            {
+              skill_type_id: 3301,
+              skill_name: 'Hull Upgrades',
+              group_name: 'Mechanics',
+              active_level: 2,
+              trained_level: 2,
+              skillpoints_in_skill: 200,
+              required_level: 4,
+              current_level: 2,
+              satisfied: false,
+            },
+          ],
+          skills: [
+            {
+              skill_type_id: 3300,
+              skill_name: 'Damage Control',
+              group_name: 'Engineering',
+              active_level: 4,
+              trained_level: 4,
+              skillpoints_in_skill: 1000,
+              current_level: 4,
+            },
+          ],
+        })
+      )
     useSessionStore.getState().setSessionSnapshot({
       isLoggedIn: true,
       accessToken: 'token',
@@ -139,8 +148,7 @@ describe('dashboard skill readiness page', () => {
     usePreferenceStore.getState().setLocale('zh-CN')
   })
 
-  test('restores URL filters, loads users, and opens scoped character skill comparison', async () => {
-    const user = userEvent.setup()
+  function renderPage() {
     render(
       <I18nProvider>
         <MemoryRouter initialEntries={['/dashboard/skill-readiness?plan=7&corporations=10']}>
@@ -150,6 +158,23 @@ describe('dashboard skill readiness page', () => {
         </MemoryRouter>
       </I18nProvider>
     )
+  }
+
+  test('shows a business error from the generated query', async () => {
+    vi.mocked(querySkillReadiness).mockResolvedValue({
+      code: 400,
+      msg: 'Plan is unavailable',
+      data: null,
+    })
+    renderPage()
+
+    expect(await screen.findByText('Plan is unavailable')).toBeTruthy()
+    expect(screen.queryByText('Pilot A')).toBeNull()
+  })
+
+  test('restores URL filters, loads users, and opens scoped character skill comparison', async () => {
+    const user = userEvent.setup()
+    renderPage()
 
     expect(await screen.findByText('Pilot A')).toBeTruthy()
     expect(querySkillReadiness).toHaveBeenCalledWith({
@@ -169,11 +194,11 @@ describe('dashboard skill readiness page', () => {
     await user.click(screen.getByLabelText('仅看未达标技能'))
     await waitFor(() => expect(screen.queryByText('Damage Control')).toBeNull())
     expect(screen.getByText('Hull Upgrades')).toBeTruthy()
-    expect(fetchSkillReadinessUserCharacters).toHaveBeenCalledWith(
+    expect(getSkillReadinessUserCharacters).toHaveBeenCalledWith(
       31,
       expect.objectContaining({ corporation_ids: [10], plan_id: 7 })
     )
-    expect(fetchSkillReadinessCharacterSkills).toHaveBeenCalledWith(
+    expect(getSkillReadinessCharacterSkills).toHaveBeenCalledWith(
       1001,
       expect.objectContaining({ corporation_ids: [10], plan_id: 7 })
     )

@@ -1,17 +1,14 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  fetchInfoAssetLocations,
-  fetchInfoAssetLocationItems,
-  fetchInfoAssetChildren,
-} from '@/api/eve-info'
+import { getAssetLocations, getAssetLocationItems, getAssetChildren } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useI18n } from '@/i18n'
 import type {
-  AssetListItemNode,
-  AssetLocationItemsResponse,
-  AssetLocationSummary,
-} from '@/types/api/eve-info'
+  InfoAssetListItem,
+  InfoAssetLocationItems,
+  InfoAssetLocationSummary,
+} from '@/api/generated/client'
 
 const BLUEPRINT_CATEGORY_ID = 9
 
@@ -27,7 +24,7 @@ export function InfoAssetsPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [locations, setLocations] = useState<AssetLocationSummary[]>([])
+  const [locations, setLocations] = useState<InfoAssetLocationSummary[]>([])
   const [totalLocations, setTotalLocations] = useState(0)
   const [totalItems, setTotalItems] = useState(0)
   const [keyword, setKeyword] = useState('')
@@ -36,14 +33,14 @@ export function InfoAssetsPage() {
   // Expanded locations
   const [expandedLocations, setExpandedLocations] = useState<Record<number, boolean>>({})
   // Location items cache
-  const [locationItems, setLocationItems] = useState<Record<number, AssetListItemNode[]>>({})
+  const [locationItems, setLocationItems] = useState<Record<number, InfoAssetListItem[]>>({})
   const [locationLoading, setLocationLoading] = useState<Record<number, boolean>>({})
   const [locationErrors, setLocationErrors] = useState<Record<number, string>>({})
 
   // Expanded children
   const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({})
   // Children cache
-  const [children, setChildren] = useState<Record<number, AssetListItemNode[]>>({})
+  const [children, setChildren] = useState<Record<number, InfoAssetListItem[]>>({})
   const [childrenLoading, setChildrenLoading] = useState<Record<number, boolean>>({})
   const [childrenErrors, setChildrenErrors] = useState<Record<number, string>>({})
 
@@ -54,12 +51,15 @@ export function InfoAssetsPage() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetchInfoAssetLocations({
-          language: 'en',
-          page: 1,
-          page_size: 20,
-          keyword: searchKeyword || undefined,
-        })
+        const response = await unwrapContract(
+          getAssetLocations({
+            language: 'en',
+            page: 1,
+            page_size: 20,
+            keyword: searchKeyword || undefined,
+          }),
+          'fetch asset locations failed'
+        )
         if (requestId !== locationsRequestSeq.current) return
         setLocations(response.locations ?? [])
         setTotalLocations(response.total_locations)
@@ -92,11 +92,14 @@ export function InfoAssetsPage() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetchInfoAssetLocations({
-          language: 'en',
-          page: 1,
-          page_size: 20,
-        })
+        const response = await unwrapContract(
+          getAssetLocations({
+            language: 'en',
+            page: 1,
+            page_size: 20,
+          }),
+          'fetch asset locations failed'
+        )
         if (cancelled || requestId !== locationsRequestSeq.current) return
         setLocations(response.locations ?? [])
         setTotalLocations(response.total_locations)
@@ -124,16 +127,19 @@ export function InfoAssetsPage() {
   }, [t])
 
   const loadLocationItemsFor = useCallback(
-    async (loc: AssetLocationSummary) => {
+    async (loc: InfoAssetLocationSummary) => {
       setLocationLoading((prev) => ({ ...prev, [loc.location_id]: true }))
       setLocationErrors((prev) => ({ ...prev, [loc.location_id]: '' }))
       try {
-        const response: AssetLocationItemsResponse = await fetchInfoAssetLocationItems({
-          language: 'en',
-          location_id: loc.location_id,
-          page: 1,
-          page_size: 50,
-        })
+        const response: InfoAssetLocationItems = await unwrapContract(
+          getAssetLocationItems({
+            language: 'en',
+            location_id: loc.location_id,
+            page: 1,
+            page_size: 50,
+          }),
+          'fetch asset location items failed'
+        )
         setLocationItems((prev) => ({ ...prev, [loc.location_id]: response.items }))
       } catch {
         setLocationErrors((prev) => ({
@@ -147,7 +153,7 @@ export function InfoAssetsPage() {
     [t]
   )
 
-  const toggleLocation = (loc: AssetLocationSummary) => {
+  const toggleLocation = (loc: InfoAssetLocationSummary) => {
     const locId = loc.location_id
     const currently = expandedLocations[locId] ?? false
     if (currently) {
@@ -165,10 +171,13 @@ export function InfoAssetsPage() {
       setChildrenLoading((prev) => ({ ...prev, [itemId]: true }))
       setChildrenErrors((prev) => ({ ...prev, [itemId]: '' }))
       try {
-        const response = await fetchInfoAssetChildren({
-          language: 'en',
-          parent_item_id: itemId,
-        })
+        const response = await unwrapContract(
+          getAssetChildren({
+            language: 'en',
+            parent_item_id: itemId,
+          }),
+          'fetch asset children failed'
+        )
         setChildren((prev) => ({ ...prev, [itemId]: response.items }))
       } catch {
         setChildrenErrors((prev) => ({ ...prev, [itemId]: t('infoAssets.childrenFailed') }))
@@ -179,7 +188,7 @@ export function InfoAssetsPage() {
     [t]
   )
 
-  const toggleItem = (item: AssetListItemNode) => {
+  const toggleItem = (item: InfoAssetListItem) => {
     const itemId = item.item_id
     const currently = expandedItems[itemId] ?? false
     if (currently) {
@@ -197,7 +206,7 @@ export function InfoAssetsPage() {
     void loadLocations(value)
   }
 
-  const renderItemRow = (item: AssetListItemNode) => {
+  const renderItemRow = (item: InfoAssetListItem) => {
     const hasKids = item.has_children
     const itemExpanded = expandedItems[item.item_id] ?? false
     const kids = children[item.item_id]

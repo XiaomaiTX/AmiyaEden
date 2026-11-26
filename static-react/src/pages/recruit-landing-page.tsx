@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { submitRecruitQQ } from '@/api/newbro'
+import { submitRecruitQQ } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useI18n } from '@/i18n'
 
 const QQ_REGEX = /^\d{5,20}$/
@@ -39,7 +40,10 @@ export function RecruitLandingPage() {
     setSubmitError('')
 
     try {
-      const data = await submitRecruitQQ(code ?? '', { qq: qq.trim() })
+      const data = await unwrapContract(
+        submitRecruitQQ(code ?? '', { qq: qq.trim() }),
+        'submit recruit qq failed'
+      )
       setQqUrl(data.qq_url)
       setSubmitted(true)
     } catch (err) {

@@ -1,31 +1,38 @@
+import type {
+  SrpApplication,
+  SrpBatchPayoutSummary,
+  SrpFleetOption,
+  SrpPayoutMode
+} from '@/api/generated/client'
 import { ref, reactive, computed, type Ref, type ComputedRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { useNameResolver } from '@/hooks'
 import {
-  reviewApplication,
-  payoutApplication,
-  fetchBatchPayoutSummary,
-  batchPayoutByUser,
-  batchPayoutAsFuxiCoin,
-  runFleetAutoApproval,
-  openInfoWindow
-} from '@/api/srp'
+  batchPayoutSrpAsFuxiCoin,
+  batchPayoutSrpByUser,
+  listSrpBatchPayoutSummary,
+  openSrpInfoWindow,
+  payoutSrpApplication,
+  reviewSrpApplication,
+  runSrpFleetAutoApproval
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useClipboardCopy } from '@/hooks/core/useClipboardCopy'
 import { formatIskPlain, millionInputToIsk } from '@/utils/common'
 import { showMailAttemptMessage } from '@/utils/mailAttempt'
 import { operationSalaryMessage } from '@/utils/operation-salary'
 
-type SrpApp = Api.Srp.Application
-type BatchPayoutSummary = Api.Srp.BatchPayoutSummary
+type SrpApp = SrpApplication
+type BatchPayoutSummary = SrpBatchPayoutSummary
 
 export function useSrpWorkflow(deps: {
-  fleetMap: ComputedRef<Map<string, Api.Srp.FleetOption>>
-  formatFleetLabel: (f: Api.Srp.FleetOption) => string
+  fleetMap: ComputedRef<Map<string, SrpFleetOption>>
+  formatFleetLabel: (f: SrpFleetOption) => string
   formatISK: (v: number) => string
   filter: { review_status: string; fleet_id: string; keyword: string }
-  payoutMode: Ref<Api.Srp.PayoutMode>
+  payoutMode: Ref<SrpPayoutMode>
   refreshData: () => void | Promise<void>
 }) {
   const { t } = useI18n()
@@ -96,11 +103,13 @@ export function useSrpWorkflow(deps: {
     }
     actionLoading.value = true
     try {
-      await reviewApplication(reviewTarget.value.id, {
-        action: reviewAction.value,
-        review_note: reviewForm.review_note,
-        final_amount: reviewForm.final_amount
-      })
+      await unwrapContract(
+        reviewSrpApplication(reviewTarget.value.id, {
+          action: reviewAction.value,
+          review_note: reviewForm.review_note,
+          final_amount: reviewForm.final_amount
+        })
+      )
       ElMessage.success(
         reviewAction.value === 'approve'
           ? t('srp.manage.approveSuccess')
@@ -163,7 +172,7 @@ export function useSrpWorkflow(deps: {
 
     actionLoading.value = true
     try {
-      const result = await payoutApplication(row.id, { mode: 'fuxi_coin' })
+      const result = await unwrapContract(payoutSrpApplication(row.id, { mode: 'fuxi_coin' }))
       ElMessage.success(
         t('srp.manage.fuxiPayoutSuccess', { amount: formatFuxiCoin(row.final_amount) })
       )
@@ -180,7 +189,9 @@ export function useSrpWorkflow(deps: {
     if (!payoutTarget.value) return
     actionLoading.value = true
     try {
-      const result = await payoutApplication(payoutTarget.value.id, { mode: 'manual_transfer' })
+      const result = await unwrapContract(
+        payoutSrpApplication(payoutTarget.value.id, { mode: 'manual_transfer' })
+      )
       ElMessage.success(t('srp.manage.payoutSuccess'))
       showMailAttemptMessage(result, t)
       payoutDialogVisible.value = false
@@ -202,7 +213,7 @@ export function useSrpWorkflow(deps: {
   const loadBatchPayoutSummary = async () => {
     batchSummaryLoading.value = true
     try {
-      batchPayoutList.value = await fetchBatchPayoutSummary()
+      batchPayoutList.value = await unwrapContract(listSrpBatchPayoutSummary())
     } catch {
       batchPayoutList.value = []
     } finally {
@@ -222,7 +233,7 @@ export function useSrpWorkflow(deps: {
     }
 
     try {
-      const summary = await fetchBatchPayoutSummary()
+      const summary = await unwrapContract(listSrpBatchPayoutSummary())
       const count = summary.reduce((sum, row) => sum + row.application_count, 0)
       if (!count) {
         ElMessage.warning(t('srp.manage.batchPayoutEmpty'))
@@ -244,7 +255,7 @@ export function useSrpWorkflow(deps: {
 
     batchSummaryLoading.value = true
     try {
-      const result = await batchPayoutAsFuxiCoin()
+      const result = await unwrapContract(batchPayoutSrpAsFuxiCoin({}))
       ElMessage.success(
         t('srp.manage.fuxiBatchPayoutSuccess', {
           users: result.user_count,
@@ -269,7 +280,9 @@ export function useSrpWorkflow(deps: {
 
     autoApproveLoading.value = true
     try {
-      const result = await runFleetAutoApproval({ fleet_id: deps.filter.fleet_id })
+      const result = await unwrapContract(
+        runSrpFleetAutoApproval({ fleet_id: deps.filter.fleet_id })
+      )
       ElMessage.success(
         t('srp.manage.autoApproveSuccess', {
           approved: result.approved_count,
@@ -305,7 +318,7 @@ export function useSrpWorkflow(deps: {
 
     batchPayoutLoadingUserId.value = row.user_id
     try {
-      const result = await batchPayoutByUser(row.user_id)
+      const result = await unwrapContract(batchPayoutSrpByUser(row.user_id, {}))
       ElMessage.success(t('srp.manage.batchPayoutSuccess'))
       showMailAttemptMessage(result, t)
       await Promise.all([loadBatchPayoutSummary(), deps.refreshData()])
@@ -344,10 +357,12 @@ export function useSrpWorkflow(deps: {
       return
     }
     try {
-      await openInfoWindow({
-        character_id: primaryCharacterId,
-        target_id: payoutTarget.value.character_id
-      })
+      await unwrapContract(
+        openSrpInfoWindow({
+          character_id: primaryCharacterId,
+          target_id: payoutTarget.value.character_id
+        })
+      )
       ElMessage.success(t('srp.manage.openInfoWindowSuccess'))
     } catch {
       /* handled */

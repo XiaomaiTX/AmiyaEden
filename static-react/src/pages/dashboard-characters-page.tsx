@@ -1,23 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { fetchGetUserInfo, getEveBindURL } from '@/api/auth'
+import { setPrimaryEveCharacter, unbindEveCharacter, updateMe } from '@/api/generated/client'
 import {
-  fetchGetUserInfo,
-  getEveBindURL,
-  setPrimaryCharacter,
-  unbindCharacter,
-  updateMyProfile,
-} from '@/api/auth'
-import {
-  checkDirectReferrerQQ,
+  checkDirectReferrer,
   confirmDirectReferrer,
-  fetchDirectReferralStatus,
-} from '@/api/newbro'
+  getDirectReferralStatus,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
 import { useI18n } from '@/i18n'
 import type { EveCharacter, UserInfo } from '@/types/api/auth'
-import type { DirectReferralStatus, DirectReferrerCandidate } from '@/types/api/newbro'
+import type { NewbroDirectReferralStatus, NewbroDirectReferrer } from '@/api/generated/client'
 import { useSessionStore } from '@/stores'
 import { toSessionSnapshot } from '@/auth'
 import type { ProfileLockReason } from '@/auth/profile-lock'
@@ -58,14 +54,14 @@ export function DashboardCharactersPage() {
   const [switchingId, setSwitchingId] = useState<number | null>(null)
   const [unbindingId, setUnbindingId] = useState<number | null>(null)
   const [directReferralLoading, setDirectReferralLoading] = useState(false)
-  const [directReferralStatus, setDirectReferralStatus] = useState<DirectReferralStatus>({
+  const [directReferralStatus, setDirectReferralStatus] = useState<NewbroDirectReferralStatus>({
     show_card: false,
     needs_profile_qq: false,
   })
   const [directReferrerQQ, setDirectReferrerQQ] = useState('')
   const [checkedDirectReferrerQQ, setCheckedDirectReferrerQQ] = useState('')
   const [directReferrerCandidate, setDirectReferrerCandidate] =
-    useState<DirectReferrerCandidate | null>(null)
+    useState<NewbroDirectReferrer | null>(null)
   const [directReferralChecking, setDirectReferralChecking] = useState(false)
   const [directReferralConfirming, setDirectReferralConfirming] = useState(false)
 
@@ -145,7 +141,10 @@ export function DashboardCharactersPage() {
   const loadDirectReferralStatus = useCallback(async () => {
     setDirectReferralLoading(true)
     try {
-      const status = await fetchDirectReferralStatus()
+      const status = await unwrapContract(
+        getDirectReferralStatus(),
+        'fetch direct referral status failed'
+      )
       setDirectReferralStatus(status)
       if (!status.show_card || status.needs_profile_qq) {
         setDirectReferrerCandidate(null)
@@ -225,11 +224,14 @@ export function DashboardCharactersPage() {
     setProfileSaving(true)
     setNotice(null)
     try {
-      await updateMyProfile({
-        nickname: profileForm.nickname.trim(),
-        qq: profileForm.qq.trim(),
-        discord_id: profileForm.discordId.trim(),
-      })
+      await unwrapContract(
+        updateMe({
+          nickname: profileForm.nickname.trim(),
+          qq: profileForm.qq.trim(),
+          discord_id: profileForm.discordId.trim(),
+        }),
+        'update my profile failed'
+      )
       await Promise.all([syncUserInfo(), loadDirectReferralStatus()])
       setNotice({ kind: 'success', text: t('characters.profile.saveSuccess') })
     } catch (error) {
@@ -268,7 +270,10 @@ export function DashboardCharactersPage() {
     setSwitchingId(character.character_id)
     setNotice(null)
     try {
-      await setPrimaryCharacter(character.character_id)
+      await unwrapContract(
+        setPrimaryEveCharacter(character.character_id),
+        'set primary character failed'
+      )
       await syncUserInfo()
       setNotice({
         kind: 'success',
@@ -292,7 +297,7 @@ export function DashboardCharactersPage() {
     setUnbindingId(character.character_id)
     setNotice(null)
     try {
-      await unbindCharacter(character.character_id)
+      await unwrapContract(unbindEveCharacter(character.character_id), 'unbind character failed')
       await syncUserInfo()
       setNotice({
         kind: 'success',
@@ -317,7 +322,10 @@ export function DashboardCharactersPage() {
     setCheckedDirectReferrerQQ('')
     setNotice(null)
     try {
-      const candidate = await checkDirectReferrerQQ({ qq })
+      const candidate = await unwrapContract(
+        checkDirectReferrer({ qq }),
+        'check direct referrer failed'
+      )
       setDirectReferrerCandidate(candidate)
       setCheckedDirectReferrerQQ(qq)
       setNotice({ kind: 'success', text: t('characters.directReferral.checkSuccess') })
@@ -339,7 +347,10 @@ export function DashboardCharactersPage() {
     setDirectReferralConfirming(true)
     setNotice(null)
     try {
-      await confirmDirectReferrer({ referrer_user_id: directReferrerCandidate.user_id })
+      await unwrapContract(
+        confirmDirectReferrer({ referrer_user_id: directReferrerCandidate.user_id }),
+        'confirm direct referrer failed'
+      )
       setDirectReferrerQQ('')
       setDirectReferrerCandidate(null)
       setCheckedDirectReferrerQQ('')

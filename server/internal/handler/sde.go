@@ -2,6 +2,7 @@ package handler
 
 import (
 	"amiya-eden/global"
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"context"
@@ -24,70 +25,46 @@ func NewSdeHandler() *SdeHandler {
 	}
 }
 
-// GetVersion godoc
-// GET /api/v1/sde/version
-// 获取当前已导入的 SDE 版本信息
-func (h *SdeHandler) GetVersion(c *gin.Context) {
+const sdeNoVersionMessage = "尚未导入任何 SDE 版本"
+
+func (h *SdeHandler) getSdeVersion() (*apicontract.SdeVersion, *contractOperationFailure) {
 	v, err := h.svc.GetCurrentVersion()
 	if err != nil {
-		response.Fail(c, response.CodeBizError, "查询版本失败: "+err.Error())
-		return
+		return nil, &contractOperationFailure{response.CodeBizError, "查询版本失败: " + err.Error()}
 	}
 	if v == nil {
-		response.OK(c, gin.H{"version": nil, "message": "尚未导入任何 SDE 版本"})
-		return
+		return nil, nil
 	}
-	response.OK(c, v)
+	return &apicontract.SdeVersion{
+		Id: v.ID, Version: v.Version, BuildHash: v.BuildHash, Note: v.Note,
+		CreatedAt: v.CreatedAt, UpdatedAt: v.UpdatedAt,
+	}, nil
 }
 
-// GetTypes godoc
-// POST /api/v1/sde/types
-// 批量查询物品信息（含 group + category + market_group 翻译）
-type GetTypesRequest struct {
-	TypeIDs    []int  `json:"type_ids"`
-	Published  *bool  `json:"published"`
-	LanguageID string `json:"language_id"`
-}
-
-func (h *SdeHandler) GetTypes(c *gin.Context) {
-	var req GetTypesRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
-		return
+func (h *SdeHandler) getSdeTypes(req apicontract.GetSdeTypesJSONRequestBody) ([]apicontract.SdeType, *contractOperationFailure) {
+	if len(req.TypeIds) == 0 {
+		return nil, &contractOperationFailure{response.CodeParamError, "type_ids 不能为空"}
 	}
-	if len(req.TypeIDs) == 0 {
-		response.Fail(c, response.CodeParamError, "type_ids 不能为空")
-		return
-	}
-	if req.LanguageID == "" {
-		req.LanguageID = "en"
+	if req.LanguageId == "" {
+		req.LanguageId = "en"
 	}
 
-	list, err := h.svc.GetTypes(req.TypeIDs, req.Published, req.LanguageID)
+	list, err := h.svc.GetTypes(req.TypeIds, req.Published, req.LanguageId)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, "查询失败: "+err.Error())
-		return
+		return nil, &contractOperationFailure{response.CodeBizError, "查询失败: " + err.Error()}
 	}
-	response.OK(c, list)
-}
-
-// GetNames godoc
-// POST /api/v1/sde/names
-// 批量查询名称映射
-type GetNamesRequest struct {
-	Language string           `json:"language"`
-	IDs      map[string][]int `json:"ids"` // key 为 tcID 名称：type/group/category/region/constellation/solar_system/market_group/tech/description
-	ESI      []int64          `json:"esi"` // character/corporation/alliance id，调用 ESI /universe/names
-}
-
-type GetNamesResponse struct {
-	Flat  map[int]string            `json:"flat"`
-	Names map[string]map[int]string `json:"names"`
-	Miss  *GetNamesMisses           `json:"misses,omitempty"`
-}
-
-type GetNamesMisses struct {
-	ESI []int `json:"esi,omitempty"`
+	var out []apicontract.SdeType
+	if list != nil {
+		out = make([]apicontract.SdeType, len(list))
+		for i, item := range list {
+			out[i] = apicontract.SdeType{
+				TypeId: item.TypeID, TypeName: item.TypeName, GroupId: item.GroupID, GroupName: item.GroupName,
+				MarketGroupId: item.MarketGroupID, MarketGroupName: item.MarketGroupName,
+				CategoryId: item.CategoryID, CategoryName: item.CategoryName,
+			}
+		}
+	}
+	return out, nil
 }
 
 type getNamesESIEntry struct {
@@ -95,14 +72,14 @@ type getNamesESIEntry struct {
 	Name string `json:"name"`
 }
 
-func newGetNamesResponse() GetNamesResponse {
-	return GetNamesResponse{
+func newGetNamesResponse() apicontract.SdeNames {
+	return apicontract.SdeNames{
 		Flat:  make(map[int]string),
 		Names: make(map[string]map[int]string),
 	}
 }
 
-func mergeGetNamesNamespaces(result *GetNamesResponse, names service.SdeNameMap) {
+func mergeGetNamesNamespaces(result *apicontract.SdeNames, names service.SdeNameMap) {
 	namespaces := make([]string, 0, len(names))
 	for namespace := range names {
 		namespaces = append(namespaces, namespace)
@@ -119,7 +96,7 @@ func mergeGetNamesNamespaces(result *GetNamesResponse, names service.SdeNameMap)
 	}
 }
 
-func mergeGetNamesESI(result *GetNamesResponse, entries []getNamesESIEntry) {
+func mergeGetNamesESI(result *apicontract.SdeNames, entries []getNamesESIEntry) {
 	if _, ok := result.Names["esi"]; !ok {
 		result.Names["esi"] = make(map[int]string, len(entries))
 	}
@@ -131,61 +108,58 @@ func mergeGetNamesESI(result *GetNamesResponse, entries []getNamesESIEntry) {
 	}
 }
 
-func mergeGetNamesESIMisses(result *GetNamesResponse, misses []int64) {
+func mergeGetNamesESIMisses(result *apicontract.SdeNames, misses []int64) {
 	if len(misses) == 0 {
 		return
 	}
-	if result.Miss == nil {
-		result.Miss = &GetNamesMisses{}
+	if result.Misses == nil {
+		result.Misses = &apicontract.SdeNameMisses{}
 	}
-	result.Miss.ESI = make([]int, 0, len(misses))
+	result.Misses.Esi = make([]int, 0, len(misses))
 	for _, id := range misses {
 		if id > 0 {
-			result.Miss.ESI = append(result.Miss.ESI, int(id))
+			result.Misses.Esi = append(result.Misses.Esi, int(id))
 		}
 	}
 }
 
-func (h *SdeHandler) GetNames(c *gin.Context) {
-	var req GetNamesRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
-		return
+// sdeRequestLanguage preserves body, Accept-Language, cookie, then English precedence.
+func sdeRequestLanguage(c *gin.Context, bodyLanguage string) string {
+	if bodyLanguage != "" {
+		return bodyLanguage
 	}
-	// language 优先 body，其次 Accept-Language header，其次 cookie，最后默认 en
-	if req.Language == "" {
-		req.Language = c.GetHeader("Accept-Language")
-	}
-	if req.Language == "" {
-		if lang, err := c.Cookie("language"); err == nil && lang != "" {
-			req.Language = lang
+	if c != nil {
+		if headerLanguage := c.GetHeader("Accept-Language"); headerLanguage != "" {
+			return headerLanguage
+		}
+		if cookieLanguage, err := c.Cookie("language"); err == nil && cookieLanguage != "" {
+			return cookieLanguage
 		}
 	}
-	if req.Language == "" {
-		req.Language = "en"
-	}
-	if len(req.IDs) == 0 && len(req.ESI) == 0 {
-		response.Fail(c, response.CodeParamError, "ids 和 esi 不能同时为空")
-		return
+	return "en"
+}
+
+func (h *SdeHandler) getSdeNames(req apicontract.GetSdeNamesJSONRequestBody) (apicontract.SdeNames, *contractOperationFailure) {
+	if len(req.Ids) == 0 && len(req.Esi) == 0 {
+		return apicontract.SdeNames{}, &contractOperationFailure{response.CodeParamError, "ids 和 esi 不能同时为空"}
 	}
 
 	result := newGetNamesResponse()
 
 	// 查数据库翻译
-	if len(req.IDs) > 0 {
-		dbNames, err := h.svc.GetNames(req.IDs, req.Language)
+	if len(req.Ids) > 0 {
+		dbNames, err := h.svc.GetNames(req.Ids, req.Language)
 		if err != nil {
-			response.Fail(c, response.CodeBizError, "查询失败: "+err.Error())
-			return
+			return apicontract.SdeNames{}, &contractOperationFailure{response.CodeBizError, "查询失败: " + err.Error()}
 		}
 		mergeGetNamesNamespaces(&result, dbNames)
 	}
 
 	// 调用 ESI /universe/names 查询 character/corporation/alliance
-	if len(req.ESI) > 0 {
+	if len(req.Esi) > 0 {
 		// 过滤掉无效 ID（0 或负数）
-		validESI := make([]int64, 0, len(req.ESI))
-		for _, id := range req.ESI {
+		validESI := make([]int64, 0, len(req.Esi))
+		for _, id := range req.Esi {
 			if id > 0 {
 				validESI = append(validESI, id)
 			}
@@ -209,46 +183,83 @@ func (h *SdeHandler) GetNames(c *gin.Context) {
 		}
 	}
 
-	response.OK(c, result)
+	return result, nil
 }
 
-// FuzzySearch godoc
-// POST /api/v1/sde/search
-// 模糊搜索物品/成员名称
-type FuzzySearchRequest struct {
-	Keyword            string `json:"keyword" binding:"required"`
-	Language           string `json:"language"`
-	CategoryIDs        []int  `json:"category_ids"`
-	ExcludeCategoryIDs []int  `json:"exclude_category_ids"`
-	Limit              int    `json:"limit"`
-	SearchMember       bool   `json:"search_member"`
-}
-
-func (h *SdeHandler) FuzzySearch(c *gin.Context) {
-	var req FuzzySearchRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
-		return
-	}
-	if req.Language == "" {
-		req.Language = c.GetHeader("Accept-Language")
-	}
-	if req.Language == "" {
-		if lang, err := c.Cookie("language"); err == nil && lang != "" {
-			req.Language = lang
-		}
-	}
-	if req.Language == "" {
-		req.Language = "en"
-	}
+func (h *SdeHandler) searchSde(req apicontract.SearchSdeJSONRequestBody) ([]apicontract.SdeSearchItem, *contractOperationFailure) {
 	if req.Limit <= 0 {
 		req.Limit = 20
 	}
 
-	list, err := h.svc.FuzzySearch(req.Keyword, req.Language, req.CategoryIDs, req.ExcludeCategoryIDs, req.Limit, req.SearchMember)
+	list, err := h.svc.FuzzySearch(req.Keyword, req.Language, req.CategoryIds, req.ExcludeCategoryIds, req.Limit, req.SearchMember)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, "查询失败: "+err.Error())
-		return
+		return nil, &contractOperationFailure{response.CodeBizError, "查询失败: " + err.Error()}
 	}
-	response.OK(c, list)
+	var out []apicontract.SdeSearchItem
+	if list != nil {
+		out = make([]apicontract.SdeSearchItem, len(list))
+		for i, item := range list {
+			out[i] = apicontract.SdeSearchItem{Id: item.ID, Name: item.Name, GroupId: item.GroupID, GroupName: item.GroupName, Category: item.Category}
+		}
+	}
+	return out, nil
+}
+
+func (h *SdeHandler) GetSdeVersion(_ context.Context, _ apicontract.GetSdeVersionRequestObject) (apicontract.GetSdeVersionResponseObject, error) {
+	out := &apicontract.GetSdeVersion200JSONResponse{}
+	version, failure := h.getSdeVersion()
+	switch {
+	case failure != nil:
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	case version == nil:
+		return out, out.FromSdeNoVersionSuccess(apicontract.SdeNoVersionSuccess{
+			Code: response.CodeOK, Msg: "success", Data: apicontract.SdeNoVersion{Message: sdeNoVersionMessage},
+		})
+	default:
+		return out, out.FromSdeVersionSuccess(apicontract.SdeVersionSuccess{
+			Code: response.CodeOK, Msg: "success", Data: *version,
+		})
+	}
+}
+
+func (h *SdeHandler) GetSdeTypes(_ context.Context, request apicontract.GetSdeTypesRequestObject) (apicontract.GetSdeTypesResponseObject, error) {
+	out := &apicontract.GetSdeTypes200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "参数错误"))
+	}
+	data, failure := h.getSdeTypes(*request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSdeTypesSuccess(apicontract.SdeTypesSuccess{Code: response.CodeOK, Msg: "success", Data: &data})
+}
+
+func (h *SdeHandler) GetSdeNames(ctx context.Context, request apicontract.GetSdeNamesRequestObject) (apicontract.GetSdeNamesResponseObject, error) {
+	out := &apicontract.GetSdeNames200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "参数错误"))
+	}
+	c, _ := ctx.(*gin.Context)
+	input := *request.Body
+	input.Language = sdeRequestLanguage(c, input.Language)
+	data, failure := h.getSdeNames(input)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSdeNamesSuccess(apicontract.SdeNamesSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SdeHandler) SearchSde(ctx context.Context, request apicontract.SearchSdeRequestObject) (apicontract.SearchSdeResponseObject, error) {
+	out := &apicontract.SearchSde200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "参数错误"))
+	}
+	c, _ := ctx.(*gin.Context)
+	input := *request.Body
+	input.Language = sdeRequestLanguage(c, input.Language)
+	data, failure := h.searchSde(input)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSdeSearchSuccess(apicontract.SdeSearchSuccess{Code: response.CodeOK, Msg: "success", Data: &data})
 }

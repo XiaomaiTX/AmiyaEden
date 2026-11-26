@@ -13,23 +13,12 @@ last_reviewed: 2026-04-23
 
 - TODO
 
-## Base URL
+## 契约入口
 
-```text
-/api/v1
-```
+- 链接适用的 OpenAPI 根规范或模块片段；不复制路由、权限或请求与响应结构。
+- 非 OpenAPI 的接口说明其所在边界，并链接对应实现。
 
-## 路由
-
-| Method | Path | 说明 | 权限 |
-| --- | --- | --- | --- |
-| TODO | TODO | TODO | TODO |
-
-## 请求 / 响应要点
-
-- TODO
-
-## 合同设计决策
+## 契约设计决策
 
 > Only keep this section when route shape, authentication, authorization, or compatibility behavior has durable rationale that is not obvious from code. Delete it otherwise.
 
@@ -40,7 +29,4 @@ last_reviewed: 2026-04-23
 
 ## 同步要求
 
-- 更新后端
-- 更新前端 API
-- 更新类型
-- 更新 route index
+- 见 [OpenAPI 契约同步顺序](../api/conventions.md#契约同步顺序)。

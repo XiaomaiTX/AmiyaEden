@@ -126,15 +126,21 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    WelfareEligibleItem,
+    WelfareMyApplication,
+    WelfareMyApplicationListInput
+  } from '@/api/generated/client'
   import { ElTag, ElButton, ElUpload, ElMessage, ElTooltip, ElSelect, ElOption } from 'element-plus'
   import { useTable } from '@/hooks/core/useTable'
   import { formatTime } from '@utils/common'
   import {
-    getEligibleWelfares,
+    uploadEvidence,
     applyForWelfare,
-    getMyApplications,
-    uploadWelfareEvidence
-  } from '@/api/welfare'
+    getEligibleWelfares,
+    listMyWelfareApplications
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { sortEligibleRows } from './eligibleRows'
   import {
     buildRoleFilterOptions,
@@ -192,7 +198,7 @@
     buildWelfareNameFilterOptions(eligibleAllRows.value)
   )
 
-  function flattenEligibleWelfares(welfares: Api.Welfare.EligibleWelfare[]): EligibleRow[] {
+  function flattenEligibleWelfares(welfares: WelfareEligibleItem[]): EligibleRow[] {
     const rows: EligibleRow[] = []
     for (const w of welfares) {
       const shared = {
@@ -213,7 +219,7 @@
           roleFilterValue: naturalPersonRoleLabel.value
         })
       } else {
-        for (const char of w.eligible_characters) {
+        for (const char of w.eligible_characters ?? []) {
           rows.push({
             ...shared,
             canApplyNow: char.can_apply_now,
@@ -232,7 +238,7 @@
   async function getEligibleWelfaresPage(
     params: Api.Common.CommonSearchParams
   ): Promise<Api.Common.PaginatedResponse<EligibleRow>> {
-    const welfares = await getEligibleWelfares()
+    const welfares = await unwrapContract(getEligibleWelfares())
     const rows = flattenEligibleWelfares(welfares ?? [])
     eligibleAllRows.value = rows
     const filters: EligibleFilters = {
@@ -397,7 +403,7 @@
   async function handleEvidenceFileUpload(file: File) {
     evidenceUploading.value = true
     try {
-      const res = await uploadWelfareEvidence(file)
+      const res = await unwrapContract(uploadEvidence({ file }))
       evidenceImageUrl.value = res.url
     } catch (e: any) {
       ElMessage.error(e?.message ?? t('welfareMy.applyFailed'))
@@ -420,11 +426,13 @@
 
   async function submitApply(row: EligibleRow, evidenceImage: string) {
     try {
-      await applyForWelfare({
-        welfare_id: row.welfareId,
-        character_id: row.characterId,
-        evidence_image: evidenceImage || undefined
-      })
+      await unwrapContract(
+        applyForWelfare({
+          welfare_id: row.welfareId,
+          character_id: row.characterId,
+          evidence_image: evidenceImage || undefined
+        })
+      )
       ElMessage.success(t('welfareMy.applySuccess'))
       loadEligibleWelfares()
       loadApplications()
@@ -443,7 +451,8 @@
     getData: loadApplications
   } = useTable({
     core: {
-      apiFn: getMyApplications,
+      apiFn: (data?: WelfareMyApplicationListInput) =>
+        unwrapContract(listMyWelfareApplications(data)),
       apiParams: { current: 1, size: 200 },
       immediate: false
     }
@@ -474,7 +483,7 @@
       prop: 'status',
       label: t('common.status'),
       width: 100,
-      formatter: (row: Api.Welfare.MyApplication) => {
+      formatter: (row: WelfareMyApplication) => {
         const cfg = STATUS_CONFIG.value[row.status] ?? {
           label: row.status,
           type: 'info'
@@ -487,19 +496,19 @@
       label: t('welfareMy.reviewerName'),
       width: 130,
       showOverflowTooltip: true,
-      formatter: (row: Api.Welfare.MyApplication) => row.reviewer_name || '-'
+      formatter: (row: WelfareMyApplication) => row.reviewer_name || '-'
     },
     {
       prop: 'created_at',
       label: t('welfareMy.appliedAt'),
       width: 170,
-      formatter: (row: Api.Welfare.MyApplication) => formatTime(row.created_at)
+      formatter: (row: WelfareMyApplication) => formatTime(row.created_at)
     },
     {
       prop: 'reviewed_at',
       label: t('welfareMy.reviewedAt'),
       width: 170,
-      formatter: (row: Api.Welfare.MyApplication) => formatTime(row.reviewed_at)
+      formatter: (row: WelfareMyApplication) => formatTime(row.reviewed_at)
     }
   ])
 

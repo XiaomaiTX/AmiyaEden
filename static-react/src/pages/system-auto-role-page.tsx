@@ -16,25 +16,26 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
-  fetchCreateEsiRoleMapping,
-  fetchCreateEsiTitleMapping,
-  fetchDeleteEsiRoleMapping,
-  fetchDeleteEsiTitleMapping,
-  fetchGetAllEsiRoles,
-  fetchGetCorpTitles,
-  fetchGetEsiRoleMappings,
-  fetchGetEsiTitleMappings,
-  fetchGetRoleDefinitions,
-  fetchTriggerAutoRoleSync,
-} from '@/api/system-manage'
+  createEsiRoleMapping as createEsiRoleMappingRequest,
+  createEsiTitleMapping,
+  deleteAutoRoleEsiRoleMapping,
+  deleteAutoRoleEsiTitleMapping,
+  getAllEsiRoles,
+  listCorpTitles,
+  listEsiRoleMappings,
+  listEsiTitleMappings,
+  listRoleDefinitions,
+  triggerAutoRoleSync,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
 import type {
-  CorpTitleInfo,
-  EsiRoleMapping,
-  EsiTitleMapping,
-  RoleDefinition,
-} from '@/types/api/system-manage'
+  AutoRoleCorpTitle,
+  AutoRoleEsiRoleMapping,
+  AutoRoleEsiTitleMapping,
+  SystemRoleDefinition,
+} from '@/api/generated/client'
 import { ShopDialog, formatDateTime } from './shop-page-utils'
 
 type AutoRoleTab = 'esi-role' | 'title'
@@ -71,10 +72,10 @@ export function SystemAutoRolePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [esiRoles, setEsiRoles] = useState<string[]>([])
-  const [roleDefinitions, setRoleDefinitions] = useState<RoleDefinition[]>([])
-  const [corpTitles, setCorpTitles] = useState<CorpTitleInfo[]>([])
-  const [esiRoleMappings, setEsiRoleMappings] = useState<EsiRoleMapping[]>([])
-  const [titleMappings, setTitleMappings] = useState<EsiTitleMapping[]>([])
+  const [roleDefinitions, setRoleDefinitions] = useState<SystemRoleDefinition[]>([])
+  const [corpTitles, setCorpTitles] = useState<AutoRoleCorpTitle[]>([])
+  const [esiRoleMappings, setEsiRoleMappings] = useState<AutoRoleEsiRoleMapping[]>([])
+  const [titleMappings, setTitleMappings] = useState<AutoRoleEsiTitleMapping[]>([])
   const [syncing, setSyncing] = useState(false)
   const [esiRoleDialogOpen, setEsiRoleDialogOpen] = useState(false)
   const [titleDialogOpen, setTitleDialogOpen] = useState(false)
@@ -98,13 +99,13 @@ export function SystemAutoRolePage() {
   const loadCatalogs = useCallback(async () => {
     try {
       const [roles, definitions, titles] = await Promise.all([
-        fetchGetAllEsiRoles(),
-        fetchGetRoleDefinitions(),
-        fetchGetCorpTitles(),
+        unwrapContract(getAllEsiRoles(), 'fetch esi roles failed'),
+        unwrapContract(listRoleDefinitions(), 'fetch role definitions failed'),
+        unwrapContract(listCorpTitles(), 'fetch corp titles failed'),
       ])
       setEsiRoles(roles)
       setRoleDefinitions(definitions)
-      setCorpTitles(titles)
+      setCorpTitles(titles ?? [])
     } catch {
       setError(t('autoRolePage.messages.loadBaseFailed'))
       setEsiRoles([])
@@ -116,8 +117,8 @@ export function SystemAutoRolePage() {
   const loadMappings = useCallback(async () => {
     try {
       const [esi, title] = await Promise.all([
-        fetchGetEsiRoleMappings(),
-        fetchGetEsiTitleMappings(),
+        unwrapContract(listEsiRoleMappings(), 'fetch esi role mappings failed'),
+        unwrapContract(listEsiTitleMappings(), 'fetch esi title mappings failed'),
       ])
       setEsiRoleMappings(esi)
       setTitleMappings(title)
@@ -161,7 +162,10 @@ export function SystemAutoRolePage() {
 
     setEsiRoleSaving(true)
     try {
-      await fetchCreateEsiRoleMapping(esiRoleForm)
+      await unwrapContract(
+        createEsiRoleMappingRequest(esiRoleForm),
+        'create esi role mapping failed'
+      )
       notifySuccess(t('autoRolePage.messages.created'))
       setEsiRoleDialogOpen(false)
       setEsiRoleForm(defaultEsiRoleForm)
@@ -181,12 +185,15 @@ export function SystemAutoRolePage() {
 
     setTitleSaving(true)
     try {
-      await fetchCreateEsiTitleMapping({
-        corporation_id: titleForm.corporation_id,
-        title_id: titleForm.title_id,
-        title_name: titleForm.title_name || undefined,
-        role_code: titleForm.role_code,
-      })
+      await unwrapContract(
+        createEsiTitleMapping({
+          corporation_id: titleForm.corporation_id,
+          title_id: titleForm.title_id,
+          title_name: titleForm.title_name || undefined,
+          role_code: titleForm.role_code,
+        }),
+        'create esi title mapping failed'
+      )
       notifySuccess(t('autoRolePage.messages.created'))
       setTitleDialogOpen(false)
       setTitleForm(defaultTitleForm)
@@ -204,7 +211,7 @@ export function SystemAutoRolePage() {
     }
 
     try {
-      await fetchDeleteEsiRoleMapping(id)
+      await unwrapContract(deleteAutoRoleEsiRoleMapping(id), 'delete esi role mapping failed')
       notifySuccess(t('autoRolePage.messages.deleted'))
       await reloadMappings()
     } catch {
@@ -218,7 +225,7 @@ export function SystemAutoRolePage() {
     }
 
     try {
-      await fetchDeleteEsiTitleMapping(id)
+      await unwrapContract(deleteAutoRoleEsiTitleMapping(id), 'delete esi title mapping failed')
       notifySuccess(t('autoRolePage.messages.deleted'))
       await reloadMappings()
     } catch {
@@ -229,7 +236,7 @@ export function SystemAutoRolePage() {
   const triggerSync = async () => {
     setSyncing(true)
     try {
-      await fetchTriggerAutoRoleSync()
+      await unwrapContract(triggerAutoRoleSync(), 'trigger auto role sync failed')
       notifySuccess(t('autoRolePage.messages.syncTriggered'))
     } catch {
       notifyError(t('autoRolePage.messages.syncFailed'))

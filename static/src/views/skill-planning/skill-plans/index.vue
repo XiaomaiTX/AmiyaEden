@@ -170,6 +170,10 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    SkillPlanDetail as ContractSkillPlanDetail,
+    SkillPlanRecord
+  } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import { Plus } from '@element-plus/icons-vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
@@ -177,21 +181,19 @@
   import { formatTime } from '@utils/common'
   import {
     deleteSkillPlan,
-    fetchSkillPlanDetail,
-    fetchSkillPlanList,
+    getSkillPlan,
+    listSkillPlans,
     reorderSkillPlans
-  } from '@/api/skill-plan'
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import SkillPlanDialog from './modules/skill-plan-dialog.vue'
   import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'SkillPlans' })
 
-  type SkillPlanListItem = Api.SkillPlan.SkillPlanListItem
-  type SkillPlanDetail = Api.SkillPlan.SkillPlanDetail
-  type SkillPlanDisplayState = Pick<
-    Api.SkillPlan.SkillPlanDetail,
-    'id' | 'ship_type_id' | 'ship_name'
-  >
+  type SkillPlanListItem = SkillPlanRecord
+  type SkillPlanDetail = ContractSkillPlanDetail
+  type SkillPlanDisplayState = Pick<ContractSkillPlanDetail, 'id' | 'ship_type_id' | 'ship_name'>
 
   const { t } = useI18n()
   const userStore = useUserStore()
@@ -241,11 +243,13 @@
   async function loadPlans(preferredPlanId?: number | null) {
     listLoading.value = true
     try {
-      const response = await fetchSkillPlanList({
-        current: pagination.current,
-        size: pagination.size,
-        keyword: keyword.value.trim() || undefined
-      })
+      const response = await unwrapContract(
+        listSkillPlans({
+          current: pagination.current,
+          size: pagination.size,
+          keyword: keyword.value.trim() || undefined
+        })
+      )
 
       plans.value = response.list ?? []
       pagination.total = response.total ?? 0
@@ -277,7 +281,9 @@
     if (!planId) return
     detailLoading.value = true
     try {
-      selectedPlan.value = await fetchSkillPlanDetail(planId, currentLang.value)
+      selectedPlan.value = await unwrapContract(
+        getSkillPlan(planId, currentLang.value ? { lang: currentLang.value } : undefined)
+      )
       selectedPlanId.value = planId
       mergePlanDisplayState(selectedPlan.value)
     } catch (error: any) {
@@ -328,7 +334,7 @@
         }
       )
 
-      await deleteSkillPlan(selectedPlan.value.id)
+      await unwrapContract(deleteSkillPlan(selectedPlan.value.id))
       ElMessage.success(t('skillPlan.deleteSuccess'))
 
       const deletedId = selectedPlan.value.id
@@ -350,7 +356,7 @@
   async function handleReorderEnd() {
     reorderSaving.value = true
     try {
-      await reorderSkillPlans(plans.value.map((p) => p.id))
+      await unwrapContract(reorderSkillPlans({ ids: plans.value.map((p) => p.id) }))
       await loadPlans(selectedPlanId.value)
     } catch (e: any) {
       ElMessage.error(e?.message ?? t('skillPlan.reorderFailed'))

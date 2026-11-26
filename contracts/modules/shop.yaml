@@ -1,0 +1,478 @@
+paths:
+  /shop/products:
+    post:
+      operationId: listShopProducts
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "cap:menu.shop"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopProductListInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopProductPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /shop/product/detail:
+    post:
+      operationId: getShopProductDetail
+      x-gin-access: ["jwt", "login", "cap:menu.shop"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopProductDetailInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopProductResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /shop/buy:
+    post:
+      operationId: buyShopProduct
+      x-gin-access: ["jwt", "login", "cap:menu.shop", "cap:shop.order.create"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopBuyInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopOrderResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /shop/orders:
+    post:
+      operationId: listMyShopOrders
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "cap:menu.shop", "cap:shop.order.read_self"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopOrderListInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopOrderPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /shop/wallet/my:
+    post:
+      operationId: getMyShopWallet
+      x-gin-access: ["jwt", "login", "cap:menu.shop", "cap:shop.wallet.read"]
+      responses:
+        '200': { $ref: '#/components/responses/ShopWalletResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /shop/wallet/my/transactions:
+    post:
+      operationId: listMyShopWalletTransactions
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "cap:menu.shop", "cap:shop.wallet.read"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopWalletTransactionListInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopWalletTransactionPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/shop/product/list:
+    post:
+      operationId: adminListShopProducts
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "role:admin", "cap:shop.manage", "cap:shop.admin.product.manage"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopAdminProductListInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopProductPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/shop/product/add:
+    post:
+      operationId: adminCreateShopProduct
+      x-gin-access: ["jwt", "login", "role:admin", "cap:shop.manage", "cap:shop.admin.product.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopProductCreateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopProductResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/shop/product/edit:
+    post:
+      operationId: adminUpdateShopProduct
+      x-gin-access: ["jwt", "login", "role:admin", "cap:shop.manage", "cap:shop.admin.product.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopProductUpdateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopProductResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/shop/product/delete:
+    post:
+      operationId: adminDeleteShopProduct
+      x-gin-access: ["jwt", "login", "role:admin", "cap:shop.manage", "cap:shop.admin.product.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopProductDeleteInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopDeleteResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/shop/order/list:
+    post:
+      operationId: adminListShopOrders
+      x-gin-body: { allowMalformedJSON: true }
+      x-gin-access: ["jwt", "login", "cap:shop.manage", "cap:shop.admin.order.manage", "role:admin,shop_order_manage"]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopAdminOrderListInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopOrderPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/shop/order/deliver:
+    post:
+      operationId: adminDeliverShopOrder
+      x-gin-access: ["jwt", "login", "cap:shop.manage", "cap:shop.admin.order.manage", "role:admin,shop_order_manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopOrderReviewInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopOrderActionResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/shop/order/reject:
+    post:
+      operationId: adminRejectShopOrder
+      x-gin-access: ["jwt", "login", "cap:shop.manage", "cap:shop.admin.order.manage", "role:admin,shop_order_manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopOrderReviewInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ShopOrderResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  responses:
+    ShopProductPageResult:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ShopProductPageSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    ShopProductResult:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ShopProductSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    ShopOrderResult:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ShopOrderSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    ShopOrderPageResult:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ShopOrderPageSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    ShopWalletResult:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ShopWalletSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    ShopWalletTransactionPageResult:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ShopWalletTransactionPageSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    ShopDeleteResult:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/NullSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    ShopOrderActionResult:
+      description: Successful result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ShopOrderActionSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+  schemas:
+    ShopProductListInput:
+      type: object
+      properties:
+        current: { type: integer, default: 1, description: Values below 1 use 1., x-go-type-skip-optional-pointer: true }
+        size: { type: integer, default: 20, description: Values outside 1–100 use 20., x-go-type-skip-optional-pointer: true }
+        type: { type: string, x-go-type-skip-optional-pointer: true }
+        status: { type: string, description: Accepted but ignored., x-go-type-skip-optional-pointer: true }
+    ShopOrderListInput:
+      type: object
+      properties:
+        current: { type: integer, default: 1, description: Values below 1 use 1., x-go-type-skip-optional-pointer: true }
+        size: { type: integer, default: 20, description: Values outside 1–100 use 20., x-go-type-skip-optional-pointer: true }
+        type: { type: string, description: Accepted but ignored., x-go-type-skip-optional-pointer: true }
+        status: { type: string, x-go-type-skip-optional-pointer: true }
+    ShopProductDetailInput:
+      type: object
+      required: [product_id]
+      properties:
+        product_id: { type: integer, x-go-type: uint, x-go-name: ProductID, minimum: 1, x-oapi-codegen-extra-tags: { binding: required } }
+    ShopBuyInput:
+      type: object
+      required: [product_id, quantity]
+      properties:
+        product_id: { type: integer, x-go-type: uint, x-go-name: ProductID, minimum: 1, x-oapi-codegen-extra-tags: { binding: required } }
+        quantity: { type: integer, minimum: 1, x-oapi-codegen-extra-tags: { binding: 'required,min=1' } }
+        remark: { type: string, x-go-type-skip-optional-pointer: true }
+    ShopWalletTransactionListInput:
+      type: object
+      properties:
+        current: { type: integer, default: 1, description: Values below 1 use 1., x-go-type-skip-optional-pointer: true }
+        size: { type: integer, default: 200, description: Values below 1 use 200 and values above 1000 use 1000. An absent or malformed body uses 20., x-go-type-skip-optional-pointer: true }
+        user_keyword: { type: string, description: Accepted but ignored., x-go-type-skip-optional-pointer: true }
+        sort_by: { type: string, description: Accepted but ignored., x-go-type-skip-optional-pointer: true }
+        sort_order: { type: string, description: Accepted but ignored., x-go-type-skip-optional-pointer: true }
+    ShopAdminProductListInput:
+      type: object
+      properties:
+        current: { type: integer, default: 1, description: Values below 1 use 1., x-go-type-skip-optional-pointer: true }
+        size: { type: integer, default: 20, description: Values outside 1–100 use 20., x-go-type-skip-optional-pointer: true }
+        type: { type: string, x-go-type-skip-optional-pointer: true }
+        name: { type: string, x-go-type-skip-optional-pointer: true }
+        status: { type: integer, minimum: -128, maximum: 127, x-go-type: int8, nullable: true }
+    ShopProductCreateInput:
+      type: object
+      required: [name, price, type]
+      properties:
+        name: { type: string, minLength: 1, x-oapi-codegen-extra-tags: { binding: required } }
+        description: { type: string, x-go-type-skip-optional-pointer: true }
+        image: { type: string, x-go-type-skip-optional-pointer: true }
+        price: { type: number, format: double, minimum: 0, exclusiveMinimum: true, x-oapi-codegen-extra-tags: { binding: 'required,gt=0' } }
+        stock: { type: integer, x-go-type-skip-optional-pointer: true }
+        max_per_user: { type: integer, x-go-type-skip-optional-pointer: true }
+        limit_period: { type: string, x-go-type-skip-optional-pointer: true }
+        type: { type: string, enum: [normal], x-go-type: string, x-oapi-codegen-extra-tags: { binding: 'required,oneof=normal' } }
+        status: { type: integer, minimum: -128, maximum: 127, x-go-type: int8, x-go-type-skip-optional-pointer: true }
+        sort_order: { type: integer, x-go-type-skip-optional-pointer: true }
+    ShopProductUpdateInput:
+      type: object
+      required: [id]
+      properties:
+        id: { type: integer, x-go-type: uint, x-go-name: ID, minimum: 1, x-oapi-codegen-extra-tags: { binding: required } }
+        name: { type: string, x-go-type-skip-optional-pointer: true }
+        description: { type: string, nullable: true }
+        image: { type: string, nullable: true }
+        price: { type: number, format: double, nullable: true }
+        stock: { type: integer, nullable: true }
+        max_per_user: { type: integer, nullable: true }
+        limit_period: { type: string, nullable: true }
+        type: { type: string, x-go-type-skip-optional-pointer: true }
+        status: { type: integer, minimum: -128, maximum: 127, x-go-type: int8, nullable: true }
+        sort_order: { type: integer, nullable: true }
+    ShopProductDeleteInput:
+      type: object
+      required: [id]
+      properties:
+        id: { type: integer, x-go-type: uint, x-go-name: ID, minimum: 1, x-oapi-codegen-extra-tags: { binding: required } }
+    ShopAdminOrderListInput:
+      type: object
+      properties:
+        current: { type: integer, default: 1, description: Values below 1 use 1., x-go-type-skip-optional-pointer: true }
+        size: { type: integer, default: 200, description: Values below 1 use 200 and values above 1000 use 1000. An absent or malformed body uses 20., x-go-type-skip-optional-pointer: true }
+        keyword: { type: string, x-go-type-skip-optional-pointer: true }
+        statuses: { type: array, items: { type: string }, description: When nonempty takes precedence over status., x-go-type-skip-optional-pointer: true }
+        status: { type: string, x-go-type-skip-optional-pointer: true }
+    ShopOrderReviewInput:
+      type: object
+      required: [order_id]
+      properties:
+        order_id: { type: integer, x-go-type: uint, x-go-name: OrderID, minimum: 1, x-oapi-codegen-extra-tags: { binding: required } }
+        remark: { type: string, x-go-type-skip-optional-pointer: true }
+    ShopProductPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/ShopProductPage' }
+    ShopProductSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/ShopProduct' }
+    ShopOrderSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/ShopOrder' }
+    ShopOrderPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/ShopOrderPage' }
+    ShopWalletSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/ShopWallet' }
+    ShopWalletTransactionPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/ShopWalletTransactionPage' }
+    ShopOrderActionSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/ShopOrderActionResultData' }
+    ShopProduct:
+      type: object
+      required: [id, created_at, updated_at, name, description, image, price, stock, max_per_user, limit_period, type, status, sort_order]
+      properties:
+        id: { type: integer, x-go-type: uint, x-go-name: ID }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        name: { type: string }
+        description: { type: string }
+        image: { type: string }
+        price: { type: number, format: double }
+        stock: { type: integer }
+        max_per_user: { type: integer }
+        limit_period: { type: string }
+        type: { type: string }
+        status: { type: integer, minimum: -128, maximum: 127, x-go-type: int8 }
+        sort_order: { type: integer }
+    ShopOrder:
+      type: object
+      required: [id, created_at, updated_at, order_no, user_id, main_character_name, nickname, qq, discord_id, product_id, product_name, product_type, quantity, unit_price, total_price, status, transaction_id, remark, reviewed_by, reviewed_at, review_remark]
+      properties:
+        id: { type: integer, x-go-type: uint, x-go-name: ID }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        order_no: { type: string }
+        user_id: { type: integer, x-go-type: uint, x-go-name: UserID }
+        main_character_name: { type: string }
+        nickname: { type: string }
+        qq: { type: string, x-go-name: QQ }
+        discord_id: { type: string, x-go-name: DiscordID }
+        product_id: { type: integer, x-go-type: uint, x-go-name: ProductID }
+        product_name: { type: string }
+        product_type: { type: string }
+        quantity: { type: integer }
+        unit_price: { type: number, format: double }
+        total_price: { type: number, format: double }
+        status: { type: string }
+        transaction_id: { type: integer, x-go-type: uint, x-go-name: TransactionID, nullable: true }
+        remark: { type: string }
+        reviewed_by: { type: integer, x-go-type: uint, x-go-name: ReviewedBy, nullable: true }
+        reviewed_at: { type: string, format: date-time, nullable: true }
+        review_remark: { type: string }
+        reviewer_name: { type: string }
+    ShopOrderActionResultData:
+      allOf:
+        - $ref: '#/components/schemas/ShopOrder'
+        - type: object
+          properties:
+            mail_error: { type: string }
+            mail_id: { type: integer, format: int64, x-go-name: MailID }
+            mail_sender_character_id: { type: integer, format: int64, x-go-name: MailSenderCharacterID }
+            mail_sender_character_name: { type: string }
+            mail_recipient_character_id: { type: integer, format: int64, x-go-name: MailRecipientCharacterID }
+            mail_recipient_character_name: { type: string }
+    ShopWallet:
+      type: object
+      required: [id, user_id, balance, updated_at]
+      properties:
+        id: { type: integer, x-go-type: uint, x-go-name: ID }
+        user_id: { type: integer, x-go-type: uint, x-go-name: UserID }
+        balance: { type: number, format: double }
+        updated_at: { type: string, format: date-time }
+    ShopWalletTransaction:
+      type: object
+      required: [id, user_id, amount, reason, ref_type, ref_id, balance_after, operator_id, created_at, character_name, nickname, operator_name]
+      properties:
+        id: { type: integer, x-go-type: uint, x-go-name: ID }
+        user_id: { type: integer, x-go-type: uint, x-go-name: UserID }
+        amount: { type: number, format: double }
+        reason: { type: string }
+        ref_type: { type: string }
+        ref_id: { type: string, x-go-name: RefID }
+        balance_after: { type: number, format: double }
+        operator_id: { type: integer, x-go-type: uint, x-go-name: OperatorID }
+        created_at: { type: string, format: date-time }
+        character_name: { type: string }
+        nickname: { type: string }
+        operator_name: { type: string }
+    ShopProductPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, nullable: true, items: { $ref: '#/components/schemas/ShopProduct' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    ShopOrderPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/ShopOrder' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    ShopWalletTransactionPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, nullable: true, items: { $ref: '#/components/schemas/ShopWalletTransaction' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }

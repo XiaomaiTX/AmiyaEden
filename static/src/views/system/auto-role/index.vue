@@ -245,31 +245,38 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    AutoRoleCorpTitle,
+    AutoRoleEsiRoleMapping,
+    AutoRoleEsiTitleMapping,
+    SystemRoleDefinition
+  } from '@/api/generated/client'
   import { ref, onMounted } from 'vue'
   import { Plus } from '@element-plus/icons-vue'
   import type { FormInstance, FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
   import {
-    fetchGetEsiRoleMappings,
-    fetchCreateEsiRoleMapping,
-    fetchDeleteEsiRoleMapping,
-    fetchGetEsiTitleMappings,
-    fetchCreateEsiTitleMapping,
-    fetchDeleteEsiTitleMapping,
-    fetchGetAllEsiRoles,
-    fetchGetCorpTitles,
-    fetchGetRoleDefinitions,
-    fetchTriggerAutoRoleSync
-  } from '@/api/system-manage'
+    createEsiRoleMapping,
+    createEsiTitleMapping,
+    deleteAutoRoleEsiRoleMapping,
+    deleteAutoRoleEsiTitleMapping,
+    getAllEsiRoles,
+    listCorpTitles,
+    listEsiRoleMappings,
+    listEsiTitleMappings,
+    listRoleDefinitions,
+    triggerAutoRoleSync
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineOptions({ name: 'AutoRole' })
   const { t } = useI18n()
 
-  type EsiRoleMapping = Api.SystemManage.EsiRoleMapping
-  type EsiTitleMapping = Api.SystemManage.EsiTitleMapping
-  type RoleDefinition = Api.SystemManage.RoleDefinition
-  type CorpTitleInfo = Api.SystemManage.CorpTitleInfo
+  type EsiRoleMapping = AutoRoleEsiRoleMapping
+  type EsiTitleMapping = AutoRoleEsiTitleMapping
+  type RoleDefinition = SystemRoleDefinition
+  type CorpTitleInfo = AutoRoleCorpTitle
 
   // ─── Tab ───
   const activeTab = ref('esi-role')
@@ -296,9 +303,9 @@
 
   async function loadBaseData() {
     const [esiRoles, systemRoles, corpTitles] = await Promise.all([
-      fetchGetAllEsiRoles(),
-      fetchGetRoleDefinitions(),
-      fetchGetCorpTitles()
+      unwrapContract(getAllEsiRoles()),
+      unwrapContract(listRoleDefinitions()),
+      unwrapContract(listCorpTitles()).then((data) => data ?? [])
     ])
     allEsiRoles.value = esiRoles
     // 过滤掉 super_admin（文档规定不可映射）
@@ -313,7 +320,7 @@
   async function loadEsiRoleMappings() {
     esiRoleLoading.value = true
     try {
-      esiRoleMappings.value = await fetchGetEsiRoleMappings()
+      esiRoleMappings.value = await unwrapContract(listEsiRoleMappings())
     } finally {
       esiRoleLoading.value = false
     }
@@ -321,7 +328,7 @@
 
   async function handleDeleteEsiRole(id: number) {
     try {
-      await fetchDeleteEsiRoleMapping(id)
+      await unwrapContract(deleteAutoRoleEsiRoleMapping(id))
       ElMessage.success(t('autoRolePage.deleteSuccess'))
       await loadEsiRoleMappings()
     } catch (e: any) {
@@ -353,10 +360,12 @@
     await esiRoleFormRef.value.validate()
     esiRoleSubmitting.value = true
     try {
-      await fetchCreateEsiRoleMapping({
-        esi_role: esiRoleForm.esi_role,
-        role_code: esiRoleForm.role_code
-      })
+      await unwrapContract(
+        createEsiRoleMapping({
+          esi_role: esiRoleForm.esi_role,
+          role_code: esiRoleForm.role_code
+        })
+      )
       ElMessage.success(t('autoRolePage.mappingCreated'))
       esiRoleDialogVisible.value = false
       await loadEsiRoleMappings()
@@ -374,7 +383,7 @@
   async function loadTitleMappings() {
     titleLoading.value = true
     try {
-      titleMappings.value = await fetchGetEsiTitleMappings()
+      titleMappings.value = await unwrapContract(listEsiTitleMappings())
     } finally {
       titleLoading.value = false
     }
@@ -382,7 +391,7 @@
 
   async function handleDeleteTitle(id: number) {
     try {
-      await fetchDeleteEsiTitleMapping(id)
+      await unwrapContract(deleteAutoRoleEsiTitleMapping(id))
       ElMessage.success(t('autoRolePage.deleteSuccess'))
       await loadTitleMappings()
     } catch (e: any) {
@@ -429,12 +438,14 @@
     await titleFormRef.value.validate()
     titleSubmitting.value = true
     try {
-      await fetchCreateEsiTitleMapping({
-        corporation_id: titleForm.corporation_id,
-        title_id: titleForm.title_id,
-        title_name: titleForm.title_name || undefined,
-        role_code: titleForm.role_code
-      })
+      await unwrapContract(
+        createEsiTitleMapping({
+          corporation_id: titleForm.corporation_id,
+          title_id: titleForm.title_id,
+          title_name: titleForm.title_name || undefined,
+          role_code: titleForm.role_code
+        })
+      )
       ElMessage.success(t('autoRolePage.mappingCreated'))
       titleDialogVisible.value = false
       await loadTitleMappings()
@@ -451,7 +462,7 @@
   async function handleTriggerSync() {
     syncLoading.value = true
     try {
-      await fetchTriggerAutoRoleSync()
+      await unwrapContract(triggerAutoRoleSync())
       ElMessage.success(t('autoRolePage.syncTriggered'))
     } catch (e: any) {
       ElMessage.error(e?.message ?? t('autoRolePage.syncFailed'))

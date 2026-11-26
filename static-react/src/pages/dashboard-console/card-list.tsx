@@ -1,7 +1,7 @@
 import { useI18n } from '@/i18n'
 import { formatIskSmart } from '@/lib/isk'
 import { humanizeNumber } from '@/lib/format'
-import type { DashboardCards } from '@/types/api/dashboard'
+import type { DashboardCards } from '@/api/generated/client'
 
 interface DashboardCardListProps {
   cards?: DashboardCards

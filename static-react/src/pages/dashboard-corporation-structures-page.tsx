@@ -6,12 +6,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { MultiSelect } from '@/components/ui/multi-select'
-import {
-  Dialog,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   Table,
   TableHeader,
@@ -23,27 +18,28 @@ import {
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
-  fetchCorporationStructureFilterOptions,
-  fetchCorporationStructureList,
-  fetchCorporationStructureSettings,
-  fetchStructureServiceCatalog,
-  runCorporationStructuresTask,
-  updateCorporationStructureAuthorizations,
-  updateStructureServiceCatalog,
-} from '@/api/corporation-structures'
+  getCorpStructureFilterOptions,
+  listCorpStructures,
+  getCorpStructureSettings,
+  getCorpStructureServiceCatalog,
+  runCorpStructureTask,
+  updateCorpStructureAuthorizations,
+  updateCorpStructureServiceCatalog,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useI18n } from '@/i18n'
 import { fuelExpiryMonthOffset } from '@/lib/format'
 import type {
-  CorporationStructureFilterOptionsResponse,
-  CorporationStructureListRequest,
-  CorporationStructureRow,
-  CorporationStructuresSettings,
-  CorporationStructureSystemOption,
-  StructureServiceCatalog,
-} from '@/types/api/dashboard'
+  CorpStructureFilters as CorporationStructureFilterOptionsResponse,
+  CorpStructureListInput as CorporationStructureListRequest,
+  CorpStructureRow as CorporationStructureRow,
+  CorpStructureSettings as CorporationStructuresSettings,
+  CorpStructureSystem as CorporationStructureSystemOption,
+  CorpStructureCatalog as StructureServiceCatalog,
+} from '@/api/generated/client'
 
 type ActiveTab = 'list' | 'settings'
 type DateTimeRange = [string, string] | null
@@ -305,8 +301,8 @@ export function DashboardCorporationStructuresPage() {
     setSettingsError(null)
     try {
       const [data, catalog] = await Promise.all([
-        fetchCorporationStructureSettings(),
-        fetchStructureServiceCatalog(),
+        unwrapContract(getCorpStructureSettings(), 'fetch corporation structure settings failed'),
+        unwrapContract(getCorpStructureServiceCatalog(), 'fetch structure service catalog failed'),
       ])
       setSettings(data)
       setNoticeThresholds({
@@ -335,9 +331,12 @@ export function DashboardCorporationStructuresPage() {
   }
 
   const loadFilterOptions = async (corporationId = filters.corporation_id) => {
-    const data = await fetchCorporationStructureFilterOptions({
-      corporation_id: corporationId > 0 ? corporationId : undefined,
-    })
+    const data = await unwrapContract(
+      getCorpStructureFilterOptions(
+        corporationId > 0 ? { corporation_id: corporationId } : undefined
+      ),
+      'fetch corporation structure filter options failed'
+    )
     setFilterOptions(data)
   }
 
@@ -350,9 +349,15 @@ export function DashboardCorporationStructuresPage() {
 
       try {
         const [settingsData, filterData, catalogData] = await Promise.all([
-          fetchCorporationStructureSettings(),
-          fetchCorporationStructureFilterOptions(),
-          fetchStructureServiceCatalog(),
+          unwrapContract(getCorpStructureSettings(), 'fetch corporation structure settings failed'),
+          unwrapContract(
+            getCorpStructureFilterOptions(),
+            'fetch corporation structure filter options failed'
+          ),
+          unwrapContract(
+            getCorpStructureServiceCatalog(),
+            'fetch structure service catalog failed'
+          ),
         ])
 
         if (cancelled) {
@@ -411,50 +416,53 @@ export function DashboardCorporationStructuresPage() {
       setError(null)
 
       try {
-        const data = await fetchCorporationStructureList({
-          corporation_id:
-            appliedFilters.corporation_id > 0 ? appliedFilters.corporation_id : undefined,
-          keyword: appliedFilters.keyword || undefined,
-          state_groups: appliedFilters.state_groups.length
-            ? appliedFilters.state_groups
-            : undefined,
-          fuel_bucket: appliedFilters.fuel_bucket,
-          fuel_min_hours:
-            appliedFilters.fuel_bucket === 'custom' && appliedFilters.fuel_min_hours !== ''
-              ? Number(appliedFilters.fuel_min_hours)
+        const data = await unwrapContract(
+          listCorpStructures({
+            corporation_id:
+              appliedFilters.corporation_id > 0 ? appliedFilters.corporation_id : undefined,
+            keyword: appliedFilters.keyword || undefined,
+            state_groups: appliedFilters.state_groups.length
+              ? appliedFilters.state_groups
               : undefined,
-          fuel_max_hours:
-            appliedFilters.fuel_bucket === 'custom' && appliedFilters.fuel_max_hours !== ''
-              ? Number(appliedFilters.fuel_max_hours)
+            fuel_bucket: appliedFilters.fuel_bucket,
+            fuel_min_hours:
+              appliedFilters.fuel_bucket === 'custom' && appliedFilters.fuel_min_hours !== ''
+                ? Number(appliedFilters.fuel_min_hours)
+                : undefined,
+            fuel_max_hours:
+              appliedFilters.fuel_bucket === 'custom' && appliedFilters.fuel_max_hours !== ''
+                ? Number(appliedFilters.fuel_max_hours)
+                : undefined,
+            system_ids: appliedFilters.system_ids.length ? appliedFilters.system_ids : undefined,
+            region_ids: appliedFilters.region_ids.length ? appliedFilters.region_ids : undefined,
+            security_bands: appliedFilters.security_bands.length
+              ? appliedFilters.security_bands
               : undefined,
-          system_ids: appliedFilters.system_ids.length ? appliedFilters.system_ids : undefined,
-          region_ids: appliedFilters.region_ids.length ? appliedFilters.region_ids : undefined,
-          security_bands: appliedFilters.security_bands.length
-            ? appliedFilters.security_bands
-            : undefined,
-          security_min:
-            appliedFilters.security_min !== '' ? Number(appliedFilters.security_min) : undefined,
-          security_max:
-            appliedFilters.security_max !== '' ? Number(appliedFilters.security_max) : undefined,
-          type_ids: appliedFilters.type_ids.length ? appliedFilters.type_ids : undefined,
-          service_names: appliedFilters.service_names.length
-            ? appliedFilters.service_names
-            : undefined,
-          service_match_mode: appliedFilters.service_match_mode,
-          timer_bucket: appliedFilters.timer_bucket,
-          timer_start:
-            appliedFilters.timer_bucket === 'custom' && appliedTimerRange
-              ? appliedTimerRange[0]
+            security_min:
+              appliedFilters.security_min !== '' ? Number(appliedFilters.security_min) : undefined,
+            security_max:
+              appliedFilters.security_max !== '' ? Number(appliedFilters.security_max) : undefined,
+            type_ids: appliedFilters.type_ids.length ? appliedFilters.type_ids : undefined,
+            service_names: appliedFilters.service_names.length
+              ? appliedFilters.service_names
               : undefined,
-          timer_end:
-            appliedFilters.timer_bucket === 'custom' && appliedTimerRange
-              ? appliedTimerRange[1]
-              : undefined,
-          sort_by: sort.sort_by,
-          sort_order: sort.sort_order,
-          page,
-          page_size: pageSize,
-        })
+            service_match_mode: appliedFilters.service_match_mode,
+            timer_bucket: appliedFilters.timer_bucket,
+            timer_start:
+              appliedFilters.timer_bucket === 'custom' && appliedTimerRange
+                ? appliedTimerRange[0]
+                : undefined,
+            timer_end:
+              appliedFilters.timer_bucket === 'custom' && appliedTimerRange
+                ? appliedTimerRange[1]
+                : undefined,
+            sort_by: sort.sort_by,
+            sort_order: sort.sort_order,
+            page,
+            page_size: pageSize,
+          }),
+          'fetch corporation structure list failed'
+        )
 
         if (cancelled) {
           return
@@ -523,14 +531,17 @@ export function DashboardCorporationStructuresPage() {
   const saveAuthorizations = async () => {
     setSavingAuthorizations(true)
     try {
-      await updateCorporationStructureAuthorizations({
-        authorizations: settings.corporations.map((corp) => ({
-          corporation_id: corp.corporation_id,
-          character_id: authorizationByCorp[corp.corporation_id] || 0,
-        })),
-        fuel_notice_threshold_days: noticeThresholds.fuel_notice_threshold_days,
-        timer_notice_threshold_days: noticeThresholds.timer_notice_threshold_days,
-      })
+      await unwrapContract(
+        updateCorpStructureAuthorizations({
+          authorizations: settings.corporations.map((corp) => ({
+            corporation_id: corp.corporation_id,
+            character_id: authorizationByCorp[corp.corporation_id] || 0,
+          })),
+          fuel_notice_threshold_days: noticeThresholds.fuel_notice_threshold_days,
+          timer_notice_threshold_days: noticeThresholds.timer_notice_threshold_days,
+        }),
+        'update corporation structure authorizations failed'
+      )
       await loadSettings()
     } finally {
       setSavingAuthorizations(false)
@@ -547,7 +558,10 @@ export function DashboardCorporationStructuresPage() {
 
     setSavingServiceCatalog(true)
     try {
-      await updateStructureServiceCatalog({ modules: [], activities })
+      await unwrapContract(
+        updateCorpStructureServiceCatalog({ modules: [], activities }),
+        'update structure service catalog failed'
+      )
       await loadSettings()
     } finally {
       setSavingServiceCatalog(false)
@@ -557,7 +571,10 @@ export function DashboardCorporationStructuresPage() {
   const handleRunTask = async (corporationId: number) => {
     setRunningTaskCorpId(corporationId)
     try {
-      await runCorporationStructuresTask({ corporation_id: corporationId })
+      await unwrapContract(
+        runCorpStructureTask({ corporation_id: corporationId }),
+        'run corporation structures task failed'
+      )
     } finally {
       setRunningTaskCorpId(0)
     }
@@ -580,7 +597,10 @@ export function DashboardCorporationStructuresPage() {
         </div>
       </div>
 
-      <Tabs selectedKey={activeTab} onSelectionChange={(key) => ((value) => setTab(value as ActiveTab))(String(key))}>
+      <Tabs
+        selectedKey={activeTab}
+        onSelectionChange={(key) => ((value) => setTab(value as ActiveTab))(String(key))}
+      >
         <TabsList>
           <TabsTrigger id="list">{t('corporationStructures.tabs.list')}</TabsTrigger>
           <TabsTrigger id="settings">{t('corporationStructures.tabs.settings')}</TabsTrigger>
@@ -597,11 +617,13 @@ export function DashboardCorporationStructuresPage() {
                 </span>
                 <Select
                   selectedKey={String(filters.corporation_id ?? '')}
-                  onSelectionChange={(key) => (async (value) => {
-                    const corpId = Number(value)
-                    setFilters((current) => ({ ...current, corporation_id: corpId }))
-                    await loadFilterOptionsForSelectedCorp(corpId)
-                  })(String(key))}
+                  onSelectionChange={(key) =>
+                    (async (value) => {
+                      const corpId = Number(value)
+                      setFilters((current) => ({ ...current, corporation_id: corpId }))
+                      await loadFilterOptionsForSelectedCorp(corpId)
+                    })(String(key))
+                  }
                 >
                   <SelectTrigger className="h-10 w-full">
                     <SelectValue />
@@ -611,10 +633,7 @@ export function DashboardCorporationStructuresPage() {
                       {t('corporationStructures.allCorporations')}
                     </SelectItem>
                     {settings.corporations.map((corp) => (
-                      <SelectItem
-                        key={corp.corporation_id}
-                        id={String(corp.corporation_id ?? '')}
-                      >
+                      <SelectItem key={corp.corporation_id} id={String(corp.corporation_id ?? '')}>
                         {corp.corporation_name} ({corp.corporation_id})
                       </SelectItem>
                     ))}
@@ -1272,11 +1291,13 @@ export function DashboardCorporationStructuresPage() {
                     <TableCell className="px-3 py-2">
                       <Select
                         selectedKey={String(authorizationByCorp[corp.corporation_id] || 0)}
-                        onSelectionChange={(key) => ((value) =>
-                          setAuthorizationByCorp((current) => ({
-                            ...current,
-                            [corp.corporation_id]: Number(value),
-                          })))(String(key))}
+                        onSelectionChange={(key) =>
+                          ((value) =>
+                            setAuthorizationByCorp((current) => ({
+                              ...current,
+                              [corp.corporation_id]: Number(value),
+                            })))(String(key))
+                        }
                       >
                         <SelectTrigger className="h-10 w-full">
                           <SelectValue />

@@ -16,8 +16,9 @@ source_of_truth:
   - server/internal/service/sys_webhook.go
   - server/internal/handler/audit_event.go
   - server/internal/router/router.go
-  - static/src/api/audit.ts
-  - static/src/types/api/api.d.ts
+  - contracts/modules/audit-webhook.yaml
+  - static/src/views/system/audit/index.vue
+  - static-react/src/pages/system-audit-page.tsx
   - static/src/router/modules/system.ts
   - static/src/views/system/audit
   - docs/api/route-index.md
@@ -59,21 +60,13 @@ source_of_truth:
 ## 前端实现映射（迁移期）
 
 - Vue 当前实现位于 `static/src`。
-- React 已承接 `/system/audit`，API 与本地类型位于 `static-react/src/api/audit.ts` 和 `static-react/src/types/api/audit.ts`。
+- [React 审计页](../../../static-react/src/pages/system-audit-page.tsx)已承接 `/system/audit`，直接使用生成的事件查询操作与类型。Vue 和 React 的导出标签均提示暂不可用，后端导出能力仍保留。
 - 权限和回归状态以迁移基线及 `docs/architecture/auth-and-permissions.md` 为准。
 - `static/src/router/modules/system.ts` 中的 `/system/audit`
 
-### 前端 API
+### API 契约
 
-- `static/src/api/audit.ts`
-- `static/src/types/api/api.d.ts`
-
-### 后端路由
-
-- `/api/v1/system/audit/events`
-- `/api/v1/system/audit/export`
-- `/api/v1/system/audit/export/:task_id`
-- `/api/v1/system/audit/export/list`
+- [审计与 Webhook OpenAPI 片段](../../../contracts/modules/audit-webhook.yaml)定义审计查询与导出操作；Vue 和 React 直接使用各自的生成客户端。
 
 ## 权限边界
 
@@ -105,7 +98,6 @@ source_of_truth:
 - `server/internal/service/sys_webhook.go`
 - `server/internal/handler/audit_event.go`
 - `server/internal/router/router.go`
-- `static/src/api/audit.ts`
-- `static/src/types/api/api.d.ts`
 - `static/src/router/modules/system.ts`
-- `static/src/views/system/audit`
+- `static/src/views/system/audit/index.vue`
+- `static-react/src/pages/system-audit-page.tsx`

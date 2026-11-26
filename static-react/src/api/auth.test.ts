@@ -6,6 +6,8 @@ vi.mock('@/api/http-client', () => ({
 
 import { requestJson } from '@/api/http-client'
 import { fetchGetUserInfo } from '@/api/auth'
+import { updateMe } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 
 const baseMeResponse = {
   user: {
@@ -33,7 +35,7 @@ describe('auth api', () => {
 
   test('derives a completed profile when a rolling backend response omits the flag', async () => {
     vi.mocked(requestJson).mockResolvedValueOnce({
-      code: 0,
+      code: 200,
       msg: 'ok',
       data: baseMeResponse,
     })
@@ -45,7 +47,7 @@ describe('auth api', () => {
 
   test('honors an explicit backend profile flag', async () => {
     vi.mocked(requestJson).mockResolvedValueOnce({
-      code: 0,
+      code: 200,
       msg: 'ok',
       data: { ...baseMeResponse, profile_complete: false },
     })
@@ -53,5 +55,36 @@ describe('auth api', () => {
     const userInfo = await fetchGetUserInfo()
 
     expect(userInfo.profileComplete).toBe(false)
+    expect(requestJson).toHaveBeenCalledWith(
+      '/api/v1/me',
+      expect.objectContaining({ method: 'GET' })
+    )
+  })
+
+  test('sends the generated profile patch and preserves business failures', async () => {
+    const data = { nickname: 'Amiya', qq: null }
+    vi.mocked(requestJson).mockResolvedValueOnce({
+      code: 200,
+      msg: 'success',
+      data: { user: baseMeResponse.user, profile_complete: true },
+    })
+    await expect(unwrapContract(updateMe(data), 'update my profile failed')).resolves.toMatchObject(
+      { profile_complete: true }
+    )
+    expect(requestJson).toHaveBeenCalledWith(
+      '/api/v1/me',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify(data),
+      })
+    )
+    vi.mocked(requestJson).mockResolvedValueOnce({
+      code: 409,
+      msg: 'contact_already_bound',
+      data: {},
+    })
+    await expect(unwrapContract(updateMe(data), 'update my profile failed')).rejects.toThrow(
+      'contact_already_bound'
+    )
   })
 })

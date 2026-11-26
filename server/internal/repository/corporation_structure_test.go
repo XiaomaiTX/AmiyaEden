@@ -17,7 +17,7 @@ func TestBuildFuelOfficerUsersByCorporationsQueryQuotesUserTable(t *testing.T) {
 	db := newDryRunPostgresDB(t)
 
 	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return buildFuelOfficerUsersByCorporationsQuery(tx, []int64{9001}).Scan(&[]FuelOfficerUserOption{})
+		return buildFuelOfficerUsersByCorporationsQuery(tx, []int64{9001}).Scan(&[]model.FuelOfficerUserOption{})
 	})
 
 	if !strings.Contains(sql, `FROM "user" AS u`) {

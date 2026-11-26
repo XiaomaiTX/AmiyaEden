@@ -1,12 +1,13 @@
 import { Textarea } from '@/components/ui/textarea'
 import { useCallback, useEffect, useState } from 'react'
 import {
-  createToolBookmark,
+  adminCreate,
   deleteToolBookmark,
-  fetchAdminToolBookmarks,
-  fetchVisibleToolBookmarks,
+  listToolBookmarks,
+  listVisible,
   updateToolBookmark,
-} from '@/api/tool-bookmark'
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -14,10 +15,10 @@ import { confirmAction, notifyError, notifySuccess, notifyWarning } from '@/feed
 import { useI18n } from '@/i18n'
 import { groupToolBookmarks } from '@/lib/tool-bookmark-groups'
 import { useSessionStore } from '@/stores'
-import type { ToolBookmark, ToolBookmarkUpsertRequest } from '@/types/api/tool-bookmark'
+import type { ToolBookmark, ToolBookmarkCreateInput } from '@/api/generated/client'
 import { ShopDialog } from './shop-page-utils'
 
-const emptyForm: ToolBookmarkUpsertRequest = {
+const emptyForm: ToolBookmarkCreateInput = {
   group_name: '',
   name: '',
   url: '',
@@ -40,14 +41,18 @@ export function InfoToolBookmarksPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editingBookmark, setEditingBookmark] = useState<ToolBookmark | null>(null)
-  const [form, setForm] = useState<ToolBookmarkUpsertRequest>(emptyForm)
+  const [form, setForm] = useState<ToolBookmarkCreateInput>(emptyForm)
   const groups = groupToolBookmarks(bookmarks)
 
   const loadBookmarks = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      setBookmarks(isAdmin ? await fetchAdminToolBookmarks() : await fetchVisibleToolBookmarks())
+      setBookmarks(
+        await (isAdmin
+          ? unwrapContract(listToolBookmarks(), 'fetch admin tool bookmarks failed')
+          : unwrapContract(listVisible(), 'fetch visible tool bookmarks failed'))
+      )
     } catch (caughtError) {
       setBookmarks([])
       setError(getErrorMessage(caughtError, t('infoToolBookmarks.loadFailed')))
@@ -84,7 +89,7 @@ export function InfoToolBookmarksPage() {
   }
 
   const submitForm = async () => {
-    const data: ToolBookmarkUpsertRequest = {
+    const data: ToolBookmarkCreateInput = {
       ...form,
       group_name: form.group_name?.trim() ?? '',
       name: form.name.trim(),
@@ -99,9 +104,12 @@ export function InfoToolBookmarksPage() {
     setSaving(true)
     try {
       if (editingBookmark) {
-        await updateToolBookmark(editingBookmark.id, data)
+        await unwrapContract(
+          updateToolBookmark(editingBookmark.id, data),
+          'update tool bookmark failed'
+        )
       } else {
-        await createToolBookmark(data)
+        await unwrapContract(adminCreate(data), 'create tool bookmark failed')
       }
       setDialogOpen(false)
       notifySuccess(t('infoToolBookmarks.saveSuccess'))
@@ -125,7 +133,7 @@ export function InfoToolBookmarksPage() {
     }
 
     try {
-      await deleteToolBookmark(bookmark.id)
+      await unwrapContract(deleteToolBookmark(bookmark.id), 'delete tool bookmark failed')
       notifySuccess(t('infoToolBookmarks.deleteSuccess'))
       await loadBookmarks()
     } catch (caughtError) {

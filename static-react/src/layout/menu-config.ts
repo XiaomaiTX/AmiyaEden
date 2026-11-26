@@ -16,8 +16,8 @@ import {
 import { appRouteSpecs } from '@/app/migration-routes'
 import { evaluateRouteAccess } from '@/app/route-access'
 import type { SessionSnapshot } from '@/stores'
-import type { BadgeCounts } from '@/types/api/badge'
-import type { AdmissionContext } from '@/types/api/admissions'
+import type { BadgeCounts } from '@/api/generated/client'
+import type { AdmissionContext } from '@/api/generated/client'
 import { canAccessAdmission } from '@/lib/admissions'
 
 export interface ShellMenuItem {

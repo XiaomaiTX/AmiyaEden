@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  fetchSkillReadinessCharacterSkills,
-  fetchSkillReadinessOptions,
-  fetchSkillReadinessUserCharacters,
+  getSkillReadinessCharacterSkills,
+  getSkillReadinessOptions,
+  getSkillReadinessUserCharacters,
   querySkillReadiness,
-} from '@/api/skill-readiness'
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable, type ColumnDef } from '@/components/ui/data-table'
@@ -31,10 +32,14 @@ import { useI18n } from '@/i18n'
 import type {
   SkillReadinessCharacter,
   SkillReadinessCharacterDetail,
+  SkillReadinessOptions,
   SkillReadinessRequest,
+  SkillReadinessResult,
   SkillReadinessSkill,
   SkillReadinessUser,
-} from '@/types/api/skill-readiness'
+} from '@/api/generated/client'
+
+const requestFailed = 'Skill readiness request failed'
 
 type Filters = { corporationIds: number[]; planId: number; page: number; pageSize: number }
 type DetailTab = 'comparison' | 'skills'
@@ -68,10 +73,8 @@ export function DashboardSkillReadinessPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [initial] = useState(() => readFilters(searchParams))
   const [filters, setFilters] = useState<Filters>(initial)
-  const [options, setOptions] = useState<Awaited<
-    ReturnType<typeof fetchSkillReadinessOptions>
-  > | null>(null)
-  const [result, setResult] = useState<Awaited<ReturnType<typeof querySkillReadiness>> | null>(null)
+  const [options, setOptions] = useState<SkillReadinessOptions | null>(null)
+  const [result, setResult] = useState<SkillReadinessResult | null>(null)
   const [loadingOptions, setLoadingOptions] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -115,7 +118,7 @@ export function DashboardSkillReadinessPage() {
       setLoading(true)
       setError(null)
       try {
-        const data = await querySkillReadiness(requestFor(value))
+        const data = await unwrapContract(querySkillReadiness(requestFor(value)), requestFailed)
         if (mounted.current && sequence === querySequence.current) setResult(data)
       } catch (caughtError) {
         if (mounted.current && sequence === querySequence.current) {
@@ -176,7 +179,7 @@ export function DashboardSkillReadinessPage() {
     const initialSearchTimer = window.setTimeout(() => {
       if (initial.planId) void loadQuery(initial)
     }, 0)
-    void fetchSkillReadinessOptions()
+    void unwrapContract(getSkillReadinessOptions(), requestFailed)
       .then((data) => {
         if (active) setOptions(data)
       })
@@ -229,7 +232,10 @@ export function DashboardSkillReadinessPage() {
       setCharactersLoading(true)
       const sequence = ++userSequence.current
       try {
-        const rows = await fetchSkillReadinessUserCharacters(user.user_id, requestFor(filters))
+        const rows = await unwrapContract(
+          getSkillReadinessUserCharacters(user.user_id, requestFor(filters)),
+          requestFailed
+        )
         if (mounted.current && sequence === userSequence.current) setCharacters(rows)
       } catch (caughtError) {
         if (mounted.current && sequence === userSequence.current) {
@@ -256,9 +262,9 @@ export function DashboardSkillReadinessPage() {
     setDetailLoading(true)
     const sequence = ++detailSequence.current
     try {
-      const data = await fetchSkillReadinessCharacterSkills(
-        character.character_id,
-        requestFor(filters)
+      const data = await unwrapContract(
+        getSkillReadinessCharacterSkills(character.character_id, requestFor(filters)),
+        requestFailed
       )
       if (mounted.current && sequence === detailSequence.current) setDetail(data)
     } catch (caughtError) {

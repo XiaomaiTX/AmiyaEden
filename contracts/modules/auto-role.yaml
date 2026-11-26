@@ -1,0 +1,257 @@
+paths:
+  /system/auto-role/esi-roles:
+    get:
+      operationId: getAllEsiRoles
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      responses:
+        '200':
+          description: Supported ESI corporation roles.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AutoRoleEsiRoleListSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/auto-role/esi-role-mappings:
+    get:
+      operationId: listEsiRoleMappings
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      responses:
+        '200':
+          description: ESI role mappings or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AutoRoleEsiRoleMappingListSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createEsiRoleMapping
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AutoRoleEsiRoleMappingInput' }
+      responses:
+        '200':
+          description: Created ESI role mapping or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AutoRoleEsiRoleMappingSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/auto-role/esi-role-mappings/{id}:
+    delete:
+      operationId: deleteAutoRoleEsiRoleMapping
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+      responses:
+        '200':
+          description: ESI role mapping deleted or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/auto-role/corp-titles:
+    get:
+      operationId: listCorpTitles
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      responses:
+        '200':
+          description: Corporation titles from stored snapshots, null if no titles are available, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AutoRoleCorpTitleListSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/auto-role/esi-title-mappings:
+    get:
+      operationId: listEsiTitleMappings
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      responses:
+        '200':
+          description: ESI title mappings or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AutoRoleEsiTitleMappingListSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createEsiTitleMapping
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AutoRoleEsiTitleMappingInput' }
+      responses:
+        '200':
+          description: Created ESI title mapping or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AutoRoleEsiTitleMappingSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/auto-role/esi-title-mappings/{id}:
+    delete:
+      operationId: deleteAutoRoleEsiTitleMapping
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+      responses:
+        '200':
+          description: ESI title mapping deleted or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/auto-role/sync:
+    post:
+      operationId: triggerAutoRoleSync
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage", "role:super_admin"]
+      responses:
+        '200':
+          description: Automatic role synchronization started asynchronously.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AutoRoleSyncSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    AutoRoleEsiRoleMapping:
+      type: object
+      required: [id, created_at, updated_at, esi_role, role_code, role_name]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        esi_role: { type: string }
+        role_code: { type: string }
+        role_name: { type: string }
+    AutoRoleEsiTitleMapping:
+      type: object
+      required: [id, created_at, updated_at, corporation_id, title_id, title_name, role_code, role_name]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        corporation_id: { type: integer, format: int64 }
+        title_id: { type: integer }
+        title_name: { type: string }
+        role_code: { type: string }
+        role_name: { type: string }
+    AutoRoleCorpTitle:
+      type: object
+      required: [corporation_id, corporation_name, title_id, title_name]
+      properties:
+        corporation_id: { type: integer, format: int64 }
+        corporation_name: { type: string }
+        title_id: { type: integer }
+        title_name: { type: string }
+    AutoRoleEsiRoleMappingInput:
+      type: object
+      required: [esi_role, role_code]
+      properties:
+        esi_role:
+          type: string
+          minLength: 1
+          x-oapi-codegen-extra-tags: { binding: required }
+        role_code:
+          type: string
+          minLength: 1
+          x-oapi-codegen-extra-tags: { binding: required }
+    AutoRoleEsiTitleMappingInput:
+      type: object
+      required: [corporation_id, title_id, role_code]
+      properties:
+        corporation_id:
+          type: integer
+          format: int64
+          x-oapi-codegen-extra-tags: { binding: required }
+        title_id:
+          type: integer
+          x-oapi-codegen-extra-tags: { binding: required }
+        title_name: { type: string, x-go-type-skip-optional-pointer: true }
+        role_code:
+          type: string
+          minLength: 1
+          x-oapi-codegen-extra-tags: { binding: required }
+    AutoRoleEsiRoleListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { type: string } }
+    AutoRoleEsiRoleMappingListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/AutoRoleEsiRoleMapping' } }
+    AutoRoleEsiRoleMappingSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AutoRoleEsiRoleMapping' }
+    AutoRoleCorpTitleListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, nullable: true, items: { $ref: '#/components/schemas/AutoRoleCorpTitle' } }
+    AutoRoleEsiTitleMappingListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/AutoRoleEsiTitleMapping' } }
+    AutoRoleEsiTitleMappingSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AutoRoleEsiTitleMapping' }
+    AutoRoleSyncSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: string, example: 同步任务已触发 }

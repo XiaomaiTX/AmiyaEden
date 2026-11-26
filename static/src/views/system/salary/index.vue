@@ -68,8 +68,12 @@
   import { ref, onMounted } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { ElMessage } from 'element-plus'
-  import { fetchSalarySettings, updateSalarySettings } from '@/api/salary'
-  import type { SalarySettings } from '@/types/api/salary'
+  import {
+    getSalarySettings,
+    updateSalarySettings,
+    type SalarySettings
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   const { t } = useI18n()
   const operationKeys = ['recruitment', 'welfare_delivery', 'shop_delivery', 'srp_payout'] as const
   const form = ref<SalarySettings | null>(null)
@@ -81,7 +85,7 @@
     error.value = ''
     form.value = null
     try {
-      form.value = await fetchSalarySettings()
+      form.value = await unwrapContract(getSalarySettings())
     } catch {
       error.value = t('salaryManagement.loadFailed')
     } finally {
@@ -93,7 +97,7 @@
     saving.value = true
     error.value = ''
     try {
-      form.value = await updateSalarySettings(form.value)
+      form.value = await unwrapContract(updateSalarySettings(form.value))
       ElMessage.success(t('salaryManagement.saved'))
     } catch {
       error.value = t('salaryManagement.saveFailed')

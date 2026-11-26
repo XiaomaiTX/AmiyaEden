@@ -16,17 +16,17 @@ import {
 } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  adminDeliverOrder,
-  adminListOrderHistory,
-  adminListOrders,
-  adminRejectOrder,
-} from '@/api/shop'
+  adminDeliverShopOrder,
+  adminListShopOrders,
+  adminRejectShopOrder,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usePermission } from '@/hooks/use-permission'
 import { useI18n } from '@/i18n'
 import { operationSalaryMessage } from '@/lib/operation-salary'
-import type { Order } from '@/types/api/shop'
+import type { ShopOrder as Order } from '@/api/generated/client'
 import {
   formatCoin,
   formatDateTime,
@@ -79,12 +79,15 @@ export function ShopOrderManagePage() {
 
   const loadPending = useCallback(
     async (nextPage = pendingPage, nextPageSize = pendingPageSize) => {
-      const response = await adminListOrders({
-        current: nextPage,
-        size: nextPageSize,
-        keyword: keyword.trim() || undefined,
-        statuses: ['requested'],
-      })
+      const response = await unwrapContract(
+        adminListShopOrders({
+          current: nextPage,
+          size: nextPageSize,
+          keyword: keyword.trim() || undefined,
+          statuses: ['requested'],
+        }),
+        'list shop orders failed'
+      )
       setPendingOrders(response.list ?? [])
       setPendingTotal(response.total ?? 0)
       setPendingPage(response.page ?? nextPage)
@@ -95,11 +98,15 @@ export function ShopOrderManagePage() {
 
   const loadHistory = useCallback(
     async (nextPage = historyPage, nextPageSize = historyPageSize) => {
-      const response = await adminListOrderHistory({
-        current: nextPage,
-        size: nextPageSize,
-        keyword: keyword.trim() || undefined,
-      })
+      const response = await unwrapContract(
+        adminListShopOrders({
+          current: nextPage,
+          size: nextPageSize,
+          keyword: keyword.trim() || undefined,
+          statuses: ['delivered', 'rejected'],
+        }),
+        'list shop order history failed'
+      )
       setHistoryOrders(response.list ?? [])
       setHistoryTotal(response.total ?? 0)
       setHistoryPage(response.page ?? nextPage)
@@ -188,9 +195,9 @@ export function ShopOrderManagePage() {
       }
 
       if (reviewAction === 'deliver') {
-        await adminDeliverOrder(payload)
+        await unwrapContract(adminDeliverShopOrder(payload), 'deliver shop order failed')
       } else {
-        await adminRejectOrder(payload)
+        await unwrapContract(adminRejectShopOrder(payload), 'reject shop order failed')
       }
 
       setReviewDialogOpen(false)

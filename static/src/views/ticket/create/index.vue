@@ -33,7 +33,9 @@
 </template>
 
 <script setup lang="ts">
-  import { createTicket, listTicketCategories } from '@/api/ticket'
+  import type { TicketCategory, TicketCreateInput } from '@/api/generated/client'
+  import { createTicket, listCategories } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
@@ -43,15 +45,15 @@
   const router = useRouter()
 
   const submitting = ref(false)
-  const categories = ref<Api.Ticket.TicketCategory[]>([])
-  const form = reactive<Api.Ticket.CreateTicketParams>({
+  const categories = ref<TicketCategory[]>([])
+  const form = reactive<TicketCreateInput>({
     category_id: 0,
     title: '',
     description: ''
   })
 
   const loadCategories = async () => {
-    categories.value = (await listTicketCategories()).filter(
+    categories.value = (await unwrapContract(listCategories())).filter(
       (category) => category.enabled && !category.retired_admission
     )
     if (!form.category_id && categories.value.length > 0) {
@@ -66,7 +68,7 @@
     }
     submitting.value = true
     try {
-      await createTicket(form)
+      await unwrapContract(createTicket(form))
       ElMessage.success(t('ticket.messages.created'))
       router.push({ name: 'TicketMyList' })
     } catch (error: unknown) {

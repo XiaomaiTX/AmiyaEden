@@ -14,10 +14,12 @@
 </template>
 
 <script setup lang="ts">
+  import type { CorpStructureRow } from '@/api/generated/client'
   import { ElMessage, ElTag } from 'element-plus'
   import { computed, h, onMounted, reactive, ref } from 'vue'
   import { useI18n } from 'vue-i18n'
-  import { fetchMyAssignedCorporationStructures } from '@/api/corporation-structures'
+  import { listMyAssignedCorpStructures } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { formatTime, fuelExpiryMonthOffset } from '@/utils/common/time'
   import type { ColumnOption } from '@/types/component'
 
@@ -26,9 +28,9 @@
   const { t } = useI18n()
   const loading = ref(false)
   const pagination = reactive({ current: 1, size: 20, total: 0 })
-  const data = ref<Api.Dashboard.CorporationStructureRow[]>([])
+  const data = ref<CorpStructureRow[]>([])
 
-  const columns = computed<ColumnOption<Api.Dashboard.CorporationStructureRow>[]>(() => [
+  const columns = computed<ColumnOption<CorpStructureRow>[]>(() => [
     {
       prop: 'corporation_name',
       label: t('corporationStructures.table.corporation'),
@@ -46,7 +48,7 @@
       prop: 'fuel_per_hour',
       label: t('corporationStructures.table.fuelPerHour'),
       minWidth: 140,
-      formatter: (row: Api.Dashboard.CorporationStructureRow) =>
+      formatter: (row: CorpStructureRow) =>
         row.fuel_estimate_incomplete
           ? formatFuelEstimateStatus(row.fuel_estimate_status)
           : row.fuel_per_hour != null
@@ -68,14 +70,12 @@
       prop: 'updated_at',
       label: t('corporationStructures.table.updatedAt'),
       minWidth: 180,
-      formatter: (row: Api.Dashboard.CorporationStructureRow) =>
+      formatter: (row: CorpStructureRow) =>
         row.updated_at ? formatTime(new Date(row.updated_at * 1000).toISOString()) : '-'
     }
   ])
 
-  function formatFuelEstimateStatus(
-    status: Api.Dashboard.CorporationStructureRow['fuel_estimate_status']
-  ) {
+  function formatFuelEstimateStatus(status: CorpStructureRow['fuel_estimate_status']) {
     const keyByStatus: Record<string, string> = {
       authorization_required: 'fuelEstimateAuthorizationRequired',
       activity_mapping_required: 'fuelEstimateActivityMappingRequired',
@@ -87,7 +87,7 @@
   }
 
   // 数值后的 +N 徽标表示目标月底（fuel_expires 所在月）距当前月还有几个整月
-  function formatFuelToMonthEnd(row: Api.Dashboard.CorporationStructureRow) {
+  function formatFuelToMonthEnd(row: CorpStructureRow) {
     if (row.fuel_estimate_incomplete) {
       return formatFuelEstimateStatus(row.fuel_estimate_status)
     }
@@ -107,10 +107,12 @@
   async function loadData() {
     loading.value = true
     try {
-      const res = await fetchMyAssignedCorporationStructures({
-        page: pagination.current,
-        page_size: pagination.size
-      })
+      const res = await unwrapContract(
+        listMyAssignedCorpStructures({
+          page: pagination.current,
+          page_size: pagination.size
+        })
+      )
       data.value = res.items
       pagination.total = res.total
     } catch (error: any) {

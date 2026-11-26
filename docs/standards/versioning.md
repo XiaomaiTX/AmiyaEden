@@ -331,7 +331,7 @@ git checkout -b feature/welfare-approval
 
 # 2. 开发功能
 # - static/src/views/welfare/approval/index.vue
-# - static/src/api/welfare.ts
+# - contracts/modules/wallet-welfare.yaml（先改契约并生成）
 # - server/internal/handler/welfare.go
 # - server/internal/service/welfare.go
 # - server/internal/repository/welfare.go

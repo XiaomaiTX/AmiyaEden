@@ -5,21 +5,21 @@ vi.mock('@/api/http-client', () => ({
 }))
 
 import { requestJson } from '@/api/http-client'
-import { fetchPersonalSkillPlanList, fetchSkillPlanList } from '@/api/skill-plan'
+import { listPersonalSkillPlans, listSkillPlans } from '@/api/generated/client'
 
 describe('skill plan api', () => {
   beforeEach(() => {
     vi.mocked(requestJson).mockReset()
   })
 
-  test('fetchSkillPlanList uses GET with query params', async () => {
+  test('listSkillPlans uses GET with query params', async () => {
     vi.mocked(requestJson).mockResolvedValueOnce({
-      code: 0,
+      code: 200,
       data: { list: [], total: 0, page: 1, pageSize: 10 },
       msg: '',
     })
 
-    await fetchSkillPlanList({ current: 2, size: 20, keyword: 'logi' })
+    await listSkillPlans({ current: 2, size: 20, keyword: 'logi' })
 
     expect(requestJson).toHaveBeenCalledWith(
       '/api/v1/skill-planning/skill-plans?current=2&size=20&keyword=logi',
@@ -29,14 +29,14 @@ describe('skill plan api', () => {
     )
   })
 
-  test('fetchPersonalSkillPlanList uses GET with default pagination', async () => {
+  test('listPersonalSkillPlans uses GET with explicit pagination', async () => {
     vi.mocked(requestJson).mockResolvedValueOnce({
-      code: 0,
+      code: 200,
       data: { list: [], total: 0, page: 1, pageSize: 10 },
       msg: '',
     })
 
-    await fetchPersonalSkillPlanList()
+    await listPersonalSkillPlans({ current: 1, size: 10 })
 
     expect(requestJson).toHaveBeenCalledWith(
       '/api/v1/skill-planning/personal-skill-plans?current=1&size=10',

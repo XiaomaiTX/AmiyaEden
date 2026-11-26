@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { ShopProduct } from '@/api/generated/client'
   import {
     ElTabs,
     ElTabPane,
@@ -74,8 +75,9 @@
   } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatFuxiCoinAmount } from '@utils/common'
-  import { buyProduct as apiBuyProduct } from '@/api/shop'
-  import { fetchMyWallet } from '@/api/sys-wallet'
+  import { buyShopProduct } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
+  import { getMyShopWallet } from '@/api/generated/client'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import ShopProducts from './modules/shop-products.vue'
   import ShopOrders from './modules/shop-orders.vue'
@@ -101,7 +103,7 @@
 
   async function loadWallet() {
     try {
-      const res = (await fetchMyWallet()) as any
+      const res = (await unwrapContract(getMyShopWallet())) as any
       walletBalance.value = res?.balance ?? null
     } catch {
       /* ignore */
@@ -110,7 +112,7 @@
 
   // ─── 购买对话框 ───
   const buyDialogVisible = ref(false)
-  const buyProductRef = ref<Api.Shop.Product | null>(null)
+  const buyProductRef = ref<ShopProduct | null>(null)
   const buyProduct = computed(() => buyProductRef.value)
   const buyQuantity = ref(1)
   const buyRemark = ref('')
@@ -126,7 +128,7 @@
     return Math.min(stock, limit)
   })
 
-  function openBuyDialog(product: Api.Shop.Product) {
+  function openBuyDialog(product: ShopProduct) {
     buyProductRef.value = product
     buyQuantity.value = 1
     buyRemark.value = ''
@@ -137,11 +139,13 @@
     if (!buyProduct.value) return
     buyLoading.value = true
     try {
-      await apiBuyProduct({
-        product_id: buyProduct.value.id,
-        quantity: buyQuantity.value,
-        remark: buyRemark.value
-      })
+      await unwrapContract(
+        buyShopProduct({
+          product_id: buyProduct.value.id,
+          quantity: buyQuantity.value,
+          remark: buyRemark.value
+        })
+      )
       ElMessage.success(t('shopBrowse.purchaseSuccess'))
       buyDialogVisible.value = false
       productsRef.value?.refresh()

@@ -637,6 +637,17 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    CorpStructureAssignment,
+    CorpStructureAuthorization,
+    CorpStructureCatalog,
+    CorpStructureFilters,
+    CorpStructureFuelOfficer,
+    CorpStructureListInput,
+    CorpStructureRow,
+    CorpStructureSettings,
+    CorpStructureSystem
+  } from '@/api/generated/client'
   import { ElCheckbox, ElLink, ElMessage, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { useRoute, useRouter } from 'vue-router'
@@ -645,25 +656,26 @@
   import { formatTime, fuelExpiryMonthOffset } from '@/utils/common'
   import StructureServicesDialog from './modules/structure-services-dialog.vue'
   import {
-    fetchCorporationStructureAssignments,
-    fetchCorporationStructureFilterOptions,
-    fetchCorporationStructureList,
-    fetchCorporationStructureSettings,
-    fetchStructureServiceCatalog,
-    fetchFuelSalarySettings,
-    runFuelSalaryPayout,
-    runCorporationStructuresTask,
-    updateCorporationStructureAssignments,
-    updateCorporationStructureAuthorizations,
-    updateFuelSalarySettings,
-    updateStructureServiceCatalog
-  } from '@/api/corporation-structures'
+    getCorpStructureAssignments,
+    getCorpStructureFilterOptions,
+    getCorpStructureFuelSalarySettings,
+    getCorpStructureServiceCatalog,
+    getCorpStructureSettings,
+    listCorpStructures,
+    runCorpStructureFuelSalaryPayout,
+    runCorpStructureTask,
+    updateCorpStructureAssignments,
+    updateCorpStructureAuthorizations,
+    updateCorpStructureFuelSalarySettings,
+    updateCorpStructureServiceCatalog
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineOptions({ name: 'DashboardCorporationStructures' })
 
   type StructureTab = 'list' | 'settings' | 'assignment_salary'
-  type StructureRow = Api.Dashboard.CorporationStructureRow
-  type AssignmentRow = Api.Dashboard.CorporationStructureAssignmentItem
+  type StructureRow = CorpStructureRow
+  type AssignmentRow = CorpStructureAssignment
   type AssignmentFilterMode = 'all' | 'assigned_to_selected_officer' | 'unassigned'
   type TableSort = { prop?: string; order?: 'ascending' | 'descending' | null }
   type TagType = '' | 'success' | 'warning' | 'info' | 'primary' | 'danger'
@@ -672,7 +684,7 @@
   const route = useRoute()
   const router = useRouter()
 
-  const settings = ref<Api.Dashboard.CorporationStructuresSettings>({
+  const settings = ref<CorpStructureSettings>({
     corporations: [],
     fuel_notice_threshold_days: 7,
     timer_notice_threshold_days: 7
@@ -682,7 +694,7 @@
     timer_notice_threshold_days: 7
   })
   const settingsLoading = ref(false)
-  const serviceCatalog = ref<Api.Dashboard.StructureServiceCatalog>({
+  const serviceCatalog = ref<CorpStructureCatalog>({
     modules: [],
     activities: [],
     unmapped_activities: []
@@ -704,7 +716,7 @@
     servicesDialogVisible.value = true
   }
 
-  const filterOptions = ref<Api.Dashboard.CorporationStructureFilterOptionsResponse>({
+  const filterOptions = ref<CorpStructureFilters>({
     systems: [],
     regions: [],
     types: [],
@@ -715,7 +727,7 @@
     corporation_id: 0,
     keyword: '',
     state_groups: [] as string[],
-    fuel_bucket: 'all' as Api.Dashboard.CorporationStructureListRequest['fuel_bucket'],
+    fuel_bucket: 'all' as CorpStructureListInput['fuel_bucket'],
     fuel_min_hours: undefined as number | undefined,
     fuel_max_hours: undefined as number | undefined,
     system_ids: [] as number[],
@@ -726,7 +738,7 @@
     type_ids: [] as number[],
     service_names: [] as string[],
     service_match_mode: 'and' as const,
-    timer_bucket: 'all' as Api.Dashboard.CorporationStructureListRequest['timer_bucket']
+    timer_bucket: 'all' as CorpStructureListInput['timer_bucket']
   })
 
   const filters = reactive(buildDefaultFilters())
@@ -745,7 +757,7 @@
   const runningPayout = ref(false)
   const payoutMonth = ref<string>('')
   const assignmentItems = ref<AssignmentRow[]>([])
-  const fuelOfficerOptions = ref<Api.Dashboard.FuelOfficerUserOption[]>([])
+  const fuelOfficerOptions = ref<CorpStructureFuelOfficer[]>([])
   const assignmentByStructure = reactive<Record<number, number>>({})
   const assignmentTargetUserId = ref<number>(0)
   const assignmentFilterMode = ref<AssignmentFilterMode>('all')
@@ -897,7 +909,7 @@
   ])
   const assignmentColumnChecks = ref<ColumnOption[]>([])
 
-  const normalizeFuelHours = (value: number | undefined) => {
+  const normalizeFuelHours = (value: number | null | undefined) => {
     if (value == null || Number.isNaN(value)) {
       return undefined
     }
@@ -912,32 +924,34 @@
   }
 
   const fetchStructurePage = async (
-    params: Api.Dashboard.CorporationStructureListRequest & { current: number; size: number }
+    params: CorpStructureListInput & { current: number; size: number }
   ): Promise<Api.Common.PaginatedResponse<StructureRow>> => {
     const corpId = params.corporation_id ?? 0
-    const response = await fetchCorporationStructureList({
-      corporation_id: corpId > 0 ? corpId : undefined,
-      page: params.current,
-      page_size: params.size,
-      keyword: params.keyword || undefined,
-      state_groups: params.state_groups?.length ? params.state_groups : undefined,
-      fuel_bucket: params.fuel_bucket,
-      fuel_min_hours: normalizeFuelHours(params.fuel_min_hours),
-      fuel_max_hours: normalizeFuelHours(params.fuel_max_hours),
-      system_ids: params.system_ids?.length ? params.system_ids : undefined,
-      region_ids: params.region_ids?.length ? params.region_ids : undefined,
-      security_bands: params.security_bands?.length ? params.security_bands : undefined,
-      security_min: params.security_min,
-      security_max: params.security_max,
-      type_ids: params.type_ids?.length ? params.type_ids : undefined,
-      service_names: params.service_names?.length ? params.service_names : undefined,
-      service_match_mode: params.service_match_mode,
-      timer_bucket: params.timer_bucket,
-      timer_start: params.timer_start,
-      timer_end: params.timer_end,
-      sort_by: params.sort_by,
-      sort_order: params.sort_order
-    })
+    const response = await unwrapContract(
+      listCorpStructures({
+        corporation_id: corpId > 0 ? corpId : undefined,
+        page: params.current,
+        page_size: params.size,
+        keyword: params.keyword || undefined,
+        state_groups: params.state_groups?.length ? params.state_groups : undefined,
+        fuel_bucket: params.fuel_bucket,
+        fuel_min_hours: normalizeFuelHours(params.fuel_min_hours),
+        fuel_max_hours: normalizeFuelHours(params.fuel_max_hours),
+        system_ids: params.system_ids?.length ? params.system_ids : undefined,
+        region_ids: params.region_ids?.length ? params.region_ids : undefined,
+        security_bands: params.security_bands?.length ? params.security_bands : undefined,
+        security_min: params.security_min,
+        security_max: params.security_max,
+        type_ids: params.type_ids?.length ? params.type_ids : undefined,
+        service_names: params.service_names?.length ? params.service_names : undefined,
+        service_match_mode: params.service_match_mode,
+        timer_bucket: params.timer_bucket,
+        timer_start: params.timer_start,
+        timer_end: params.timer_end,
+        sort_by: params.sort_by,
+        sort_order: params.sort_order
+      })
+    )
     return {
       list: response?.items ?? [],
       total: response?.total ?? 0,
@@ -1140,8 +1154,8 @@
     settingsLoading.value = true
     try {
       const [nextSettings, nextCatalog] = await Promise.all([
-        fetchCorporationStructureSettings(),
-        fetchStructureServiceCatalog()
+        unwrapContract(getCorpStructureSettings()),
+        unwrapContract(getCorpStructureServiceCatalog())
       ])
       settings.value = nextSettings
       serviceCatalog.value = nextCatalog
@@ -1162,9 +1176,11 @@
   }
 
   const loadFilterOptions = async () => {
-    filterOptions.value = (await fetchCorporationStructureFilterOptions({
-      corporation_id: filters.corporation_id > 0 ? filters.corporation_id : undefined
-    })) || {
+    filterOptions.value = (await unwrapContract(
+      getCorpStructureFilterOptions({
+        corporation_id: filters.corporation_id > 0 ? filters.corporation_id : undefined
+      })
+    )) || {
       systems: [],
       regions: [],
       types: [],
@@ -1219,23 +1235,26 @@
   }
 
   const saveAuthorizations = async () => {
-    const authorizations: Api.Dashboard.CorporationStructureAuthorizationBinding[] =
-      settings.value.corporations.map((corp) => ({
+    const authorizations: CorpStructureAuthorization[] = settings.value.corporations.map(
+      (corp) => ({
         corporation_id: corp.corporation_id,
         character_id: authorizationByCorp[corp.corporation_id] || 0
-      }))
+      })
+    )
 
     savingAuthorizations.value = true
     try {
-      await updateCorporationStructureAuthorizations({
-        authorizations,
-        fuel_notice_threshold_days: normalizeThresholdDays(
-          noticeThresholds.fuel_notice_threshold_days
-        ),
-        timer_notice_threshold_days: normalizeThresholdDays(
-          noticeThresholds.timer_notice_threshold_days
-        )
-      })
+      await unwrapContract(
+        updateCorpStructureAuthorizations({
+          authorizations,
+          fuel_notice_threshold_days: normalizeThresholdDays(
+            noticeThresholds.fuel_notice_threshold_days
+          ),
+          timer_notice_threshold_days: normalizeThresholdDays(
+            noticeThresholds.timer_notice_threshold_days
+          )
+        })
+      )
       await loadSettings()
       ElMessage.success(t('corporationStructures.messages.authorizationSaved'))
     } finally {
@@ -1253,7 +1272,7 @@
     if (activities.length === 0) return
     savingServiceCatalog.value = true
     try {
-      await updateStructureServiceCatalog({ modules: [], activities })
+      await unwrapContract(updateCorpStructureServiceCatalog({ modules: [], activities }))
       await loadSettings()
       ElMessage.success(t('corporationStructures.messages.serviceCatalogSaved'))
     } finally {
@@ -1264,7 +1283,7 @@
   const handleRunTaskForCorporation = async (corporationId: number) => {
     runningTaskCorpId.value = corporationId
     try {
-      const result = await runCorporationStructuresTask({ corporation_id: corporationId })
+      const result = await unwrapContract(runCorpStructureTask({ corporation_id: corporationId }))
       if (result.running) {
         ElMessage.warning(
           result.message || t('corporationStructures.messages.refreshAlreadyRunning')
@@ -1298,16 +1317,14 @@
       searchParams.sort_by = 'fuel_remaining_hours'
       searchParams.sort_order = 'asc'
     } else {
-      searchParams.sort_by = sort.prop as Api.Dashboard.CorporationStructureListRequest['sort_by']
+      searchParams.sort_by = sort.prop as CorpStructureListInput['sort_by']
       searchParams.sort_order = sort.order === 'descending' ? 'desc' : 'asc'
     }
     searchParams.current = 1
     getData()
   }
 
-  const formatFuelEstimateStatus = (
-    status: Api.Dashboard.CorporationStructureRow['fuel_estimate_status']
-  ) => {
+  const formatFuelEstimateStatus = (status: CorpStructureRow['fuel_estimate_status']) => {
     const keyByStatus: Record<string, string> = {
       authorization_required: 'fuelEstimateAuthorizationRequired',
       activity_mapping_required: 'fuelEstimateActivityMappingRequired',
@@ -1377,7 +1394,7 @@
     return translated
   }
 
-  const formatSystemOption = (item: Api.Dashboard.CorporationStructureSystemOption) => {
+  const formatSystemOption = (item: CorpStructureSystem) => {
     const regionText = item.region_name ? ` / ${item.region_name}` : ''
     return `${item.system_name}${regionText} (${formatSecurity(item.security)})`
   }
@@ -1434,9 +1451,11 @@
   const loadAssignments = async () => {
     assignmentsLoading.value = true
     try {
-      const response = await fetchCorporationStructureAssignments({
-        corporation_id: filters.corporation_id > 0 ? filters.corporation_id : undefined
-      })
+      const response = await unwrapContract(
+        getCorpStructureAssignments({
+          corporation_id: filters.corporation_id > 0 ? filters.corporation_id : undefined
+        })
+      )
       assignmentItems.value = response.items
       fuelOfficerOptions.value = response.fuel_officers
       Object.keys(assignmentByStructure).forEach((key) => {
@@ -1464,13 +1483,15 @@
   const saveAssignments = async () => {
     savingAssignments.value = true
     try {
-      await updateCorporationStructureAssignments({
-        assignments: assignmentItems.value.map((item) => ({
-          corporation_id: item.corporation_id,
-          structure_id: item.structure_id,
-          user_id: assignmentByStructure[item.structure_id] || 0
-        }))
-      })
+      await unwrapContract(
+        updateCorpStructureAssignments({
+          assignments: assignmentItems.value.map((item) => ({
+            corporation_id: item.corporation_id,
+            structure_id: item.structure_id,
+            user_id: assignmentByStructure[item.structure_id] || 0
+          }))
+        })
+      )
       ElMessage.success(t('common.saveSuccess'))
       await loadAssignments()
     } finally {
@@ -1479,16 +1500,21 @@
   }
 
   const loadFuelSalarySettings = async () => {
-    const settingsRes = await fetchFuelSalarySettings()
+    const settingsRes = await unwrapContract(getCorpStructureFuelSalarySettings())
     salaryPerStructureMonthly.value = Math.max(0, settingsRes.salary_per_structure_monthly || 0)
   }
 
   const saveFuelSalarySettings = async () => {
     savingSalary.value = true
     try {
-      await updateFuelSalarySettings({
-        salary_per_structure_monthly: Math.max(0, Math.floor(salaryPerStructureMonthly.value || 0))
-      })
+      await unwrapContract(
+        updateCorpStructureFuelSalarySettings({
+          salary_per_structure_monthly: Math.max(
+            0,
+            Math.floor(salaryPerStructureMonthly.value || 0)
+          )
+        })
+      )
       ElMessage.success(t('common.saveSuccess'))
       await loadFuelSalarySettings()
     } finally {
@@ -1503,7 +1529,9 @@
     }
     runningPayout.value = true
     try {
-      const result = await runFuelSalaryPayout({ settlement_month: payoutMonth.value })
+      const result = await unwrapContract(
+        runCorpStructureFuelSalaryPayout({ settlement_month: payoutMonth.value })
+      )
       ElMessage.success(
         t('corporationStructures.salary.payoutSuccess', { count: result.items.length })
       )

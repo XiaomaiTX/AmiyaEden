@@ -53,7 +53,7 @@ export function formatContact(
 
 export function getLimitPeriodLabel(
   t: (key: string, vars?: Record<string, string | number>) => string,
-  value: 'forever' | 'daily' | 'weekly' | 'monthly'
+  value: string
 ) {
   const key = `shop.period.${value}`
   const translated = t(key)

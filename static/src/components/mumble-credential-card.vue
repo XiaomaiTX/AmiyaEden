@@ -84,22 +84,24 @@
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import {
-    createMumbleCredential,
-    fetchMumbleCredential,
-    revokeMumbleCredential,
-    rotateMumbleCredential
-  } from '@/api/mumble'
+    deleteMumbleCredential,
+    getMumbleCredential,
+    issueMumbleCredential,
+    renewMumbleCredential,
+    type MumbleCredentialStatus
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineProps<{ canonicalName: string }>()
   const { t } = useI18n()
-  const status = ref<Api.Mumble.CredentialStatus | null>(null)
+  const status = ref<MumbleCredentialStatus | null>(null)
   const secret = ref('')
   const busy = ref(false)
 
   async function load() {
     busy.value = true
     try {
-      status.value = await fetchMumbleCredential()
+      status.value = await unwrapContract(getMumbleCredential())
     } catch {
       ElMessage.error(t('mumble.credential.loadFailed'))
     } finally {
@@ -123,7 +125,9 @@
     }
     busy.value = true
     try {
-      const result = rotate ? await rotateMumbleCredential() : await createMumbleCredential()
+      const result = await unwrapContract(
+        rotate ? renewMumbleCredential() : issueMumbleCredential()
+      )
       status.value = result.credential
       secret.value = result.password
       ElMessage.success(t('mumble.credential.issued'))
@@ -145,7 +149,7 @@
         }
       )
       busy.value = true
-      await revokeMumbleCredential()
+      await unwrapContract(deleteMumbleCredential())
       if (status.value) status.value.enabled = false
       secret.value = ''
       ElMessage.success(t('mumble.credential.revoked'))

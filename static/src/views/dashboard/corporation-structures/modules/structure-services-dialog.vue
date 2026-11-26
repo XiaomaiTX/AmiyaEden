@@ -38,6 +38,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { CorpStructureRow } from '@/api/generated/client'
   import { ElDialog, ElEmpty, ElTable, ElTableColumn, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
@@ -45,7 +46,7 @@
 
   interface Props {
     visible: boolean
-    row: Api.Dashboard.CorporationStructureRow | null
+    row: CorpStructureRow | null
   }
 
   const props = defineProps<Props>()

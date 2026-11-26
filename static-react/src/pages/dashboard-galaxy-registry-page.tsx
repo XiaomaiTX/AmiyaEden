@@ -1,29 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  createAdminGalaxyRegistrySystem,
-  createGalaxyRegistryEntry,
-  deleteAdminGalaxyRegistrySystem,
-  endGalaxyRegistryEntry,
-  fetchAdminGalaxyRegistryAnalytics,
-  fetchAdminGalaxyRegistryEntries,
-  fetchAdminGalaxyRegistrySystems,
-  fetchGalaxyRegistrySystems,
-  fetchMyGalaxyRegistryEntries,
-  forceEndAdminGalaxyRegistryEntry,
-  revalidateAdminGalaxyRegistryEntry,
-  searchGalaxyRegistrySdeSystems,
-  updateAdminGalaxyRegistryEntryValidation,
-  updateAdminGalaxyRegistrySystem,
-  updateGalaxyRegistryEntryExpectedEndAt,
-} from '@/api/galaxy-registry'
+  createAdminSystem,
+  createEntry,
+  deleteAdminSystem,
+  endMyEntry,
+  getAdminAnalytics,
+  listAdminEntries,
+  listAdminSystems,
+  listSystems,
+  listMyEntries,
+  forceEndAdminEntry,
+  revalidateAdminEntry,
+  searchAdminSdeSystems,
+  updateAdminEntryValidation,
+  updateAdminSystem,
+  updateMyExpectedEndAt,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { DataTable, type ColumnDef } from '@/components/ui/data-table'
-import {
-  Dialog,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -38,16 +34,16 @@ import { confirmAction, notifyError, notifySuccess, notifyWarning } from '@/feed
 import { useI18n } from '@/i18n'
 import { formatTime } from '@/lib/format'
 import { useSessionStore } from '@/stores'
+import type { GalaxyRegistryEntryListParams } from '@/types/api/galaxy-registry'
 import type {
   GalaxyRegistryAdminAnalytics,
   GalaxyRegistryAdminSystem,
-  GalaxyRegistryEntryItem,
-  GalaxyRegistryEntryListParams,
+  GalaxyRegistryEntry as GalaxyRegistryEntryItem,
   GalaxyRegistryEntryPage,
   GalaxyRegistrySdeSystem,
   GalaxyRegistrySystemItem,
-  GalaxyRegistrySystemsResponse,
-} from '@/types/api/galaxy-registry'
+  GalaxyRegistrySystems as GalaxyRegistrySystemsResponse,
+} from '@/api/generated/client'
 
 type AdminDraft = GalaxyRegistryAdminSystem & { localId: string; isNew: boolean; dirty: boolean }
 type EntryDialog = { id: number; expectedEnd: string; actualStartAt: string | null }
@@ -102,32 +98,41 @@ export function DashboardGalaxyRegistryPage() {
   const [violationReason, setViolationReason] = useState('')
 
   const loadSystems = useCallback(async () => {
-    setSystems(await fetchGalaxyRegistrySystems())
+    setSystems(await unwrapContract(listSystems(), ''))
   }, [])
   const loadCaptain = useCallback(async () => {
     setMyPage(
-      await fetchMyGalaxyRegistryEntries({
-        current: myFilters.page,
-        size: myFilters.pageSize,
-        status: myFilters.status,
-        validation_status: myFilters.validation_status,
-      })
+      await unwrapContract(
+        listMyEntries({
+          current: myFilters.page,
+          size: myFilters.pageSize,
+          status: myFilters.status || undefined,
+          validation_status: myFilters.validation_status || undefined,
+        }),
+        ''
+      )
     )
   }, [myFilters])
   const loadAdmin = useCallback(async () => {
     const [entries, configured, nextAnalytics] = await Promise.all([
-      fetchAdminGalaxyRegistryEntries({
-        current: adminFilters.page,
-        size: adminFilters.pageSize,
-        keyword: adminFilters.keyword,
-        status: adminFilters.status,
-        validation_status: adminFilters.validation_status,
-      }),
-      fetchAdminGalaxyRegistrySystems(),
-      fetchAdminGalaxyRegistryAnalytics({
-        start_date: analyticsRange.start,
-        end_date: analyticsRange.end,
-      }),
+      unwrapContract(
+        listAdminEntries({
+          current: adminFilters.page,
+          size: adminFilters.pageSize,
+          keyword: adminFilters.keyword || undefined,
+          status: adminFilters.status || undefined,
+          validation_status: adminFilters.validation_status || undefined,
+        }),
+        ''
+      ),
+      unwrapContract(listAdminSystems(), ''),
+      unwrapContract(
+        getAdminAnalytics({
+          start_date: analyticsRange.start || undefined,
+          end_date: analyticsRange.end || undefined,
+        }),
+        ''
+      ),
     ])
     setAdminPage(entries)
     setAdminSystems((current) =>
@@ -214,7 +219,7 @@ export function DashboardGalaxyRegistryPage() {
       )
         return
       await act(async () => {
-        await deleteAdminGalaxyRegistrySystem(row.id)
+        await unwrapContract(deleteAdminSystem(row.id), '')
         setAdminSystems([])
       }, 'all')
     },
@@ -224,18 +229,24 @@ export function DashboardGalaxyRegistryPage() {
     act(async () => {
       for (const row of adminSystems) {
         if (row.isNew)
-          await createAdminGalaxyRegistrySystem({
-            solar_system_id: row.solar_system_id,
-            note: row.note,
-            min_bounty_amount: row.min_bounty_amount,
-            is_enabled: row.is_enabled,
-          })
+          await unwrapContract(
+            createAdminSystem({
+              solar_system_id: row.solar_system_id,
+              note: row.note,
+              min_bounty_amount: row.min_bounty_amount,
+              is_enabled: row.is_enabled,
+            }),
+            ''
+          )
         else if (row.dirty)
-          await updateAdminGalaxyRegistrySystem(row.id, {
-            note: row.note,
-            min_bounty_amount: row.min_bounty_amount,
-            is_enabled: row.is_enabled,
-          })
+          await unwrapContract(
+            updateAdminSystem(row.id, {
+              note: row.note,
+              min_bounty_amount: row.min_bounty_amount,
+              is_enabled: row.is_enabled,
+            }),
+            ''
+          )
       }
       setAdminSystems([])
     }, 'all')
@@ -252,14 +263,20 @@ export function DashboardGalaxyRegistryPage() {
     }
     await act(async () => {
       if (entryDialog.id < 0)
-        await createGalaxyRegistryEntry({
-          system_config_id: -entryDialog.id,
-          expected_end_at: new Date(entryDialog.expectedEnd).toISOString(),
-        })
+        await unwrapContract(
+          createEntry({
+            system_config_id: -entryDialog.id,
+            expected_end_at: new Date(entryDialog.expectedEnd).toISOString(),
+          }),
+          ''
+        )
       else
-        await updateGalaxyRegistryEntryExpectedEndAt(entryDialog.id, {
-          expected_end_at: new Date(entryDialog.expectedEnd).toISOString(),
-        })
+        await unwrapContract(
+          updateMyExpectedEndAt(entryDialog.id, {
+            expected_end_at: new Date(entryDialog.expectedEnd).toISOString(),
+          }),
+          ''
+        )
       setEntryDialog(null)
     }, 'all')
   }
@@ -305,7 +322,9 @@ export function DashboardGalaxyRegistryPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => void act(() => endGalaxyRegistryEntry(entry.entry_id), 'all')}
+                  onClick={() =>
+                    void act(() => unwrapContract(endMyEntry(entry.entry_id), ''), 'all')
+                  }
                 >
                   {t('galaxyRegistry.end')}
                 </Button>
@@ -363,7 +382,9 @@ export function DashboardGalaxyRegistryPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => void act(() => endGalaxyRegistryEntry(row.original.id), 'all')}
+                onClick={() =>
+                  void act(() => unwrapContract(endMyEntry(row.original.id), ''), 'all')
+                }
               >
                 {t('galaxyRegistry.end')}
               </Button>
@@ -374,7 +395,7 @@ export function DashboardGalaxyRegistryPage() {
                 size="sm"
                 variant="outline"
                 onClick={() =>
-                  void act(() => revalidateAdminGalaxyRegistryEntry(row.original.id), 'all')
+                  void act(() => unwrapContract(revalidateAdminEntry(row.original.id), ''), 'all')
                 }
               >
                 {t('galaxyRegistry.revalidate')}
@@ -384,7 +405,7 @@ export function DashboardGalaxyRegistryPage() {
                   size="sm"
                   variant="outline"
                   onClick={() =>
-                    void act(() => forceEndAdminGalaxyRegistryEntry(row.original.id), 'all')
+                    void act(() => unwrapContract(forceEndAdminEntry(row.original.id), ''), 'all')
                   }
                 >
                   {t('galaxyRegistry.forceEnd')}
@@ -509,12 +530,14 @@ export function DashboardGalaxyRegistryPage() {
       )}
       <Select
         selectedKey={String(value.status ?? '')}
-        onSelectionChange={(key) => ((value) =>
-          setValue((current) => ({
-            ...current,
-            page: 1,
-            status: value as EntryFilters['status'],
-          })))(String(key))}
+        onSelectionChange={(key) =>
+          ((value) =>
+            setValue((current) => ({
+              ...current,
+              page: 1,
+              status: value as EntryFilters['status'],
+            })))(String(key))
+        }
       >
         <SelectTrigger>
           <SelectValue />
@@ -527,12 +550,14 @@ export function DashboardGalaxyRegistryPage() {
       </Select>
       <Select
         selectedKey={String(value.validation_status ?? '')}
-        onSelectionChange={(key) => ((value) =>
-          setValue((current) => ({
-            ...current,
-            page: 1,
-            validation_status: value as EntryFilters['validation_status'],
-          })))(String(key))}
+        onSelectionChange={(key) =>
+          ((value) =>
+            setValue((current) => ({
+              ...current,
+              page: 1,
+              validation_status: value as EntryFilters['validation_status'],
+            })))(String(key))
+        }
       >
         <SelectTrigger>
           <SelectValue />
@@ -557,12 +582,10 @@ export function DashboardGalaxyRegistryPage() {
         <p className="text-sm text-muted-foreground">{t('galaxyRegistry.subtitle')}</p>
       </header>
       <span className="sr-only">{t('galaxyRegistry.adminEntries')}</span>
-      <Tabs selectedKey={tab} onSelectionChange={(key) => (setTab)(String(key))}>
+      <Tabs selectedKey={tab} onSelectionChange={(key) => setTab(String(key))}>
         <TabsList>
           <TabsTrigger id="current">{t('galaxyRegistry.tabs.current')}</TabsTrigger>
-          {canCaptain && (
-            <TabsTrigger id="captain">{t('galaxyRegistry.tabs.captain')}</TabsTrigger>
-          )}
+          {canCaptain && <TabsTrigger id="captain">{t('galaxyRegistry.tabs.captain')}</TabsTrigger>}
           {canAdmin && <TabsTrigger id="admin">{t('galaxyRegistry.tabs.admin')}</TabsTrigger>}
         </TabsList>
         <TabsContent id="current" className="space-y-4">
@@ -608,7 +631,10 @@ export function DashboardGalaxyRegistryPage() {
                 void act(
                   async () =>
                     setSdeResults(
-                      await searchGalaxyRegistrySdeSystems({ keyword: sdeKeyword, limit: 20 })
+                      await unwrapContract(
+                        searchAdminSdeSystems({ keyword: sdeKeyword || undefined, limit: 20 }),
+                        ''
+                      )
                     ),
                   'tab'
                 )
@@ -632,7 +658,9 @@ export function DashboardGalaxyRegistryPage() {
               <span>{item.solar_system_name}</span>
               <Button
                 size="sm"
-                isDisabled={adminSystems.some((row) => row.solar_system_id === item.solar_system_id)}
+                isDisabled={adminSystems.some(
+                  (row) => row.solar_system_id === item.solar_system_id
+                )}
                 onClick={() => addSde(item)}
               >
                 {t('galaxyRegistry.register')}
@@ -720,7 +748,9 @@ export function DashboardGalaxyRegistryPage() {
           </DialogHeader>
           <Select
             selectedKey={String(validation ?? '')}
-            onSelectionChange={(key) => ((value) => setValidation(value as 'valid' | 'violation'))(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => setValidation(value as 'valid' | 'violation'))(String(key))
+            }
           >
             <SelectTrigger>
               <SelectValue />
@@ -745,11 +775,14 @@ export function DashboardGalaxyRegistryPage() {
               onClick={() =>
                 void act(async () => {
                   if (validationDialog)
-                    await updateAdminGalaxyRegistryEntryValidation(validationDialog.id, {
-                      validation_status: validation,
-                      violation_reason:
-                        validation === 'violation' ? violationReason || undefined : undefined,
-                    })
+                    await unwrapContract(
+                      updateAdminEntryValidation(validationDialog.id, {
+                        validation_status: validation,
+                        violation_reason:
+                          validation === 'violation' ? violationReason || undefined : undefined,
+                      }),
+                      ''
+                    )
                   setValidationDialog(null)
                 }, 'all')
               }

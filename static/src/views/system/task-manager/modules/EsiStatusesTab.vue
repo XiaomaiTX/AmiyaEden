@@ -70,21 +70,27 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    EsiRefreshStatus,
+    EsiRefreshTask,
+    ListEsiRefreshStatusesParams
+  } from '@/api/generated/client'
   import { ElButton, ElCard, ElInput, ElMessage, ElOption, ElSelect, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { h } from 'vue'
   import { formatTime } from '@utils/common'
   import {
-    fetchESIRefreshStatuses,
-    fetchESIRefreshTasks,
-    runESIRefreshTask
-  } from '@/api/esi-refresh'
+    listEsiRefreshStatuses,
+    listEsiRefreshTasks,
+    runEsiRefreshTask
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import { getTaskDisplayName, getTaskDisplayDescription } from '../task-labels'
 
-  type TaskInfo = Api.ESIRefresh.TaskInfo
-  type TaskStatus = Api.ESIRefresh.TaskStatus
+  type TaskInfo = EsiRefreshTask
+  type TaskStatus = EsiRefreshStatus
 
   const { t } = useI18n()
   const { hasCapability } = useCorpCapability()
@@ -141,9 +147,10 @@
     refreshData,
     getData,
     searchParams
-  } = useTable<typeof fetchESIRefreshStatuses>({
+  } = useTable({
     core: {
-      apiFn: fetchESIRefreshStatuses,
+      apiFn: (params?: ListEsiRefreshStatusesParams) =>
+        unwrapContract(listEsiRefreshStatuses(params)),
       apiParams: { current: 1, size: 20 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
@@ -238,7 +245,7 @@
 
   async function loadTasks() {
     try {
-      tasks.value = (await fetchESIRefreshTasks()) ?? []
+      tasks.value = (await unwrapContract(listEsiRefreshTasks())) ?? []
     } catch {
       tasks.value = []
     }
@@ -265,7 +272,9 @@
     const key = `${row.task_name}_${row.character_id}`
     runningTasks.value.add(key)
     try {
-      await runESIRefreshTask({ task_name: row.task_name, character_id: row.character_id })
+      await unwrapContract(
+        runEsiRefreshTask({ task_name: row.task_name, character_id: row.character_id })
+      )
       ElMessage.success(
         t('taskManager.esi.messages.characterTaskTriggered', {
           name: getTaskDisplayName(t, row.task_name, row.description),

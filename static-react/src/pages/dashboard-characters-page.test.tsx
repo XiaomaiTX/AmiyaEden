@@ -65,7 +65,7 @@ describe('dashboard characters page', () => {
       } else {
         throw new Error(`Unexpected request: ${url}`)
       }
-      return new Response(JSON.stringify({ code: 0, msg: 'ok', data }), {
+      return new Response(JSON.stringify({ code: 200, msg: 'ok', data }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       })
@@ -104,7 +104,7 @@ describe('dashboard characters page', () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
       if (url === '/api/v1/me' && init?.method === 'PUT') {
-        return new Response(JSON.stringify({ code: 0, msg: 'ok', data: null }), {
+        return new Response(JSON.stringify({ code: 200, msg: 'ok', data: null }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         })
@@ -115,7 +115,7 @@ describe('dashboard characters page', () => {
         const complete = meRequestCount > 1
         return new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               user: {
@@ -154,7 +154,7 @@ describe('dashboard characters page', () => {
       if (url === '/api/v1/newbro/recruit/direct-referral') {
         return new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: { show_card: false, needs_profile_qq: false },
           }),

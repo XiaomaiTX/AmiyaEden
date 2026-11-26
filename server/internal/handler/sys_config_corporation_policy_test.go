@@ -29,7 +29,7 @@ func TestUpdateCorporationAccessPoliciesRejectsInvalidCapability(t *testing.T) {
 	}`))
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
-	NewSysConfigHandler().UpdateCorporationAccessPolicies(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: NewSysConfigHandler()}).UpdateCorporationAccessPolicies(ctx)
 
 	var resp response.Response
 	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
@@ -51,7 +51,7 @@ func TestGetCorporationAccessPoliciesReturnsDefaultWhenMissing(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/basic-config/corporation-access-policies", nil)
 
-	NewSysConfigHandler().GetCorporationAccessPolicies(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: NewSysConfigHandler()}).GetCorporationAccessPolicies(ctx)
 
 	var resp struct {
 		Code int `json:"code"`
@@ -117,7 +117,7 @@ func TestUpdateCorporationAccessPoliciesPersistsConfig(t *testing.T) {
 	}`))
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
-	NewSysConfigHandler().UpdateCorporationAccessPolicies(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: NewSysConfigHandler()}).UpdateCorporationAccessPolicies(ctx)
 
 	var resp response.Response
 	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
@@ -160,7 +160,7 @@ func TestUpdateCorporationAccessPoliciesRejectsReservedCapability(t *testing.T) 
 	}`))
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
-	NewSysConfigHandler().UpdateCorporationAccessPolicies(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: NewSysConfigHandler()}).UpdateCorporationAccessPolicies(ctx)
 
 	var resp response.Response
 	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
@@ -191,7 +191,7 @@ func TestGetCorporationAccessPoliciesExposesEnforcedAndLegacyCapabilities(t *tes
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/basic-config/corporation-access-policies", nil)
 
-	NewSysConfigHandler().GetCorporationAccessPolicies(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: NewSysConfigHandler()}).GetCorporationAccessPolicies(ctx)
 
 	var resp struct {
 		Code int `json:"code"`
@@ -257,7 +257,7 @@ func TestUpdateCorporationAccessPoliciesRecordsAudit(t *testing.T) {
 	}`))
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
-	NewSysConfigHandler().UpdateCorporationAccessPolicies(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: NewSysConfigHandler()}).UpdateCorporationAccessPolicies(ctx)
 
 	var resp response.Response
 	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {

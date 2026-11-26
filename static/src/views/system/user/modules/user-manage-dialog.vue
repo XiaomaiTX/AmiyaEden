@@ -111,14 +111,16 @@
 </template>
 
 <script setup lang="ts">
+  import type { SystemRoleDefinition, SystemUserListItem } from '@/api/generated/client'
   import type { FormInstance, FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import {
-    fetchGetRoleDefinitions,
-    fetchGetUserRoles,
-    fetchSetUserRoles,
-    fetchUpdateUser
-  } from '@/api/system-manage'
+    getSystemUserRoles,
+    listRoleDefinitions,
+    setSystemUserRoles,
+    updateSystemUser
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useUserStore } from '@/store/modules/user'
   import {
     buildUserManageUpdatePayload,
@@ -131,7 +133,7 @@
 
   interface Props {
     visible: boolean
-    userData?: Partial<Api.SystemManage.UserListItem>
+    userData?: Partial<SystemUserListItem>
     canEditProfile?: boolean
     canEditContacts?: boolean
     canEditRoles?: boolean
@@ -171,7 +173,7 @@
   })
 
   const formRef = ref<FormInstance>()
-  const allRoles = ref<Api.SystemManage.RoleDefinition[]>([])
+  const allRoles = ref<SystemRoleDefinition[]>([])
   const selectedRoleCodes = ref<string[]>([])
   const roleSelectionReady = ref(false)
   const submitting = ref(false)
@@ -200,7 +202,7 @@
     callback(new Error(t(validationMessageKeys[errorCode])))
   }
 
-  const getLocalizedRoleName = (role: Api.SystemManage.RoleDefinition) => {
+  const getLocalizedRoleName = (role: SystemRoleDefinition) => {
     const key = `userAdmin.roles.${role.code}`
     return te(key) ? t(key) : role.name
   }
@@ -286,8 +288,8 @@
     }
 
     const [roleDefinitions, userRoles] = await Promise.all([
-      fetchGetRoleDefinitions(),
-      fetchGetUserRoles(props.userData.id)
+      unwrapContract(listRoleDefinitions()),
+      unwrapContract(getSystemUserRoles(props.userData.id))
     ])
 
     allRoles.value = roleDefinitions
@@ -325,14 +327,18 @@
     submitting.value = true
     try {
       if (props.canEditProfile) {
-        await fetchUpdateUser(
-          props.userData.id,
-          buildUserManageUpdatePayload(form, props.canEditContacts)
+        await unwrapContract(
+          updateSystemUser(
+            props.userData.id,
+            buildUserManageUpdatePayload(form, props.canEditContacts)
+          )
         )
       }
 
       if (props.canEditRoles) {
-        await fetchSetUserRoles(props.userData.id, selectedRoleCodes.value)
+        await unwrapContract(
+          setSystemUserRoles(props.userData.id, { role_codes: selectedRoleCodes.value })
+        )
       }
 
       ElMessage.success(getSuccessMessage())

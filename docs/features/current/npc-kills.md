@@ -7,7 +7,7 @@ source_of_truth:
   - server/internal/service/npc_kill.go
   - server/internal/repository/npc_kill.go
   - server/internal/handler/npc_kill.go
-  - static/src/api/npc-kill.ts
+  - static/src/api/generated/client.ts
   - static/src/views/info/npc-kills
   - static/src/views/dashboard/npc-kills
 ---
@@ -46,11 +46,11 @@ NPC 刷怪报表展示人物通过 PvE 活动获得的 NPC 来源收入，涵盖
 - `static/src/views/info/npc-kills` — 个人报表（单人物 / 全人物切换）
 - `static/src/views/dashboard/npc-kills` — 管理员公司报表
 
-### 后端路由
+### 后端契约
 
-- `POST /api/v1/info/npc-kills` — 个人单人物报表
-- `POST /api/v1/info/npc-kills/all` — 个人全人物汇总
-- `POST /api/v1/system/npc-kills` — 公司全员报表（admin，支持可选 `corp_tickers` 逗号分隔筛选）
+[装配与 NPC 报表 OpenAPI](../../../contracts/modules/info-fittings-npc.yaml)。
+
+提供单人物、全人物和公司报表；公司报表可按军团筛选。
 
 ## 权限边界
 
@@ -66,7 +66,7 @@ NPC 刷怪报表展示人物通过 PvE 活动获得的 NPC 来源收入，涵盖
 
 ## 核心计算逻辑
 
-Request and response structures are defined in handler code and the consuming frontend type modules (`static/src/types/api/api.d.ts` or `static-react/src/types/api/npc-kill.ts`).
+请求与响应结构由 [OpenAPI 片段](../../../contracts/modules/info-fittings-npc.yaml)定义，后端和两端客户端使用生成类型。
 
 ### 总览（calcSummary）
 
@@ -162,12 +162,12 @@ Request and response structures are defined in handler code and the consuming fr
 - `server/internal/service/npc_kill.go` — 业务逻辑（汇总计算、NPC/星系/趋势解析）
 - `server/internal/repository/npc_kill.go` — 数据查询（钱包流水、星系名称）
 - `server/internal/handler/npc_kill.go` — HTTP 处理层
-- `static/src/api/npc-kill.ts` — 前端 API 封装
+- `static/src/api/generated/client.ts` — 生成的 Vue 客户端
 - `static/src/views/info/npc-kills` — 个人报表页面
 - `static/src/views/dashboard/npc-kills` — 管理员报表页面
 
 ## 前端实现映射（迁移期）
 
-- Vue 页面和 wrapper 保留在 `static/src`。
-- React 已承接个人与管理员 NPC 击杀报表，使用 `static-react/src/api/npc-kill.ts` 与对应模块类型。
+- Vue 页面保留在 `static/src`。
+- React 已承接个人与管理员 NPC 击杀报表，使用 [React 生成客户端](../../../static-react/src/api/generated/client.ts)中的操作与契约类型。
 - 展示行为、筛选语义和权限边界由本文定义，不因两端组件实现不同而改变。

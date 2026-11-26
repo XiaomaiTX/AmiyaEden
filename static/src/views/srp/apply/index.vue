@@ -127,6 +127,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { GetMySrpKillmailsParams, SrpApplication, SrpKillmail } from '@/api/generated/client'
   import { useRoute } from 'vue-router'
   import { useI18n } from 'vue-i18n'
   import { View } from '@element-plus/icons-vue'
@@ -150,20 +151,23 @@
   import { useTable } from '@/hooks/core/useTable'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import KmPreviewDialog from '@/components/business/KmPreviewDialog.vue'
-  import { fetchMyFleetList } from '@/api/fleet'
   import {
-    submitApplication,
-    fetchMyApplications,
-    fetchFleetKillmails,
-    fetchMyKillmails
-  } from '@/api/srp'
+    getMyFleets,
+    getMySrpKillmails,
+    getSrpFleetKillmails,
+    listMySrpApplications,
+    submitSrpApplication,
+    type FleetRecord,
+    type ListMySrpApplicationsParams
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useNameResolver } from '@/hooks'
 
   defineOptions({ name: 'SrpApply' })
 
   const OTHER_ACTION = '__other__'
   const KILLMAIL_DROPDOWN_LIMIT = 50
-  const killmailDropdownParams: Api.Srp.KillmailListParams = {
+  const killmailDropdownParams: GetMySrpKillmailsParams = {
     limit: KILLMAIL_DROPDOWN_LIMIT,
     exclude_submitted: true
   }
@@ -172,7 +176,7 @@
   const { getName, resolve: resolveNames } = useNameResolver()
 
   /* ── 申请列表 ── */
-  const resolveApplicationNames = async (list: Api.Srp.Application[]) => {
+  const resolveApplicationNames = async (list: SrpApplication[]) => {
     const typeIds = new Set<number>()
     const solarIds = new Set<number>()
     for (const app of list) {
@@ -198,7 +202,8 @@
     refreshData
   } = useTable({
     core: {
-      apiFn: fetchMyApplications,
+      apiFn: (params?: ListMySrpApplicationsParams) =>
+        unwrapContract(listMySrpApplications(params)),
       apiParams: { current: 1, size: 20 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
@@ -206,7 +211,7 @@
           prop: 'killmail_id',
           label: t('srp.apply.columns.id'),
           width: 120,
-          formatter: (row: Api.Srp.Application) =>
+          formatter: (row: SrpApplication) =>
             h(
               ElLink,
               {
@@ -228,21 +233,21 @@
           label: t('srp.apply.columns.ship'),
           minWidth: 140,
           showOverflowTooltip: true,
-          formatter: (row: Api.Srp.Application) =>
+          formatter: (row: SrpApplication) =>
             h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`, 'type'))
         },
         {
           prop: 'recommended_amount',
           label: t('srp.apply.columns.estimatedValue'),
           width: 140,
-          formatter: (row: Api.Srp.Application) =>
+          formatter: (row: SrpApplication) =>
             h('span', {}, `${formatIskSmart(row.recommended_amount)} ISK`)
         },
         {
           prop: 'review_status',
           label: t('srp.apply.columns.reviewStatus'),
           width: 110,
-          formatter: (row: Api.Srp.Application) => {
+          formatter: (row: SrpApplication) => {
             const tag = h(ElTag, { type: reviewStatusType(row.review_status), size: 'small' }, () =>
               reviewStatusLabel(row.review_status)
             )
@@ -257,14 +262,14 @@
           label: t('srp.apply.columns.reviewNote'),
           minWidth: 160,
           showOverflowTooltip: true,
-          formatter: (row: Api.Srp.Application) =>
+          formatter: (row: SrpApplication) =>
             h('span', { class: row.review_note ? '' : 'text-gray-400' }, row.review_note || '-')
         },
         {
           prop: 'payout_status',
           label: t('srp.apply.columns.payoutStatus'),
           width: 100,
-          formatter: (row: Api.Srp.Application) =>
+          formatter: (row: SrpApplication) =>
             h(
               'span',
               {},
@@ -276,7 +281,7 @@
           label: t('srp.apply.columns.lastActor'),
           width: 130,
           showOverflowTooltip: true,
-          formatter: (row: Api.Srp.Application) =>
+          formatter: (row: SrpApplication) =>
             h(
               'span',
               { class: row.last_actor_nickname ? '' : 'text-gray-400' },
@@ -287,7 +292,7 @@
           prop: 'final_amount',
           label: t('srp.apply.columns.actualAmount'),
           width: 130,
-          formatter: (row: Api.Srp.Application) =>
+          formatter: (row: SrpApplication) =>
             row.final_amount > 0
               ? h('span', {}, `${formatIskSmart(row.final_amount)} ISK`)
               : h('span', {}, '-')
@@ -296,7 +301,7 @@
           prop: 'fleet_id',
           label: t('srp.apply.columns.fleetNote'),
           minWidth: 140,
-          formatter: (row: Api.Srp.Application) => {
+          formatter: (row: SrpApplication) => {
             if (row.fleet_id) {
               const fleet = fleetMap.value.get(row.fleet_id)
               const tooltipContent = fleet
@@ -314,7 +319,7 @@
           label: t('srp.apply.columns.action'),
           width: 80,
           fixed: 'right',
-          formatter: (row: Api.Srp.Application) =>
+          formatter: (row: SrpApplication) =>
             h(ArtButtonTable, { type: 'view', onClick: () => openTableKmPreview(row) })
         }
       ]
@@ -326,12 +331,11 @@
   })
 
   /* ── 人物 & 舰队 ── */
-  const fleets = ref<Api.Fleet.FleetItem[]>([])
+  const fleets = ref<FleetRecord[]>([])
   const fleetMap = computed(() => new Map(fleets.value.map((f) => [f.id, f])))
   const loadFleets = async () => {
     try {
-      const list = await fetchMyFleetList()
-      fleets.value = list ?? []
+      fleets.value = (await unwrapContract(getMyFleets())) ?? []
     } catch {
       fleets.value = []
     }
@@ -341,7 +345,7 @@
   const formRef = ref<FormInstance>()
   const submitting = ref(false)
   const kmLoading = ref(false)
-  const fleetKillmails = ref<Api.Srp.FleetKillmailItem[]>([])
+  const fleetKillmails = ref<SrpKillmail[]>([])
 
   const form = reactive({
     character_id: 0,
@@ -383,7 +387,7 @@
     ]
   }
 
-  const formatKmLabel = (km: Api.Srp.FleetKillmailItem) =>
+  const formatKmLabel = (km: SrpKillmail) =>
     `${km.killmail_id}: ${getName(km.ship_type_id, `TypeID: ${km.ship_type_id}`, 'type')}` +
     `(${km.victim_name}) - ${formatTime(km.killmail_time)}` +
     ` @${getName(km.solar_system_id, String(km.solar_system_id), 'solar_system')}`
@@ -395,11 +399,13 @@
     form.killmail_id = 0
     try {
       if (form.fleet_id && form.fleet_id !== OTHER_ACTION) {
-        const list = await fetchFleetKillmails(form.fleet_id, killmailDropdownParams)
+        const list = await unwrapContract(
+          getSrpFleetKillmails(form.fleet_id, killmailDropdownParams)
+        )
         fleetKillmails.value = list ?? []
         if (!list?.length) ElMessage.info(t('srp.apply.noKmFound'))
       } else {
-        const list = await fetchMyKillmails(killmailDropdownParams)
+        const list = await unwrapContract(getMySrpKillmails(killmailDropdownParams))
         fleetKillmails.value = list ?? []
       }
 
@@ -448,12 +454,14 @@
     submitting.value = true
     try {
       const fleetId = form.fleet_id === OTHER_ACTION ? null : form.fleet_id || null
-      await submitApplication({
-        character_id: form.character_id,
-        killmail_id: form.killmail_id,
-        fleet_id: fleetId,
-        note: form.note
-      })
+      await unwrapContract(
+        submitSrpApplication({
+          character_id: form.character_id,
+          killmail_id: form.killmail_id,
+          fleet_id: fleetId,
+          note: form.note
+        })
+      )
       ElMessage.success(t('srp.apply.submitSuccess'))
       formRef.value?.resetFields()
       form.fleet_id = ''
@@ -477,13 +485,13 @@
     kmPreviewVisible.value = true
   }
 
-  const openTableKmPreview = (row: Api.Srp.Application) => {
+  const openTableKmPreview = (row: SrpApplication) => {
     previewKillmailId.value = row.killmail_id
     kmPreviewVisible.value = true
   }
 
   /* ── 工具函数 ── */
-  const formatFleetLabel = (f: Api.Fleet.FleetItem) =>
+  const formatFleetLabel = (f: FleetRecord) =>
     `${f.fc_character_name}: ${f.title} (${f.pap_count}PAP) @ ${formatTime(f.start_at)} ~ ${formatTime(f.end_at)}`
 
   type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'

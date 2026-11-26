@@ -9,7 +9,7 @@ import {
 import { useI18n } from '@/i18n'
 import { formatIskSmart } from '@/lib/isk'
 import { formatTime } from '@/lib/format'
-import type { DashboardSrpItem } from '@/types/api/dashboard'
+import type { DashboardSrpItem } from '@/api/generated/client'
 import { cn } from '@/lib/utils'
 
 interface DashboardSrpListProps {

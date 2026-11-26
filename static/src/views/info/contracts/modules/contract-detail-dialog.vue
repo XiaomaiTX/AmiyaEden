@@ -81,8 +81,10 @@
 </template>
 
 <script setup lang="ts">
+  import type { InfoContractDetail } from '@/api/generated/client'
   import { ElDialog, ElTable, ElTableColumn, ElTag, ElEmpty } from 'element-plus'
-  import { fetchInfoContractDetail } from '@/api/eve-info'
+  import { getContractDetail } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { formatIskSmart, formatTime } from '@utils/common'
   import { useUserStore } from '@/store/modules/user'
 
@@ -107,7 +109,7 @@
   })
 
   const loading = ref(false)
-  const detail = ref<Api.EveInfo.ContractDetailResponse | null>(null)
+  const detail = ref<InfoContractDetail | null>(null)
 
   const sortedBids = computed(() =>
     detail.value?.bids ? [...detail.value.bids].sort((a, b) => b.amount - a.amount) : []
@@ -118,11 +120,13 @@
     loading.value = true
     detail.value = null
     try {
-      const res = await fetchInfoContractDetail({
-        character_id: props.characterId,
-        contract_id: props.contractId,
-        language: userStore.language
-      })
+      const res = await unwrapContract(
+        getContractDetail({
+          character_id: props.characterId,
+          contract_id: props.contractId,
+          language: userStore.language
+        })
+      )
       detail.value = res
     } catch {
       detail.value = null

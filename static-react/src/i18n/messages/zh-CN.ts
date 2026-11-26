@@ -1930,16 +1930,10 @@ const zhCN = {
       in_progress: '处理中',
       completed: '已完成',
     },
-    priorities: {
-      low: '低',
-      medium: '中',
-      high: '高',
-    },
     columns: {
       id: '编号',
       title: '标题',
       status: '状态',
-      priority: '优先级',
       updatedAt: '更新时间',
       actions: '操作',
     },
@@ -1963,13 +1957,7 @@ const zhCN = {
     fields: {
       category: '工单分类',
       title: '标题',
-      priority: '优先级',
       description: '内容',
-    },
-    priorities: {
-      low: '低',
-      medium: '中',
-      high: '高',
     },
     placeholders: {
       title: '请输入工单标题',
@@ -2018,7 +2006,7 @@ const zhCN = {
   },
   ticketManagement: {
     title: '工单管理',
-    subtitle: '查看、筛选并调整所有工单的状态与优先级。',
+    subtitle: '查看、筛选并调整所有工单的状态。',
     loading: '正在加载工单管理数据...',
     loadFailed: '加载工单管理数据失败。',
     updateFailed: '更新工单失败。',
@@ -2033,16 +2021,10 @@ const zhCN = {
       in_progress: '处理中',
       completed: '已完成',
     },
-    priority: {
-      low: '低',
-      medium: '中',
-      high: '高',
-    },
     columns: {
       id: '编号',
       title: '标题',
       status: '状态',
-      priority: '优先级',
       updatedAt: '更新时间',
       actions: '操作',
     },

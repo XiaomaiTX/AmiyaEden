@@ -2,7 +2,7 @@ package handler
 
 import (
 	"amiya-eden/global"
-	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/jobs"
@@ -28,94 +28,16 @@ func NewESIRefreshHandler() *ESIRefreshHandler {
 	return &ESIRefreshHandler{userSvc: service.NewUserService()}
 }
 
-// TaskInfoItem 任务定义信息（用于前端展示所有可用任务）
-type TaskInfoItem struct {
-	Name                  string   `json:"name"`
-	Description           string   `json:"description"`
-	Priority              int      `json:"priority"`
-	ActiveInterval        string   `json:"active_interval"`
-	InactiveInterval      string   `json:"inactive_interval"`
-	ActiveIntervalMinutes int      `json:"active_interval_minutes"`
-	InactiveIntervalMinutes int    `json:"inactive_interval_minutes"`
-	RequiredScopes        []string `json:"required_scopes"`
-}
-
-type TaskStatusItem struct {
-	TaskName      string     `json:"task_name"`
-	Description   string     `json:"description"`
-	CharacterID   int64      `json:"character_id"`
-	CharacterName string     `json:"character_name,omitempty"`
-	Priority      int        `json:"priority"`
-	LastRun       *time.Time `json:"last_run,omitempty"`
-	NextRun       *time.Time `json:"next_run,omitempty"`
-	Status        string     `json:"status"`
-	Error         string     `json:"error,omitempty"`
-}
-
-type MonitorOverview struct {
-	Total    int `json:"total"`
-	Healthy  int `json:"healthy"`
-	Warning  int `json:"warning"`
-	Critical int `json:"critical"`
-	Running  int `json:"running"`
-	Failed   int `json:"failed"`
-	Overdue  int `json:"overdue"`
-}
-
-type MonitorTaskPanelItem struct {
-	TaskName        string  `json:"task_name"`
-	Description     string  `json:"description"`
-	Priority        int     `json:"priority"`
-	Total           int     `json:"total"`
-	Healthy         int     `json:"healthy"`
-	Warning         int     `json:"warning"`
-	Critical        int     `json:"critical"`
-	Running         int     `json:"running"`
-	Failed          int     `json:"failed"`
-	Overdue         int     `json:"overdue"`
-	SuccessRate     float64 `json:"success_rate"`
-	WorstLagSeconds int64   `json:"worst_lag_seconds"`
-}
-
-type MonitorFailureItem struct {
-	TaskName      string     `json:"task_name"`
-	Description   string     `json:"description"`
-	CharacterID   int64      `json:"character_id"`
-	CharacterName string     `json:"character_name,omitempty"`
-	Error         string     `json:"error"`
-	LastRun       *time.Time `json:"last_run,omitempty"`
-}
-
-type MonitorOverdueItem struct {
-	TaskName       string     `json:"task_name"`
-	Description    string     `json:"description"`
-	CharacterID    int64      `json:"character_id"`
-	CharacterName  string     `json:"character_name,omitempty"`
-	NextRun        *time.Time `json:"next_run,omitempty"`
-	OverdueSeconds int64      `json:"overdue_seconds"`
-}
-
-type MonitorResponse struct {
-	GeneratedAt time.Time              `json:"generated_at"`
-	Overview    MonitorOverview        `json:"overview"`
-	TaskPanels  []MonitorTaskPanelItem `json:"task_panels"`
-	FailureTop  []MonitorFailureItem   `json:"failure_top"`
-	OverdueTop  []MonitorOverdueItem   `json:"overdue_top"`
-}
-
-// GetTasks 获取所有已注册的刷新任务定义
-//
-// GET /api/v1/tasks/esi/tasks
-func (h *ESIRefreshHandler) GetTasks(c *gin.Context) {
+func (h *ESIRefreshHandler) listEsiRefreshTasks() []apicontract.EsiRefreshTask {
 	allTasks := esi.AllTasks()
-	items := make([]TaskInfoItem, 0, len(allTasks))
+	items := make([]apicontract.EsiRefreshTask, 0, len(allTasks))
 	for _, task := range allTasks {
 		scopes := make([]string, 0)
 		for _, scope := range task.RequiredScopes() {
 			scopes = append(scopes, scope.Scope)
 		}
 		interval := esi.ResolveInterval(task.Name())
-		items = append(items, TaskInfoItem{
+		items = append(items, apicontract.EsiRefreshTask{
 			Name:                    task.Name(),
 			Description:             task.Description(),
 			Priority:                int(task.Priority()),
@@ -131,30 +53,30 @@ func (h *ESIRefreshHandler) GetTasks(c *gin.Context) {
 		return items[i].Priority < items[j].Priority
 	})
 
-	response.OK(c, items)
+	return items
 }
 
-// GetStatuses 获取所有任务的运行时状态（支持分页和筛选）
-//
-// GET /api/v1/tasks/esi/statuses?current=1&size=20&task_name=xxx&status=xxx&character=xxx
-func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
+func emptyEsiStatuses() apicontract.EsiRefreshStatusPage {
+	return apicontract.EsiRefreshStatusPage{List: []apicontract.EsiRefreshStatus{}, Page: 1, PageSize: 20}
+}
+
+func (h *ESIRefreshHandler) listEsiRefreshStatuses(params apicontract.ListEsiRefreshStatusesParams) apicontract.EsiRefreshStatusPage {
 	queue := jobs.GetESIQueue()
 	if queue == nil {
-		response.OKWithPage(c, []interface{}{}, 0, 1, 20)
-		return
+		return emptyEsiStatuses()
 	}
 
 	all := queue.GetAllStatuses()
 	characterNames := h.buildCharacterNameMap(all)
 
 	// 筛选
-	taskNameFilter := c.Query("task_name")
-	statusFilter := c.Query("status")
-	characterFilter := strings.TrimSpace(c.Query("character"))
+	taskNameFilter := taskQueryValue(params.TaskName)
+	statusFilter := taskQueryValue(params.Status)
+	characterFilter := strings.TrimSpace(taskQueryValue(params.Character))
 	characterFilterLower := strings.ToLower(characterFilter)
 	characterIDFilter, characterParseErr := strconv.ParseInt(characterFilter, 10, 64)
 
-	filtered := make([]TaskStatusItem, 0, len(all))
+	filtered := make([]apicontract.EsiRefreshStatus, 0, len(all))
 	for _, s := range all {
 		if taskNameFilter != "" && s.TaskName != taskNameFilter {
 			continue
@@ -170,7 +92,7 @@ func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 				continue
 			}
 		}
-		filtered = append(filtered, TaskStatusItem{
+		filtered = append(filtered, apicontract.EsiRefreshStatus{
 			TaskName:      s.TaskName,
 			Description:   s.Description,
 			CharacterID:   s.CharacterID,
@@ -178,23 +100,15 @@ func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 			Priority:      int(s.Priority),
 			LastRun:       s.LastRun,
 			NextRun:       s.NextRun,
-			Status:        s.Status,
+			Status:        apicontract.EsiRefreshState(s.Status),
 			Error:         s.Error,
 		})
 	}
 
 	total := len(filtered)
-
-	// 分页
-	page, pageSize, err := parseUnboundedPaginationQuery(c, 20)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, err.Error())
-		return
-	}
-
+	page, pageSize := taskPage(params.Current, params.Size)
 	start, end := esiStatusPageBounds(total, page, pageSize)
-
-	response.OKWithPage(c, filtered[start:end], int64(total), page, pageSize)
+	return apicontract.EsiRefreshStatusPage{List: filtered[start:end], Total: int64(total), Page: page, PageSize: pageSize}
 }
 
 // esiStatusPageBounds expects a normalized page and page size from pagination parsing.
@@ -209,30 +123,26 @@ func esiStatusPageBounds(total, page, pageSize int) (start, end int) {
 
 const monitorListLimit = 20
 
-// GetMonitor 获取 ESI 队列聚合监控数据。
-//
-// GET /api/v1/tasks/esi/monitor
-func (h *ESIRefreshHandler) GetMonitor(c *gin.Context) {
+func (h *ESIRefreshHandler) getEsiRefreshMonitor() apicontract.EsiRefreshMonitorSnapshot {
 	queue := jobs.GetESIQueue()
 	if queue == nil {
-		response.OK(c, MonitorResponse{
+		return apicontract.EsiRefreshMonitorSnapshot{
 			GeneratedAt: time.Now().UTC(),
-			Overview:    MonitorOverview{},
-			TaskPanels:  []MonitorTaskPanelItem{},
-			FailureTop:  []MonitorFailureItem{},
-			OverdueTop:  []MonitorOverdueItem{},
-		})
-		return
+			Overview:    apicontract.EsiRefreshMonitorOverview{},
+			TaskPanels:  []apicontract.EsiRefreshMonitorTaskPanel{},
+			FailureTop:  []apicontract.EsiRefreshMonitorFailure{},
+			OverdueTop:  []apicontract.EsiRefreshMonitorOverdue{},
+		}
 	}
 
 	now := time.Now().UTC()
 	statuses := queue.GetAllStatuses()
 	characterNames := h.buildCharacterNameMap(statuses)
 
-	panelByTask := make(map[string]*MonitorTaskPanelItem)
-	failureTop := make([]MonitorFailureItem, 0, len(statuses))
-	overdueTop := make([]MonitorOverdueItem, 0, len(statuses))
-	overview := MonitorOverview{Total: len(statuses)}
+	panelByTask := make(map[string]*apicontract.EsiRefreshMonitorTaskPanel)
+	failureTop := make([]apicontract.EsiRefreshMonitorFailure, 0, len(statuses))
+	overdueTop := make([]apicontract.EsiRefreshMonitorOverdue, 0, len(statuses))
+	overview := apicontract.EsiRefreshMonitorOverview{Total: len(statuses)}
 
 	for _, status := range statuses {
 		if status == nil {
@@ -245,7 +155,7 @@ func (h *ESIRefreshHandler) GetMonitor(c *gin.Context) {
 		if overdueSeconds > 0 {
 			panel.Overdue++
 			overview.Overdue++
-			overdueTop = append(overdueTop, MonitorOverdueItem{
+			overdueTop = append(overdueTop, apicontract.EsiRefreshMonitorOverdue{
 				TaskName:       status.TaskName,
 				Description:    status.Description,
 				CharacterID:    status.CharacterID,
@@ -256,7 +166,7 @@ func (h *ESIRefreshHandler) GetMonitor(c *gin.Context) {
 		}
 
 		if strings.TrimSpace(status.Error) != "" {
-			failureTop = append(failureTop, MonitorFailureItem{
+			failureTop = append(failureTop, apicontract.EsiRefreshMonitorFailure{
 				TaskName:      status.TaskName,
 				Description:   status.Description,
 				CharacterID:   status.CharacterID,
@@ -296,7 +206,7 @@ func (h *ESIRefreshHandler) GetMonitor(c *gin.Context) {
 		}
 	}
 
-	taskPanels := make([]MonitorTaskPanelItem, 0, len(panelByTask))
+	taskPanels := make([]apicontract.EsiRefreshMonitorTaskPanel, 0, len(panelByTask))
 	for _, panel := range panelByTask {
 		if panel.Total > 0 {
 			panel.SuccessRate = panel.SuccessRate / float64(panel.Total)
@@ -361,13 +271,13 @@ func (h *ESIRefreshHandler) GetMonitor(c *gin.Context) {
 		overdueTop = overdueTop[:monitorListLimit]
 	}
 
-	response.OK(c, MonitorResponse{
+	return apicontract.EsiRefreshMonitorSnapshot{
 		GeneratedAt: now,
 		Overview:    overview,
 		TaskPanels:  taskPanels,
 		FailureTop:  failureTop,
 		OverdueTop:  overdueTop,
-	})
+	}
 }
 
 // RunTaskRequest 手动触发单个任务的请求（指定人物）
@@ -376,140 +286,65 @@ type RunTaskRequest struct {
 	CharacterID int64  `json:"character_id" binding:"required"`
 }
 
-// RunTask 手动触发指定任务（指定人物）
-//
-// POST /api/v1/tasks/esi/run
-func (h *ESIRefreshHandler) RunTask(c *gin.Context) {
-	var req RunTaskRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
-		return
-	}
-
+func (h *ESIRefreshHandler) runEsiRefreshTask(ctx context.Context, req apicontract.EsiRefreshRunInput) (apicontract.TaskCommandMessage, *taskFailure) {
 	queue := jobs.GetESIQueue()
 	if queue == nil {
-		response.Fail(c, response.CodeBizError, "刷新队列未初始化")
-		return
+		return apicontract.TaskCommandMessage{}, taskBizFailure("刷新队列未初始化")
 	}
 
-	if err := queue.RunTask(c.Request.Context(), req.TaskName, req.CharacterID); err != nil {
-		response.Fail(c, response.CodeBizError, "任务触发失败: "+err.Error())
-		return
+	if err := queue.RunTask(ctx, req.TaskName, req.CharacterID); err != nil {
+		return apicontract.TaskCommandMessage{}, taskBizFailure("任务触发失败: " + err.Error())
 	}
-
-	response.OK(c, gin.H{"message": "任务已触发"})
+	return apicontract.TaskCommandMessage{Message: "任务已触发"}, nil
 }
 
-// RunMyCharacterTask 手动触发指定任务（仅限自己的角色）
-//
-// POST /api/v1/info/esi-refresh
-func (h *ESIRefreshHandler) RunMyCharacterTask(c *gin.Context) {
-	userID := middleware.GetUserID(c)
-
-	var req RunTaskRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
-		return
-	}
-
-	char, err := h.userSvc.GetCharacterByID(req.CharacterID)
+func (h *ESIRefreshHandler) runMyCharacterTask(ctx context.Context, userID uint, input apicontract.RunMyCharacterTaskJSONRequestBody) (apicontract.TaskCommandMessage, *taskFailure) {
+	char, err := h.userSvc.GetCharacterByID(input.CharacterID)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, "角色不存在")
-		return
+		return apicontract.TaskCommandMessage{}, taskBizFailure("角色不存在")
 	}
 	if char.UserID != userID {
-		response.Fail(c, response.CodeForbidden, "无权操作此角色")
-		return
+		return apicontract.TaskCommandMessage{}, &taskFailure{response.CodeForbidden, "无权操作此角色"}
 	}
-
-	queue := jobs.GetESIQueue()
-	if queue == nil {
-		response.Fail(c, response.CodeBizError, "刷新队列未初始化")
-		return
-	}
-
-	if err := queue.RunTask(c.Request.Context(), req.TaskName, req.CharacterID); err != nil {
-		response.Fail(c, response.CodeBizError, "任务触发失败: "+err.Error())
-		return
-	}
-
-	response.OK(c, gin.H{"message": "任务已触发"})
+	return h.runEsiRefreshTask(ctx, input)
 }
 
-// RunTaskByNameRequest 按任务名称触发所有人物
-type RunTaskByNameRequest struct {
-	TaskName string `json:"task_name" binding:"required"`
-}
-
-// RunTaskByName 手动触发指定任务（所有人物）
-//
-// POST /api/v1/tasks/esi/run-task
-func (h *ESIRefreshHandler) RunTaskByName(c *gin.Context) {
-	var req RunTaskByNameRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
-		return
-	}
-
+func (h *ESIRefreshHandler) runEsiRefreshTaskByName(req apicontract.EsiRefreshRunByNameInput) (apicontract.TaskCommandMessage, *taskFailure) {
 	queue := jobs.GetESIQueue()
 	if queue == nil {
-		response.Fail(c, response.CodeBizError, "刷新队列未初始化")
-		return
+		return apicontract.TaskCommandMessage{}, taskBizFailure("刷新队列未初始化")
 	}
 
 	if ok := global.EnsureBackgroundTaskManager().Go("esi_run_task_by_name", func(ctx context.Context) error {
 		return queue.RunTaskByName(ctx, req.TaskName)
 	}); !ok {
-		response.Fail(c, response.CodeBizError, "服务正在关闭，任务未启动")
-		return
+		return apicontract.TaskCommandMessage{}, taskBizFailure("服务正在关闭，任务未启动")
 	}
-
-	response.OK(c, gin.H{"message": fmt.Sprintf("任务 %s 已触发（所有人物）", req.TaskName)})
+	return apicontract.TaskCommandMessage{Message: fmt.Sprintf("任务 %s 已触发（所有人物）", req.TaskName)}, nil
 }
 
-// RunAll 手动触发全量刷新
-//
-// POST /api/v1/tasks/esi/run-all
-func (h *ESIRefreshHandler) RunAll(c *gin.Context) {
+func (h *ESIRefreshHandler) runEsiRefreshAll() (apicontract.TaskCommandMessage, *taskFailure) {
 	queue := jobs.GetESIQueue()
 	if queue == nil {
-		response.Fail(c, response.CodeBizError, "刷新队列未初始化")
-		return
+		return apicontract.TaskCommandMessage{}, taskBizFailure("刷新队列未初始化")
 	}
 
 	if ok := global.EnsureBackgroundTaskManager().Go("esi_run_all", queue.Run); !ok {
-		response.Fail(c, response.CodeBizError, "服务正在关闭，任务未启动")
-		return
+		return apicontract.TaskCommandMessage{}, taskBizFailure("服务正在关闭，任务未启动")
 	}
-	response.OK(c, gin.H{"message": "全量刷新已触发"})
+	return apicontract.TaskCommandMessage{Message: "全量刷新已触发"}, nil
 }
 
-// UpdateIntervalRequest 更新 ESI 子任务刷新间隔的请求体
-type UpdateIntervalRequest struct {
-	ActiveMinutes   int `json:"active_minutes" binding:"required"`
-	InactiveMinutes int `json:"inactive_minutes" binding:"required"`
-}
-
-// UpdateInterval 更新指定 ESI 子任务的刷新间隔覆盖
-//
-// PUT /api/v1/tasks/esi/tasks/:name/interval
-func (h *ESIRefreshHandler) UpdateInterval(c *gin.Context) {
-	taskName := c.Param("name")
-
+func validateEsiRefreshIntervalTask(taskName string) *taskFailure {
 	if _, ok := esi.GetTask(taskName); !ok {
-		response.Fail(c, response.CodeParamError, "任务不存在: "+taskName)
-		return
+		return &taskFailure{response.CodeParamError, "任务不存在: " + taskName}
 	}
+	return nil
+}
 
-	var req UpdateIntervalRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
-		return
-	}
-
+func (h *ESIRefreshHandler) updateEsiRefreshTaskInterval(taskName string, req apicontract.EsiRefreshIntervalInput) (apicontract.TaskCommandMessage, *taskFailure) {
 	if req.ActiveMinutes <= 0 || req.InactiveMinutes <= 0 {
-		response.Fail(c, response.CodeParamError, "间隔分钟数必须为正整数")
-		return
+		return apicontract.TaskCommandMessage{}, &taskFailure{response.CodeParamError, "间隔分钟数必须为正整数"}
 	}
 
 	// 读取当前覆盖配置
@@ -517,8 +352,7 @@ func (h *ESIRefreshHandler) UpdateInterval(c *gin.Context) {
 	if err := global.DB.Model(&model.SystemConfig{}).
 		Where("key = ?", model.SysConfigESITaskIntervals).
 		Pluck("value", &raw).Error; err != nil {
-		response.Fail(c, response.CodeBizError, "读取配置失败: "+err.Error())
-		return
+		return apicontract.TaskCommandMessage{}, taskBizFailure("读取配置失败: " + err.Error())
 	}
 
 	overrides := make(map[string]esi.RefreshIntervalMinutes)
@@ -535,8 +369,7 @@ func (h *ESIRefreshHandler) UpdateInterval(c *gin.Context) {
 
 	rawBytes, err := json.Marshal(overrides)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, "序列化配置失败: "+err.Error())
-		return
+		return apicontract.TaskCommandMessage{}, taskBizFailure("序列化配置失败: " + err.Error())
 	}
 	rawJSON := string(rawBytes)
 
@@ -545,8 +378,7 @@ func (h *ESIRefreshHandler) UpdateInterval(c *gin.Context) {
 		Where("key = ?", model.SysConfigESITaskIntervals).
 		Update("value", rawJSON)
 	if res.Error != nil {
-		response.Fail(c, response.CodeBizError, "保存配置失败: "+res.Error.Error())
-		return
+		return apicontract.TaskCommandMessage{}, taskBizFailure("保存配置失败: " + res.Error.Error())
 	}
 	if res.RowsAffected == 0 {
 		if err := global.DB.Create(&model.SystemConfig{
@@ -554,18 +386,16 @@ func (h *ESIRefreshHandler) UpdateInterval(c *gin.Context) {
 			Value: rawJSON,
 			Desc:  "ESI 子任务刷新间隔覆盖",
 		}).Error; err != nil {
-			response.Fail(c, response.CodeBizError, "创建配置失败: "+err.Error())
-			return
+			return apicontract.TaskCommandMessage{}, taskBizFailure("创建配置失败: " + err.Error())
 		}
 	}
 
 	// 同步内存缓存
 	if err := esi.LoadIntervalOverrides(); err != nil {
-		response.Fail(c, response.CodeBizError, "同步缓存失败: "+err.Error())
-		return
+		return apicontract.TaskCommandMessage{}, taskBizFailure("同步缓存失败: " + err.Error())
 	}
 
-	response.OK(c, gin.H{"message": "间隔已更新"})
+	return apicontract.TaskCommandMessage{Message: "间隔已更新"}, nil
 }
 
 // formatDuration 格式化 time.Duration 为可读字符串。
@@ -610,11 +440,11 @@ func (h *ESIRefreshHandler) buildCharacterNameMap(statuses []*esi.TaskStatus) ma
 	return h.userSvc.ListCharacterNamesByIDs(characterIDs)
 }
 
-func ensureTaskPanel(panelByTask map[string]*MonitorTaskPanelItem, status *esi.TaskStatus) *MonitorTaskPanelItem {
+func ensureTaskPanel(panelByTask map[string]*apicontract.EsiRefreshMonitorTaskPanel, status *esi.TaskStatus) *apicontract.EsiRefreshMonitorTaskPanel {
 	if panel, ok := panelByTask[status.TaskName]; ok {
 		return panel
 	}
-	panel := &MonitorTaskPanelItem{
+	panel := &apicontract.EsiRefreshMonitorTaskPanel{
 		TaskName:    status.TaskName,
 		Description: status.Description,
 		Priority:    int(status.Priority),
@@ -663,4 +493,94 @@ func classifySeverity(status *esi.TaskStatus, overdueSeconds, expectedIntervalSe
 		return "warning"
 	}
 	return "healthy"
+}
+
+func taskHTTPRequestContext(ctx context.Context) context.Context {
+	if c, ok := ctx.(*gin.Context); ok && c != nil && c.Request != nil {
+		return c.Request.Context()
+	}
+	return ctx
+}
+
+func (h *ESIRefreshHandler) ListEsiRefreshTasks(_ context.Context, _ apicontract.ListEsiRefreshTasksRequestObject) (apicontract.ListEsiRefreshTasksResponseObject, error) {
+	return apicontract.ListEsiRefreshTasks200JSONResponse{Code: response.CodeOK, Msg: "success", Data: h.listEsiRefreshTasks()}, nil
+}
+
+func (h *ESIRefreshHandler) ListEsiRefreshStatuses(_ context.Context, request apicontract.ListEsiRefreshStatusesRequestObject) (apicontract.ListEsiRefreshStatusesResponseObject, error) {
+	out := &apicontract.ListEsiRefreshStatuses200JSONResponse{}
+	data := h.listEsiRefreshStatuses(request.Params)
+	return out, out.FromEsiRefreshStatusesSuccess(apicontract.EsiRefreshStatusesSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ESIRefreshHandler) GetEsiRefreshMonitor(_ context.Context, _ apicontract.GetEsiRefreshMonitorRequestObject) (apicontract.GetEsiRefreshMonitorResponseObject, error) {
+	return apicontract.GetEsiRefreshMonitor200JSONResponse{Code: response.CodeOK, Msg: "success", Data: h.getEsiRefreshMonitor()}, nil
+}
+
+func (h *ESIRefreshHandler) RunEsiRefreshTask(ctx context.Context, request apicontract.RunEsiRefreshTaskRequestObject) (apicontract.RunEsiRefreshTaskResponseObject, error) {
+	out := &apicontract.RunEsiRefreshTask200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(taskMissingBody())
+	}
+	data, failure := h.runEsiRefreshTask(taskHTTPRequestContext(ctx), *request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(failure.businessError())
+	}
+	return out, out.FromTaskCommandSuccess(apicontract.TaskCommandSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ESIRefreshHandler) RunEsiRefreshTaskByName(_ context.Context, request apicontract.RunEsiRefreshTaskByNameRequestObject) (apicontract.RunEsiRefreshTaskByNameResponseObject, error) {
+	out := &apicontract.RunEsiRefreshTaskByName200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(taskMissingBody())
+	}
+	data, failure := h.runEsiRefreshTaskByName(*request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(failure.businessError())
+	}
+	return out, out.FromTaskCommandSuccess(apicontract.TaskCommandSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ESIRefreshHandler) RunEsiRefreshAll(_ context.Context, _ apicontract.RunEsiRefreshAllRequestObject) (apicontract.RunEsiRefreshAllResponseObject, error) {
+	out := &apicontract.RunEsiRefreshAll200JSONResponse{}
+	data, failure := h.runEsiRefreshAll()
+	if failure != nil {
+		return out, out.FromBusinessError(failure.businessError())
+	}
+	return out, out.FromTaskCommandSuccess(apicontract.TaskCommandSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ESIRefreshHandler) UpdateEsiRefreshTaskInterval(_ context.Context, request apicontract.UpdateEsiRefreshTaskIntervalRequestObject) (apicontract.UpdateEsiRefreshTaskIntervalResponseObject, error) {
+	out := &apicontract.UpdateEsiRefreshTaskInterval200JSONResponse{}
+	if failure := validateEsiRefreshIntervalTask(request.Name); failure != nil {
+		return out, out.FromBusinessError(failure.businessError())
+	}
+	if request.Body == nil {
+		return out, out.FromBusinessError(taskMissingBody())
+	}
+	data, failure := h.updateEsiRefreshTaskInterval(request.Name, *request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(failure.businessError())
+	}
+	return out, out.FromTaskCommandSuccess(apicontract.TaskCommandSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ESIRefreshHandler) RunMyCharacterTask(ctx context.Context, request apicontract.RunMyCharacterTaskRequestObject) (apicontract.RunMyCharacterTaskResponseObject, error) {
+	actor, ok := taskStrictActor(ctx)
+	if !ok {
+		return apicontract.RunMyCharacterTask401JSONResponse{UnauthorizedJSONResponse: taskUnauthorized()}, nil
+	}
+	out := &apicontract.RunMyCharacterTask200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(taskMissingBody())
+	}
+	data, failure := h.runMyCharacterTask(taskHTTPRequestContext(ctx), actor, *request.Body)
+	if failure != nil {
+		if failure.code == response.CodeForbidden {
+			return apicontract.RunMyCharacterTask403JSONResponse{ForbiddenJSONResponse: apicontract.ForbiddenJSONResponse{
+				Code: response.CodeForbidden, Msg: failure.message,
+			}}, nil
+		}
+		return out, out.FromBusinessError(failure.businessError())
+	}
+	return out, out.FromTaskCommandSuccess(apicontract.TaskCommandSuccess{Code: response.CodeOK, Msg: "success", Data: data})
 }

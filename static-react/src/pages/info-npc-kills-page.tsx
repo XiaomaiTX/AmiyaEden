@@ -15,14 +15,15 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useEffect, useState } from 'react'
-import { fetchMyCharacters } from '@/api/auth'
-import { fetchNpcKills, fetchNpcKillsAll } from '@/api/npc-kill'
+import { listMyEveCharacters } from '@/api/generated/client'
+import { getAllNpcKills, getNpcKills } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatIskPlain } from '@/lib/isk'
 import { useI18n } from '@/i18n'
 import type { EveCharacter } from '@/types/api/auth'
-import type { NpcKillResponse } from '@/types/api/npc-kill'
+import type { NpcKillData as NpcKillResponse } from '@/api/generated/client'
 
 type DateRangeState = {
   startDate: string
@@ -129,7 +130,9 @@ export function InfoNpcKillsPage() {
       setCharacterLoading(true)
       setCharacterError(null)
       try {
-        const list = await fetchMyCharacters()
+        const list = await unwrapContract(listMyEveCharacters(), 'fetch characters failed').then(
+          (data) => data ?? []
+        )
         if (!cancelled) {
           setCharacters(list)
         }
@@ -167,11 +170,11 @@ export function InfoNpcKillsPage() {
 
         const data =
           selectedCharacterId === 0
-            ? await fetchNpcKillsAll(payload)
-            : await fetchNpcKills({
-                character_id: selectedCharacterId,
-                ...payload,
-              })
+            ? await unwrapContract(getAllNpcKills(payload), 'fetch npc kills all failed')
+            : await unwrapContract(
+                getNpcKills({ character_id: selectedCharacterId, ...payload }),
+                'fetch npc kills failed'
+              )
 
         if (!cancelled) {
           setReportData(data)
@@ -231,7 +234,9 @@ export function InfoNpcKillsPage() {
               <span className="text-sm text-muted-foreground">{t('npcKill.selectCharacter')}</span>
               <Select
                 selectedKey={String(selectedCharacterId ?? '')}
-                onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => setSelectedCharacterId(Number(value)))(String(key))
+                }
               >
                 <SelectTrigger className="h-10">
                   <SelectValue />
@@ -401,7 +406,7 @@ export function InfoNpcKillsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reportData.by_npc.map((item, index) => (
+                  {(reportData.by_npc ?? []).map((item, index) => (
                     <TableRow key={item.npc_id} className="border-b">
                       <TableCell className="px-3 py-2 text-muted-foreground">{index + 1}</TableCell>
                       <TableCell className="px-3 py-2">{item.npc_name}</TableCell>

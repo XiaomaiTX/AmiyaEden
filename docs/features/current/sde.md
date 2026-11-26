@@ -7,9 +7,11 @@ source_of_truth:
   - server/internal/handler/sde.go
   - server/internal/handler/sys_config.go
   - server/internal/service/sde.go
-  - server/internal/middleware/apikey.go
-  - static/src/api/sde.ts
-  - static/src/api/sys-config.ts
+  - contracts/openapi.yaml
+  - contracts/modules/system-config.yaml
+  - static/src/components/business/SdeSearchSelect.vue
+  - static/src/views/system/basic-config/index.vue
+  - static-react/src/pages/system-basic-config-page.tsx
 ---
 
 # SDE 模块
@@ -26,22 +28,9 @@ source_of_truth:
 
 ## 入口
 
-### SDE 数据查询
-- `GET /api/v1/sde/version`
-- `POST /api/v1/sde/types`
-- `POST /api/v1/sde/names`
-- `POST /api/v1/sde/search`
+### 后端契约
 
-前端封装位于 `static/src/api/sde.ts`。
-
-### SDE 配置管理（super_admin 权限）
-- `GET /api/v1/system/sde-config`
-- `PUT /api/v1/system/sde-config`
-- `GET /api/v1/system/sde-config/status`
-- `POST /api/v1/system/sde-config/check`
-- `POST /api/v1/system/sde-config/update`
-
-前端封装位于 `static/src/api/sys-config.ts`。
+[SDE 数据查询](../../../contracts/openapi.yaml)、[SDE 配置与手动导入](../../../contracts/modules/system-config.yaml)。并非每个查询操作都有页面调用方；例如 [Vue SDE 搜索组件](../../../static/src/components/business/SdeSearchSelect.vue) 和 [Vue 基础配置页](../../../static/src/views/system/basic-config/index.vue) 使用生成客户端。
 
 ## 运行时行为
 
@@ -97,7 +86,6 @@ source_of_truth:
 - `server/internal/handler/sde.go` - SDE 数据查询接口
 - `server/internal/handler/sys_config.go` - SDE 配置管理接口
 - `server/internal/service/sde.go` - SDE 业务逻辑（含配置读取、下载、导入）
-- `server/internal/middleware/apikey.go` - API Key 鉴权中间件
 - `server/internal/repository/sde.go` - SDE 基础查询
 - `server/internal/repository/sde_version.go` - 版本管理
 - `server/internal/repository/sde_types.go` - 类型查询
@@ -107,13 +95,11 @@ source_of_truth:
 - `server/internal/router/router.go` - 路由定义与中间件应用
 
 ### 前端
-- `static/src/api/sde.ts` - SDE 数据查询 API
-- `static/src/api/sys-config.ts` - 系统配置 API
-- `static/src/views/system/basic-config/index.vue` - 系统设置页面（含 SDE 配置）
-- `static/src/types/api/api.d.ts` - API 类型定义
+- `static/src/components/business/SdeSearchSelect.vue` - Vue SDE 模糊搜索组件
+- `static/src/views/system/basic-config/index.vue` - Vue 基础配置及 SDE 状态检查和手动导入
+- `static-react/src/pages/system-basic-config-page.tsx` - React 基础配置中的 SDE 参数读取与保存
 - `static/src/locales/langs/zh.json` - 中文国际化
 - `static/src/locales/langs/en.json` - 英文国际化
-- `static-react/src/types/api/` - React 模块化 API 类型
 - `static-react/src/i18n/messages/` - React 中英文文案
 
 ## PostgreSQL Bool Mapping Constraint

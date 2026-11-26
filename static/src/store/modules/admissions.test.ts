@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { admissionMenuVisibility, createAdmissionLoader } from './admissions.helpers'
-import type { AdmissionContext } from '../../types/api/admissions'
+import type { AdmissionContext } from '../../api/generated/client'
 import type { AppRouteRecord } from '../../types/router'
 
 const context: AdmissionContext = {

@@ -1,3 +1,4 @@
+import type { InfoWalletDailyPoint, InfoWalletRefTypeItem } from '@/api/generated/client'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
@@ -12,8 +13,8 @@ import {
   shiftIsoDay
 } from './wallet-analytics.utils'
 
-type DailyPoint = Api.EveInfo.WalletAnalyticsDailyPoint
-type RefTypeItem = Api.EveInfo.WalletAnalyticsRefTypeItem
+type DailyPoint = InfoWalletDailyPoint
+type RefTypeItem = InfoWalletRefTypeItem
 
 const createPoint = (
   date: string,

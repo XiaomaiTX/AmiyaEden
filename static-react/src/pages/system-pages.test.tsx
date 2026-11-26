@@ -6,7 +6,7 @@ import { useSessionStore } from '@/stores'
 function jsonResponse(data: unknown) {
   return new Response(
     JSON.stringify({
-      code: 0,
+      code: 200,
       msg: 'ok',
       data,
     }),
@@ -93,8 +93,11 @@ describe('system migration pages', () => {
     })
   })
 
-  test('system task manager page loads the task list', async () => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+  test('ordinary task uses its localized confirmation and runs only after confirmation', async () => {
+    const user = userEvent.setup()
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const runTask = vi.fn(async () => jsonResponse(null))
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
 
       if (url.includes('/api/v1/tasks/esi/tasks')) {
@@ -110,7 +113,11 @@ describe('system migration pages', () => {
         ])
       }
 
-      if (url.includes('/api/v1/tasks')) {
+      if (url === '/api/v1/tasks/esi-refresh-character/run' && init?.method === 'POST') {
+        return runTask()
+      }
+
+      if (url === '/api/v1/tasks') {
         return jsonResponse([
           {
             name: 'esi-refresh-character',
@@ -135,9 +142,14 @@ describe('system migration pages', () => {
     render(<RouterProvider router={router} />)
 
     await screen.findAllByText('任务管理')
-    await waitFor(() => {
-      expect(screen.getByText('Character Refresh')).toBeInTheDocument()
-    })
+    expect(await screen.findByText('Character Refresh')).toBeInTheDocument()
+    const button = await screen.findByRole('button', { name: /^执行$/ })
+    await user.click(button)
+    expect(confirm).toHaveBeenCalledWith('确定要立即执行任务「esi-refresh-character」吗？')
+    expect(runTask).not.toHaveBeenCalled()
+    confirm.mockReturnValue(true)
+    await user.click(button)
+    expect(runTask).toHaveBeenCalledTimes(1)
   })
 
   test('ESI rows run directly, while both all-character actions require confirmation', async () => {

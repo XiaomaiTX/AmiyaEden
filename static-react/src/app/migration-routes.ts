@@ -1,5 +1,5 @@
 import type { RouteAccessMeta } from '@/app/route-access'
-import type { BadgeCounts } from '@/types/api/badge'
+import type { BadgeCounts } from '@/api/generated/client'
 
 export type MigrationBatch = 'A' | 'B' | 'C' | 'D' | 'Tail'
 export type AppPageType =

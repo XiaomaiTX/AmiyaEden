@@ -1,17 +1,26 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
-import { useCallback, useEffect, useState } from 'react'
 import {
-  adminCreateTicketCategory,
-  adminDeleteTicketCategory,
-  adminListTicketCategories,
-  adminUpdateTicketCategory,
-} from '@/api/ticket'
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
+import { useCallback, useEffect, useState } from 'react'
+import { adminListCategories } from '@/api/generated/client'
+import {
+  adminCreateCategory,
+  adminDeleteCategory,
+  adminUpdateCategory,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
-import type { TicketCategory, UpsertCategoryParams } from '@/types/api/ticket'
+import type { UpsertCategoryParams } from '@/types/api/ticket'
+import type { TicketCategory } from '@/api/generated/client'
 import { ShopDialog } from './shop-page-utils'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -41,7 +50,10 @@ export function TicketCategoriesPage() {
     setLoading(true)
     setError(null)
     try {
-      const list = await adminListTicketCategories()
+      const list = await unwrapContract(
+        adminListCategories(),
+        'admin list ticket categories failed'
+      ).then((data) => data ?? [])
       setCategories(list)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('ticketCategories.loadFailed')))
@@ -94,9 +106,12 @@ export function TicketCategoriesPage() {
     setSaving(true)
     try {
       if (editingId > 0) {
-        await adminUpdateTicketCategory(editingId, form)
+        await unwrapContract(
+          adminUpdateCategory(editingId, form),
+          'admin update ticket category failed'
+        )
       } else {
-        await adminCreateTicketCategory(form)
+        await unwrapContract(adminCreateCategory(form), 'admin create ticket category failed')
       }
       setVisible(false)
       await loadData()
@@ -115,7 +130,7 @@ export function TicketCategoriesPage() {
 
     setDeletingId(id)
     try {
-      await adminDeleteTicketCategory(id)
+      await unwrapContract(adminDeleteCategory(id), 'admin delete ticket category failed')
       await loadData()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('ticketCategories.deleteFailed')))
@@ -156,7 +171,9 @@ export function TicketCategoriesPage() {
                 <TableHead className="px-3 py-2">{t('common.id')}</TableHead>
                 <TableHead className="px-3 py-2">{t('ticketCategories.columns.name')}</TableHead>
                 <TableHead className="px-3 py-2">{t('ticketCategories.columns.nameEn')}</TableHead>
-                <TableHead className="px-3 py-2">{t('ticketCategories.columns.sortOrder')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('ticketCategories.columns.sortOrder')}
+                </TableHead>
                 <TableHead className="px-3 py-2">{t('ticketCategories.columns.enabled')}</TableHead>
                 <TableHead className="px-3 py-2">{t('ticketCategories.columns.actions')}</TableHead>
               </TableRow>

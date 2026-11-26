@@ -8,18 +8,26 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type {
+  listSkillPlans,
+  getSkillPlan,
+  createSkillPlan,
+  updateSkillPlan,
+  deleteSkillPlan,
+  reorderSkillPlans,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useI18n } from '@/i18n'
 import { usePreferenceStore } from '@/stores'
+import type { CreateSkillPlanParams } from '@/types/api/skill-plan'
 import type {
-  CreateSkillPlanParams,
   SkillPlanDetail,
-  SkillPlanListItem,
+  SkillPlanRecord as SkillPlanListItem,
   SkillPlanScope,
-  UpdateSkillPlanParams,
-} from '@/types/api/skill-plan'
+} from '@/api/generated/client'
 import { formatDateTime, getErrorMessage, ShopBadge, ShopDialog } from './shop-page-utils'
 
 interface SkillPlanManagementPageProps {
@@ -27,17 +35,13 @@ interface SkillPlanManagementPageProps {
   subtitleKey: string
   emptyKey: string
   canManage: boolean
-  fetchList: (params?: { current?: number; size?: number; keyword?: string }) => Promise<{
-    list: SkillPlanListItem[]
-    total: number
-    page: number
-    pageSize: number
-  }>
-  fetchDetail: (id: number, lang?: string) => Promise<SkillPlanDetail>
-  createPlan: (data: CreateSkillPlanParams, lang?: string) => Promise<SkillPlanDetail>
-  updatePlan: (id: number, data: UpdateSkillPlanParams, lang?: string) => Promise<SkillPlanDetail>
-  deletePlan: (id: number) => Promise<null>
-  reorderPlans: (ids: number[]) => Promise<null>
+  personal?: boolean
+  fetchList: typeof listSkillPlans
+  fetchDetail: typeof getSkillPlan
+  createPlan: typeof createSkillPlan
+  updatePlan: typeof updateSkillPlan
+  deletePlan: typeof deleteSkillPlan
+  reorderPlans: typeof reorderSkillPlans
 }
 
 type SkillPlanFormState = {
@@ -78,6 +82,7 @@ export function SkillPlanManagementPage({
   subtitleKey,
   emptyKey,
   canManage,
+  personal = false,
   fetchList,
   fetchDetail,
   createPlan,
@@ -113,7 +118,10 @@ export function SkillPlanManagementPage({
       setDetailLoading(true)
       setError(null)
       try {
-        const detail = await fetchDetail(id, language)
+        const detail = await unwrapContract(
+          fetchDetail(id, { lang: language }),
+          'fetch skill plan detail failed'
+        )
         setSelectedPlan(detail)
         setSelectedPlanId(id)
         selectedPlanIdRef.current = id
@@ -133,11 +141,14 @@ export function SkillPlanManagementPage({
       setLoading(true)
       setError(null)
       try {
-        const response = await fetchList({
-          current: nextPage,
-          size: nextSize,
-          keyword: keyword.trim() || undefined,
-        })
+        const response = await unwrapContract(
+          fetchList({
+            current: nextPage,
+            size: nextSize,
+            keyword: keyword.trim() || undefined,
+          }),
+          'fetch skill plan list failed'
+        )
         setPlans(response.list ?? [])
         setTotal(response.total ?? 0)
         setPage(response.page ?? nextPage)
@@ -214,9 +225,12 @@ export function SkillPlanManagementPage({
       }
 
       if (form.id > 0) {
-        await updatePlan(form.id, payload, language)
+        await unwrapContract(
+          updatePlan(form.id, payload, { lang: language }),
+          'update skill plan failed'
+        )
       } else {
-        await createPlan(payload, language)
+        await unwrapContract(createPlan(payload, { lang: language }), 'create skill plan failed')
       }
 
       setDialogOpen(false)
@@ -235,7 +249,10 @@ export function SkillPlanManagementPage({
     setSaving(true)
     setError(null)
     try {
-      await deletePlan(selectedPlan.id)
+      await unwrapContract(
+        deletePlan(selectedPlan.id),
+        personal ? 'delete personal skill plan failed' : 'delete skill plan failed'
+      )
       setSelectedPlan(null)
       setSelectedPlanId(null)
       selectedPlanIdRef.current = null
@@ -258,7 +275,10 @@ export function SkillPlanManagementPage({
 
     setReorderSaving(true)
     try {
-      await reorderPlans(next.map((item) => item.id))
+      await unwrapContract(
+        reorderPlans({ ids: next.map((item) => item.id) }),
+        personal ? 'reorder personal skill plans failed' : 'reorder skill plans failed'
+      )
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('skillPlan.reorderFailed')))
       await loadPlans()

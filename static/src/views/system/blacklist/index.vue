@@ -86,23 +86,32 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    BlacklistEntry,
+    BlacklistKind,
+    BlacklistRefreshSummary
+  } from '@/api/generated/client'
   import { computed, h, onMounted, reactive, ref } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { useNow } from '@vueuse/core'
   import { ElMessage, ElTag } from 'element-plus'
-  import { fetchBlacklistEntries, fetchBlacklistSummary, refreshBlacklist } from '@/api/blacklist'
+  import { listBlacklist, latestRefresh, refresh } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
+
+  // Errors are i18n keys that this page localizes. A refresh may take up to 90 s on the server.
+  const requestOptions = { showErrorMessage: false }
   import { useTable } from '@/hooks/core/useTable'
   import { formatTime } from '@utils/common'
 
   defineOptions({ name: 'SystemBlacklist' })
 
-  type Entry = Api.Blacklist.Entry
-  type Kind = Api.Blacklist.Kind
+  type Entry = BlacklistEntry
+  type Kind = BlacklistKind
 
   const { t } = useI18n()
   const kindOptions: Kind[] = ['character', 'qq', 'discord']
   const filters = reactive<{ kind?: Kind; keyword: string }>({ kind: undefined, keyword: '' })
-  const summary = ref<Api.Blacklist.RefreshSummary | null>(null)
+  const summary = ref<BlacklistRefreshSummary | null>(null)
   const summaryLoaded = ref(false)
   const refreshing = ref(false)
   const now = useNow({ interval: 1000 })
@@ -144,7 +153,8 @@
     handleCurrentChange
   } = useTable({
     core: {
-      apiFn: fetchBlacklistEntries,
+      apiFn: (params: Api.Blacklist.ListParams) =>
+        unwrapContract(listBlacklist(params, requestOptions)),
       apiParams: { current: 1, size: 20 },
       columnsFactory: () => [
         {
@@ -185,7 +195,7 @@
 
   async function loadSummary() {
     try {
-      summary.value = await fetchBlacklistSummary()
+      summary.value = await unwrapContract(latestRefresh(requestOptions))
       summaryLoaded.value = true
     } catch (error) {
       showError(error)
@@ -195,7 +205,7 @@
   async function handleRefresh() {
     refreshing.value = true
     try {
-      const result = await refreshBlacklist()
+      const result = await unwrapContract(refresh({ ...requestOptions, timeout: 120_000 }))
       summary.value = result
       summaryLoaded.value = true
       const message = t('blacklist.refreshSuccess', {

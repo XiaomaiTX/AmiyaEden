@@ -1,5 +1,11 @@
 import { useMemo } from 'react'
-import { fetchSkillPlanDetail, fetchSkillPlanList, createSkillPlan, updateSkillPlan, deleteSkillPlan, reorderSkillPlans } from '@/api/skill-plan'
+import {
+  getSkillPlan,
+  listSkillPlans,
+  createSkillPlan,
+  updateSkillPlan,
+} from '@/api/generated/client'
+import { deleteSkillPlan, reorderSkillPlans } from '@/api/generated/client'
 import { useSessionStore } from '@/stores'
 import { SkillPlanManagementPage } from './skill-plan-management-page'
 
@@ -16,8 +22,8 @@ export function SkillPlansPage() {
       subtitleKey="skillPlan.subtitle"
       emptyKey="skillPlan.emptyList"
       canManage={canManage}
-      fetchList={fetchSkillPlanList}
-      fetchDetail={fetchSkillPlanDetail}
+      fetchList={listSkillPlans}
+      fetchDetail={getSkillPlan}
       createPlan={createSkillPlan}
       updatePlan={updateSkillPlan}
       deletePlan={deleteSkillPlan}

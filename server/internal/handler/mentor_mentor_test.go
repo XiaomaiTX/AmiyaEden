@@ -58,7 +58,7 @@ func performMentorRewardStagesRequest(t *testing.T) mentorRewardStagesHandlerRes
 	ctx.Set("userID", uint(1))
 	ctx.Set("roles", []string{model.RoleMentor})
 
-	NewMentorMentorHandler().GetRewardStages(ctx)
+	newMigratedOperationAdapter(migratedOperations{MentorMentorHandler: NewMentorMentorHandler()}).GetMentorDashboardRewardStages(ctx)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected http status 200, got %d", recorder.Code)

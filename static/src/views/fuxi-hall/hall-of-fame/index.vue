@@ -82,9 +82,11 @@
   </div>
 </template>
 <script setup lang="ts">
+  import type { HallPage } from '@/api/generated/client'
   import { onActivated, onMounted, ref } from 'vue'
   import { useI18n } from 'vue-i18n'
-  import { fetchFuxiHall, updateOwnFuxiHallCard } from '@/api/fuxi-hall'
+  import { getHall, updateHallOwnCard } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import FuxiHallMemberCard from '../components/FuxiHallMemberCard.vue'
   import FuxiHallBanner from '../components/FuxiHallBanner.vue'
   const { t } = useI18n()
@@ -96,7 +98,7 @@
     section?.focus({ preventScroll: true })
     section?.scrollIntoView({ block: 'start' })
   }
-  const page = ref<Api.FuxiHall.PageConfig | null>(null)
+  const page = ref<HallPage | null>(null)
   const cards = ref<Api.FuxiHall.Card[]>([])
   const loading = ref(false)
   const error = ref('')
@@ -117,7 +119,7 @@
     loading.value = !quiet
     error.value = ''
     try {
-      const result = await fetchFuxiHall()
+      const result = await unwrapContract(getHall({ showErrorMessage: false }))
       page.value = result.page
       cards.value = result.cards
     } catch (caught) {
@@ -137,10 +139,16 @@
     saving.value = true
     editError.value = ''
     try {
-      const updated = await updateOwnFuxiHallCard(editing.value.id, {
-        nickname: nickname.value,
-        description_html: description.value
-      })
+      const updated = await unwrapContract(
+        updateHallOwnCard(
+          editing.value.id,
+          {
+            nickname: nickname.value,
+            description_html: description.value
+          },
+          { showErrorMessage: false }
+        )
+      )
       cards.value = cards.value.map((card) =>
         card.id === updated.id
           ? { ...card, nickname: updated.nickname, description_html: updated.description_html }

@@ -1,14 +1,21 @@
+import type {
+  ListSrpApplicationsParams,
+  SrpApplication,
+  SrpFleetOption,
+  SrpPayoutMode
+} from '@/api/generated/client'
 import { ref, reactive, computed, watch, onMounted, h, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTable } from '@/hooks/core/useTable'
 import { useNameResolver } from '@/hooks'
 import { useEnterSearch } from '@/hooks/core/useEnterSearch'
 import { useUserStore } from '@/store/modules/user'
-import { fetchApplicationList, fetchSrpFleetOptions } from '@/api/srp'
+import { listSrpApplications, listSrpFleetOptions } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { formatIskSmart, formatTime } from '@utils/common'
 import { ElTag, ElTooltip, ElLink } from 'element-plus'
 
-type SrpApp = Api.Srp.Application
+type SrpApp = SrpApplication
 type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
 
 export function useSrpManage(callbacks: {
@@ -32,11 +39,11 @@ export function useSrpManage(callbacks: {
   })
 
   // ─── Fleets ───
-  const fleets = ref<Api.Srp.FleetOption[]>([])
+  const fleets = ref<SrpFleetOption[]>([])
   const fleetMap = computed(() => new Map(fleets.value.map((f) => [f.fleet_id, f])))
   const loadFleets = async () => {
     try {
-      fleets.value = (await fetchSrpFleetOptions()) ?? []
+      fleets.value = (await unwrapContract(listSrpFleetOptions())) ?? []
     } catch {
       fleets.value = []
     }
@@ -44,7 +51,7 @@ export function useSrpManage(callbacks: {
 
   // ─── Filters & Tabs ───
   const activeTab = ref('pending')
-  const payoutMode = ref<Api.Srp.PayoutMode>('fuxi_coin')
+  const payoutMode = ref<SrpPayoutMode>('fuxi_coin')
   const filter = reactive({ review_status: '', fleet_id: '', keyword: '' })
   const advancedFilter = reactive({
     corporation_id: undefined as number | undefined,
@@ -68,7 +75,7 @@ export function useSrpManage(callbacks: {
 
   const payoutStatusType = (s: string): TagType => (s === 'paid' ? 'success' : 'warning')
 
-  const formatFleetLabel = (f: Api.Srp.FleetOption) =>
+  const formatFleetLabel = (f: SrpFleetOption) =>
     f.fleet_fc_name
       ? `${f.fleet_fc_name}: ${f.fleet_title || f.fleet_id}`
       : f.fleet_title || f.fleet_id
@@ -87,7 +94,7 @@ export function useSrpManage(callbacks: {
     searchParams
   } = useTable({
     core: {
-      apiFn: fetchApplicationList,
+      apiFn: (params?: ListSrpApplicationsParams) => unwrapContract(listSrpApplications(params)),
       apiParams: {
         current: 1,
         size: 200,
@@ -427,7 +434,7 @@ export function useSrpManage(callbacks: {
       searchParams.sort_by = 'created_at'
       searchParams.sort_order = 'desc'
     } else {
-      searchParams.sort_by = sort.prop as NonNullable<Api.Srp.ApplicationSearchParams['sort_by']>
+      searchParams.sort_by = sort.prop as NonNullable<ListSrpApplicationsParams['sort_by']>
       searchParams.sort_order = sort.order === 'descending' ? 'desc' : 'asc'
     }
     searchParams.current = 1

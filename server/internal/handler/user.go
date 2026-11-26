@@ -1,15 +1,43 @@
 package handler
 
 import (
+	"context"
+	"errors"
+	"math"
+
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/utils"
 	"amiya-eden/pkg/response"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
+
+var (
+	errInvalidSystemUserID    = errors.New("无效的用户ID")
+	errInvalidSystemUserInput = errors.New("请求参数错误")
+	errSystemUserNotFound     = errors.New("用户不存在")
+)
+
+func validateSystemUserID(id uint) error {
+	if id == 0 || id > math.MaxUint32 {
+		return errInvalidSystemUserID
+	}
+	return nil
+}
+
+func systemUserErrorCode(err error) int {
+	switch {
+	case errors.Is(err, errInvalidSystemUserID), errors.Is(err, errInvalidSystemUserInput):
+		return response.CodeParamError
+	case errors.Is(err, errSystemUserNotFound):
+		return response.CodeNotFound
+	default:
+		return response.CodeBizError
+	}
+}
 
 type UserHandler struct {
 	svc *service.UserService
@@ -19,108 +47,148 @@ func NewUserHandler() *UserHandler {
 	return &UserHandler{svc: service.NewUserService()}
 }
 
-func (h *UserHandler) ListUsers(c *gin.Context) {
-	page, pageSize, err := parseLedgerPaginationQuery(c, 20)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, err.Error())
-		return
+func (h *UserHandler) listSystemUsers(roles []string, params apicontract.ListSystemUsersParams) (apicontract.SystemUserPage, error) {
+	page, pageSize := 1, 20
+	if params.Current != nil {
+		page = normalizePage(*params.Current)
 	}
-
-	filter := service.UserFilter{
-		Keyword: c.Query("keyword"),
-		Role:    c.Query("role"),
+	if params.Size != nil && *params.Size > 0 {
+		pageSize = normalizeLedgerPageSize(*params.Size)
 	}
-	if s := c.Query("status"); s != "" {
-		v, _ := strconv.Atoi(s)
-		filter.Status = &v
+	filter := service.UserFilter{Status: params.Status}
+	if params.Keyword != nil {
+		filter.Keyword = *params.Keyword
+	}
+	if params.Role != nil {
+		filter.Role = *params.Role
 	}
 
 	// admin 只能看到 allow_corporations 下有人物的用户，super_admin 看全部
-	roles := middleware.GetUserRoles(c)
 	if !model.IsSuperAdmin(roles) {
 		filter.AllowCorporations = utils.GetAllowCorporations()
 	}
 
 	users, total, err := h.svc.ListUsers(page, pageSize, filter)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.SystemUserPage{}, err
 	}
-	response.OKWithPage(c, users, total, page, pageSize)
+	rows := make([]apicontract.SystemUserListItem, 0, len(users))
+	for _, user := range users {
+		rows = append(rows, systemUserListItem(user))
+	}
+	return apicontract.SystemUserPage{List: rows, Total: total, Page: page, PageSize: pageSize}, nil
 }
 
-func (h *UserHandler) GetUser(c *gin.Context) {
-	id := requireUintID(c, "id", "用户ID")
-	if id == 0 {
-		return
+func (h *UserHandler) getSystemUser(id uint) (apicontract.CurrentUser, error) {
+	if err := validateSystemUserID(id); err != nil {
+		return apicontract.CurrentUser{}, err
 	}
 	user, err := h.svc.GetUserByID(id)
 	if err != nil {
-		response.Fail(c, response.CodeNotFound, "用户不存在")
-		return
+		return apicontract.CurrentUser{}, errSystemUserNotFound
 	}
-	response.OK(c, user)
+	return currentUserDTO(user), nil
 }
 
-type updateUserRequest struct {
-	Nickname  *string `json:"nickname"`
-	QQ        *string `json:"qq"`
-	DiscordID *string `json:"discord_id"`
-	Status    *int8   `json:"status"`
-}
-
-func (h *UserHandler) UpdateUser(c *gin.Context) {
-	id := requireUintID(c, "id", "用户ID")
-	if id == 0 {
-		return
+func (h *UserHandler) updateSystemUser(id, operatorID uint, operatorRoles []string, req *apicontract.SystemUserUpdateInput) error {
+	if err := validateSystemUserID(id); err != nil {
+		return err
 	}
-	var req updateUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
+	if req == nil {
+		return errInvalidSystemUserInput
 	}
-	operatorRoles := middleware.GetUserRoles(c)
-	if err := h.svc.UpdateUserByAdmin(id, middleware.GetUserID(c), operatorRoles, service.UserPatch{
+	return h.svc.UpdateUserByAdmin(id, operatorID, operatorRoles, service.UserPatch{
 		Nickname:  req.Nickname,
-		QQ:        req.QQ,
-		DiscordID: req.DiscordID,
+		QQ:        req.Qq,
+		DiscordID: req.DiscordId,
 		Status:    req.Status,
-	}); err != nil {
-		if contactConflictResponse(c, err) {
-			return
-		}
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, nil)
-}
-
-func (h *UserHandler) DeleteUser(c *gin.Context) {
-	id := requireUintID(c, "id", "用户ID")
-	if id == 0 {
-		return
-	}
-	operatorRoles := middleware.GetUserRoles(c)
-	if err := h.svc.DeleteUser(id, middleware.GetUserID(c), operatorRoles); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, nil)
-}
-
-// ImpersonateUser 以指定用户身份签发 JWT（仅超级管理员可用）
-func (h *UserHandler) ImpersonateUser(c *gin.Context) {
-	id := requireUintID(c, "id", "用户ID")
-	if id == 0 {
-		return
-	}
-	token, user, err := h.svc.ImpersonateUser(middleware.GetUserID(c), id)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, gin.H{
-		"token": token,
-		"user":  user,
 	})
+}
+
+func (h *UserHandler) deleteSystemUser(id, operatorID uint, operatorRoles []string) error {
+	if err := validateSystemUserID(id); err != nil {
+		return err
+	}
+	return h.svc.DeleteUser(id, operatorID, operatorRoles)
+}
+
+func (h *UserHandler) impersonateSystemUser(id, operatorID uint) (apicontract.SystemUserImpersonation, error) {
+	if err := validateSystemUserID(id); err != nil {
+		return apicontract.SystemUserImpersonation{}, err
+	}
+	token, user, err := h.svc.ImpersonateUser(operatorID, id)
+	if err != nil {
+		return apicontract.SystemUserImpersonation{}, err
+	}
+	return apicontract.SystemUserImpersonation{Token: token, User: currentUserDTO(user)}, nil
+}
+
+func systemUserListItem(user model.UserListItem) apicontract.SystemUserListItem {
+	characters := make([]apicontract.SystemUserListCharacter, 0, len(user.Characters))
+	for _, character := range user.Characters {
+		characters = append(characters, apicontract.SystemUserListCharacter{
+			CharacterId: character.CharacterID, CharacterName: character.CharacterName,
+			TotalSp: character.TotalSP, TokenInvalid: character.TokenInvalid,
+		})
+	}
+	return apicontract.SystemUserListItem{
+		Id: user.ID, Nickname: user.Nickname, Qq: user.QQ, DiscordId: user.DiscordID,
+		PrimaryCharacterId: user.PrimaryCharacterID, Status: user.Status, Roles: user.Roles,
+		Characters: characters, LastLoginAt: user.LastLoginAt, LastLoginIp: user.LastLoginIP,
+		CreatedAt: user.CreatedAt, UpdatedAt: user.UpdatedAt,
+	}
+}
+
+func (h *UserHandler) ListSystemUsers(ctx context.Context, request apicontract.ListSystemUsersRequestObject) (apicontract.ListSystemUsersResponseObject, error) {
+	data, err := h.listSystemUsers(middleware.GetUserRoles(ctx.(*gin.Context)), request.Params)
+	var out apicontract.ListSystemUsers200JSONResponse
+	if err != nil {
+		return &out, out.FromBusinessError(systemUserBusinessError(err))
+	}
+	return &out, out.FromSystemUserPageSuccess(apicontract.SystemUserPageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *UserHandler) GetSystemUser(_ context.Context, request apicontract.GetSystemUserRequestObject) (apicontract.GetSystemUserResponseObject, error) {
+	data, err := h.getSystemUser(request.Id)
+	var out apicontract.GetSystemUser200JSONResponse
+	if err != nil {
+		return &out, out.FromBusinessError(systemUserBusinessError(err))
+	}
+	return &out, out.FromSystemUserDetailSuccess(apicontract.SystemUserDetailSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *UserHandler) UpdateSystemUser(ctx context.Context, request apicontract.UpdateSystemUserRequestObject) (apicontract.UpdateSystemUserResponseObject, error) {
+	c := ctx.(*gin.Context)
+	err := h.updateSystemUser(request.Id, middleware.GetUserID(c), middleware.GetUserRoles(c), request.Body)
+	var out apicontract.UpdateSystemUser200JSONResponse
+	if err != nil {
+		if conflict, ok := contactConflictPayload(err); ok {
+			return &out, out.FromContactConflict(conflict)
+		}
+		return &out, out.FromBusinessError(systemUserBusinessError(err))
+	}
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *UserHandler) DeleteSystemUser(ctx context.Context, request apicontract.DeleteSystemUserRequestObject) (apicontract.DeleteSystemUserResponseObject, error) {
+	c := ctx.(*gin.Context)
+	err := h.deleteSystemUser(request.Id, middleware.GetUserID(c), middleware.GetUserRoles(c))
+	var out apicontract.DeleteSystemUser200JSONResponse
+	if err != nil {
+		return &out, out.FromBusinessError(systemUserBusinessError(err))
+	}
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *UserHandler) ImpersonateSystemUser(ctx context.Context, request apicontract.ImpersonateSystemUserRequestObject) (apicontract.ImpersonateSystemUserResponseObject, error) {
+	data, err := h.impersonateSystemUser(request.Id, middleware.GetUserID(ctx.(*gin.Context)))
+	var out apicontract.ImpersonateSystemUser200JSONResponse
+	if err != nil {
+		return &out, out.FromBusinessError(systemUserBusinessError(err))
+	}
+	return &out, out.FromSystemUserImpersonationSuccess(apicontract.SystemUserImpersonationSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func systemUserBusinessError(err error) apicontract.BusinessError {
+	return contractBusinessError(systemUserErrorCode(err), err.Error())
 }

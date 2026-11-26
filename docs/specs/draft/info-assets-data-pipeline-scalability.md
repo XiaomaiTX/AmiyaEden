@@ -11,15 +11,14 @@ source_of_truth:
   - server/internal/model/esi/asset.go
   - server/pkg/eve/esi/task_assets.go
   - static/src/views/info/assets/index.vue
-  - static/src/api/eve-info.ts
+  - contracts/modules/info-assets-contracts.yaml
   - static-react/src/pages/info-assets-page.tsx
-  - static-react/src/api/eve-info.ts
   - docs/features/current/info-and-reporting.md
 ---
 
 # `/info/assets` 数据链路扩容与可观测性修复草案
 
-> 本文是修复草案，不代表当前已实现行为。
+> 本文记录资产数据链路扩容的设计背景，不是当前 HTTP 契约。已接入的接口以 [资产与合同 OpenAPI](../../../contracts/modules/info-assets-contracts.yaml)和[当前模块文档](../../features/current/info-and-reporting.md)为准。
 
 ## 背景
 
@@ -739,67 +738,9 @@ source_of_truth:
 - `info.assetNoLocationData`
 - `info.assetNoItemsInLocation`
 
-## 2. Vue API 包装
+## 2. 双前端接口接入
 
-文件：
-
-- `static/src/api/eve-info.ts`
-
-改动：
-
-- 保留 `fetchInfoAssets()` 兼容旧调用。
-- 新增：
-  - `fetchInfoAssetLocations()`
-  - `fetchInfoAssetLocationItems()`
-  - `fetchInfoAssetChildren()`
-
-要求：
-
-- 接口命名与后端路由一一对应。
-
-## 3. Vue 类型定义
-
-文件：
-
-- `static/src/types/api/api.d.ts`
-
-改动：
-
-- 在 `Api.EveInfo` 下新增：
-  - `AssetLocationsRequest`
-  - `AssetLocationsResponse`
-  - `AssetLocationSummary`
-  - `AssetLocationItemsRequest`
-  - `AssetLocationItemsResponse`
-  - `AssetChildrenRequest`
-  - `AssetChildrenResponse`
-  - `AssetListItemNode`
-
-要求：
-
-- 不再要求 `AssetItemNode.children` 为接口主结构字段。
-- 若保留旧类型，必须明确区分“旧全量树”和“新分页列表”。
-
-## 4. React 页面与 API
-
-文件：
-
-- `static-react/src/pages/info-assets-page.tsx`
-- `static-react/src/api/eve-info.ts`
-- `static-react/src/types/api/eve-info.ts` 或对应类型文件
-
-改动：
-
-- 新增对应的 3 个 API wrapper。
-- 页面从一次 `fetchInfoAssets()` 改成：
-  - 初始加载位置摘要
-  - 展开位置加载根物品
-  - 展开条目加载子物品
-
-要求：
-
-- 保持现有失败态优于空态的行为。
-- 不要把新接口适配硬塞回旧树结构再一次性渲染。
+位置摘要、位置物品与子物品操作已写入 [资产与合同 OpenAPI](../../../contracts/modules/info-assets-contracts.yaml)。Vue、React 从各自生成客户端导入操作与类型，不另写逐接口包装或重复 DTO。页面先加载位置摘要，再按需加载根物品和子物品；请求失败优先显示错误，不把分页结果重组成旧全量树。
 
 ## 测试方案
 
@@ -901,14 +842,11 @@ cd static-react && pnpm test
 
 改动文件：
 
+- [资产与合同 OpenAPI](../../../contracts/modules/info-assets-contracts.yaml)、对应生成入口与客户端
 - `server/internal/handler/eve_info.go`
-- `server/internal/router/router.go`
 - `server/internal/service/asset.go`
 - `server/internal/repository/asset.go`
-- `static/src/api/eve-info.ts`
-- `static/src/types/api/api.d.ts`
 - `static/src/views/info/assets/index.vue`
-- `static-react/src/api/eve-info.ts`
 - `static-react/src/pages/info-assets-page.tsx`
 
 完成标准：
@@ -950,9 +888,6 @@ cd static-react && pnpm test
 - [ ] `server/internal/handler/eve_info.go`：新增 `GetAssetLocations()`。
 - [ ] `server/internal/handler/eve_info.go`：新增 `GetAssetLocationItems()`。
 - [ ] `server/internal/handler/eve_info.go`：新增 `GetAssetChildren()`。
-- [ ] `server/internal/router/router.go`：注册 `/info/assets/locations`。
-- [ ] `server/internal/router/router.go`：注册 `/info/assets/location-items`。
-- [ ] `server/internal/router/router.go`：注册 `/info/assets/children`。
 - [ ] `server/internal/service/asset.go`：新增位置摘要、位置根物品、子物品 3 组 DTO。
 - [ ] `server/internal/service/asset.go`：新增 `GetUserAssetLocations()`。
 - [ ] `server/internal/service/asset.go`：新增 `GetUserAssetLocationItems()`。
@@ -960,10 +895,7 @@ cd static-react && pnpm test
 - [ ] `server/internal/repository/asset.go`：新增位置摘要分页查询。
 - [ ] `server/internal/repository/asset.go`：新增指定位置根物品分页查询。
 - [ ] `server/internal/repository/asset.go`：新增指定父物品子项查询。
-- [ ] `static/src/api/eve-info.ts`：新增 Vue 侧 3 个 API wrapper。
-- [ ] `static/src/types/api/api.d.ts`：新增分页资产接口类型。
 - [ ] `static/src/views/info/assets/index.vue`：改为首屏位置摘要、按需加载位置物品与子物品。
-- [ ] `static-react/src/api/eve-info.ts`：新增 React 侧 3 个 API wrapper。
 - [ ] `static-react/src/pages/info-assets-page.tsx`：切换到分页/懒加载模式。
 
 ### 阶段 3

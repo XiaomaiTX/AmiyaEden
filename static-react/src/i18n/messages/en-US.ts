@@ -1955,16 +1955,10 @@ const enUS = {
       in_progress: 'In Progress',
       completed: 'Completed',
     },
-    priorities: {
-      low: 'Low',
-      medium: 'Medium',
-      high: 'High',
-    },
     columns: {
       id: 'ID',
       title: 'Title',
       status: 'Status',
-      priority: 'Priority',
       updatedAt: 'Updated At',
       actions: 'Actions',
     },
@@ -1989,13 +1983,7 @@ const enUS = {
     fields: {
       category: 'Ticket Category',
       title: 'Title',
-      priority: 'Priority',
       description: 'Description',
-    },
-    priorities: {
-      low: 'Low',
-      medium: 'Medium',
-      high: 'High',
     },
     placeholders: {
       title: 'Enter ticket title',
@@ -2044,7 +2032,7 @@ const enUS = {
   },
   ticketManagement: {
     title: 'Ticket Management',
-    subtitle: 'Review, filter, and adjust the status and priority of all tickets.',
+    subtitle: 'Review, filter, and adjust the status of all tickets.',
     loading: 'Loading ticket management data...',
     loadFailed: 'Failed to load ticket management data.',
     updateFailed: 'Failed to update ticket.',
@@ -2059,16 +2047,10 @@ const enUS = {
       in_progress: 'In Progress',
       completed: 'Completed',
     },
-    priority: {
-      low: 'Low',
-      medium: 'Medium',
-      high: 'High',
-    },
     columns: {
       id: 'ID',
       title: 'Title',
       status: 'Status',
-      priority: 'Priority',
       updatedAt: 'Updated At',
       actions: 'Actions',
     },
