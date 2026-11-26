@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"errors"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // FittingsHandler 装配处理器
@@ -51,8 +54,18 @@ func (h *FittingsHandler) SaveFitting(c *gin.Context) {
 
 	result, err := h.svc.SaveFitting(c.Request.Context(), userID, &req)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		response.Fail(c, response.CodeBizError, fittingSaveErrorMessage(err))
 		return
 	}
 	response.OK(c, result)
+}
+
+func fittingSaveErrorMessage(err error) string {
+	if errors.Is(err, service.ErrFittingTokenUnavailable) {
+		return service.ErrFittingTokenUnavailable.Error()
+	}
+	if logger := global.CurrentLogger(); logger != nil {
+		logger.Error("[Fittings] 保存装配失败", zap.Error(err))
+	}
+	return "保存装配失败，请检查装配数据和人物授权后重试"
 }

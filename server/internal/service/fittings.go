@@ -285,6 +285,9 @@ func (s *FittingsService) GetFittings(userID uint, req *FittingsRequest) (*Fitti
 	return result, nil
 }
 
+// ErrFittingTokenUnavailable is safe to report when the character needs rebinding.
+var ErrFittingTokenUnavailable = errors.New("人物 Token 不可用，请重新绑定")
+
 // SaveFitting 保存装配（同步 ESI + 数据库）
 func (s *FittingsService) SaveFitting(ctx context.Context, userID uint, req *SaveFittingRequest) (*FittingResponse, error) {
 	char, err := findOwnedCharacter(s.charRepo, userID, req.CharacterID)
@@ -295,7 +298,7 @@ func (s *FittingsService) SaveFitting(ctx context.Context, userID uint, req *Sav
 	// 获取有效 token（自动刷新）
 	accessToken, err := s.ssoSvc.GetValidToken(ctx, char.CharacterID)
 	if err != nil {
-		return nil, errors.New("人物 Token 不可用，请重新绑定")
+		return nil, ErrFittingTokenUnavailable
 	}
 
 	// 如果有 fittingID，先删除 ESI 上的旧装配
