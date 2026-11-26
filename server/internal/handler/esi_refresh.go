@@ -192,16 +192,19 @@ func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 		return
 	}
 
-	start := (page - 1) * pageSize
-	if start > total {
-		start = total
-	}
-	end := start + pageSize
-	if end > total {
-		end = total
-	}
+	start, end := esiStatusPageBounds(total, page, pageSize)
 
 	response.OKWithPage(c, filtered[start:end], int64(total), page, pageSize)
+}
+
+// esiStatusPageBounds expects a normalized page and page size from pagination parsing.
+func esiStatusPageBounds(total, page, pageSize int) (start, end int) {
+	// Bound the offset before multiplying so distant pages cannot overflow.
+	start = total
+	if pageIndex := page - 1; pageIndex <= total/pageSize {
+		start = pageIndex * pageSize
+	}
+	return start, start + min(pageSize, total-start)
 }
 
 const monitorListLimit = 20

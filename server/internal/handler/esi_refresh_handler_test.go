@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -264,6 +265,27 @@ func TestGetStatuses_FiltersByCharacterIDOrName(t *testing.T) {
 	}
 	if len(page.List) != 1 || page.List[0].CharacterID != 9002 || page.List[0].CharacterName != "Kal'tsit Alt" {
 		t.Fatalf("unexpected filtered result: %+v", page.List)
+	}
+}
+
+func TestEsiStatusPageBounds(t *testing.T) {
+	for _, tc := range []struct {
+		name               string
+		total, page, size  int
+		wantStart, wantEnd int
+	}{
+		{name: "empty", total: 0, page: 1, size: 2, wantStart: 0, wantEnd: 0},
+		{name: "full", total: 7, page: 2, size: 2, wantStart: 2, wantEnd: 4},
+		{name: "partial", total: 7, page: 4, size: 2, wantStart: 6, wantEnd: 7},
+		{name: "past end", total: 7, page: 5, size: 2, wantStart: 7, wantEnd: 7},
+		{name: "integer boundary", total: 7, page: math.MaxInt, size: 2, wantStart: 7, wantEnd: 7},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			start, end := esiStatusPageBounds(tc.total, tc.page, tc.size)
+			if start != tc.wantStart || end != tc.wantEnd {
+				t.Fatalf("got slice bounds [%d:%d]; want [%d:%d]", start, end, tc.wantStart, tc.wantEnd)
+			}
+		})
 	}
 }
 
