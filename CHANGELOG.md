@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-11-26
+
+### Added
+
+- 伏羲名人堂新增展厅横幅与楼层导览，可直接跳转到指定楼层。
+- 公告展示发布者及其主人物，公告板同步调整布局。
+
+### Changed
+
+- Vue 与 React 左侧导航按任务分区，保留既有页面 URL 和访问权限；Vue 其他导航布局不变。
+- 伏羲名人堂改用肖像铭牌，压缩贡献标签，并将军团 PAP 的展示名称改为「出勤」。
+- 优化技能计划管理布局；入团审核改用带头像的人物选择项。
+- 将现有 319 个 `/api/v1` 操作迁入共享 OpenAPI 契约，Go、Vue 与 React 使用同源生成的类型及服务端接口或客户端。
+- 补充入团申请和角标的请求层回归测试，统一项目验证流程，并移除 CI 中重复的 React 类型检查。
+
+### Fixed
+
+- Vue 与 React 的浏览器标签页统一使用伏羲军团徽记；侧栏角标不再遮挡子菜单箭头。
+- React ESI 任务页区分单人物与批量操作：单人物直接运行并仅显示该行的加载状态，批量运行须确认并防止重复提交。
+- ESI 分页增加防护；最终一次限流响应直接返回，不再额外等待。SDE 查询仅在表或列布局不匹配时尝试备用布局。
+- 保存装配失败时不再泄露内部错误细节。
+
+### Security
+
+- 更新 Go 工具链及前后端依赖，纳入已审计的安全修复。
+
+### Migration
+
+- [2.0.0 残留清理指南](docs/guides/pre-2.0-cleanup.md)新增手动数据库清理范围和验证步骤。已升级的实例可在备份后先预览，再按需显式执行；不会随部署自动清理。
+
+<!--
+发布范围核对：1b4611b4..471c3904，共 16 个提交，均为 release-worthy；另包含工作区的双端标签页图标调整。
+- 公告、名人堂、入团审核、技能计划及侧栏：beac3694、b63e11c3、bea44ca5、b3787514、156a2bd1、48753949、95735a40、471c3904。
+- 安全更新与升级清理：862482c3、6b99fc26。
+- ESI、SDE 与装配错误处理：0ad98732、2cf1aa71、c86881ce、1f9563a0。
+- 验证流程和 OpenAPI 契约：4df93c16、3ac4addf。
+-->
+
 ## [2.0.0] - 2026-11-23
 
 ### Added
