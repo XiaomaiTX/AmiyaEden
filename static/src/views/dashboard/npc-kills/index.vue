@@ -270,7 +270,7 @@
   import { ElDatePicker, ElOption, ElSelect, ElInputNumber } from 'element-plus'
   import { getCorpNpcKills } from '@/api/generated/client'
   import { unwrapContract } from '@/api/response'
-  import { formatIskPlain } from '@/utils/common'
+  import { formatIskPlain, getCurrentMonthRange } from '@/utils/common'
   import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'CorpNpcKillReport' })
@@ -279,7 +279,7 @@
   const defaultTickers = ['FUXI', 'FMA.1']
 
   // ─── 状态 ───
-  const dateRange = ref<[string, string] | null>(null)
+  const dateRange = ref<[string, string] | null>(getCurrentMonthRange())
   const corpTickers = ref<string[]>([...defaultTickers])
   const selectedRefTypes = ref<string[]>([])
   const solarSystemIdInputs = ref<string[]>([])
@@ -355,7 +355,7 @@
   }
 
   const handleReset = () => {
-    dateRange.value = null
+    dateRange.value = getCurrentMonthRange()
     corpTickers.value = [...defaultTickers]
     selectedRefTypes.value = []
     solarSystemIdInputs.value = []
