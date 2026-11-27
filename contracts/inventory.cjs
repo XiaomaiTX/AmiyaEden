@@ -57,7 +57,7 @@ for (const [frontend, column] of [['static', 'vue'], ['static-react', 'react']])
     if (/["'`]\/api\/v1(?:[/?"'`]|$)/m.test(text)) findings.push(`${file}: use the generated client for /api/v1 calls`)
     if (!text.includes('import') && !text.includes('export')) continue
     const source = file.endsWith('.vue')
-      ? [...text.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map((match) => match[1]).join('\n')
+      ? [...text.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map((match) => match[1]).join('\n')
       : text
     const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true,
       file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
