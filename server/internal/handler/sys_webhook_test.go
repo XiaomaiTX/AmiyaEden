@@ -178,8 +178,8 @@ func TestWebhookHandlerTestWebhookRejectsInvalidURL(t *testing.T) {
 	registerMigratedOperationRoutes(r, h, migratedOperationParamError)
 
 	reqBody := []byte(`{
-		"url":"ftp://onebot.example.com",
-		"type":"onebot"
+		"url":"ftp://discord.com/api/webhooks/1/token",
+		"type":"discord"
 	}`)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/system/webhook/test", bytes.NewReader(reqBody))

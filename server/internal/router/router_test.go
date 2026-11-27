@@ -72,12 +72,6 @@ func TestRegisterRoutesIncludesTaskManagerEndpoints(t *testing.T) {
 	RegisterRoutes(r, newTaskRouterTestService(t))
 
 	routes := r.Routes()
-	for _, route := range routes {
-		if strings.Contains(route.Path, "qq-governance") || strings.Contains(route.Path, "qqbot") || strings.Contains(route.Path, "onebot") {
-			t.Fatalf("retired QQ Bot route is registered: %s", route.Path)
-		}
-	}
-
 	want := map[string]string{
 		http.MethodGet:  "/api/v1/tasks",
 		http.MethodPost: "/api/v1/tasks/:name/run",

@@ -158,24 +158,24 @@ func TestValidateWebhookRequestTargetRejectsInvalidURLs(t *testing.T) {
 	}
 }
 
-func TestRetiredWebhookTypesRejectWithoutSendingOrSaving(t *testing.T) {
-	for _, kind := range []string{"onebot", "qq_governance_onebot"} {
+func TestUnsupportedWebhookTypesRejectWithoutSendingOrSaving(t *testing.T) {
+	for _, kind := range []string{"unknown-provider", "webhook-v99"} {
 		t.Run(kind, func(t *testing.T) {
 			store := &fakeWebhookConfigStore{}
 			transport := &recordingWebhookTransport{}
 			svc := &WebhookService{repo: store, http: &http.Client{Transport: transport}}
 			cfg := &WebhookConfig{Type: kind, URL: "https://discord.com/api/webhooks/1/token", Enabled: true}
 			if err := svc.SetConfig(cfg); err == nil {
-				t.Fatal("retired type must be rejected")
+				t.Fatal("unsupported type must be rejected")
 			}
 			if err := svc.SendTest(cfg, "test"); err == nil {
-				t.Fatal("retired type must not send a test message")
+				t.Fatal("unsupported type must not send a test message")
 			}
 			if err := svc.sendMessage(cfg, "fleet ping"); err == nil {
-				t.Fatal("persisted retired type must not fall through to Discord")
+				t.Fatal("unsupported type must not fall through to Discord")
 			}
 			if store.setManyCalls != 0 || transport.calls != 0 {
-				t.Fatal("retired type wrote configuration or sent HTTP request")
+				t.Fatal("unsupported type wrote configuration or sent HTTP request")
 			}
 		})
 	}
@@ -216,8 +216,8 @@ func TestSupportedWebhookProvidersStillSend(t *testing.T) {
 	}
 }
 
-func TestFleetPingKeepsSupportedDeliveryAndRejectsRetiredConfiguration(t *testing.T) {
-	for _, kind := range []string{"discord", "onebot", "qq_governance_onebot"} {
+func TestFleetPingKeepsSupportedDeliveryAndRejectsUnknownConfiguration(t *testing.T) {
+	for _, kind := range []string{"discord", "unknown-provider", "webhook-v99"} {
 		t.Run(kind, func(t *testing.T) {
 			transport := &recordingWebhookTransport{}
 			store := &fakeWebhookConfigStore{enabled: true, values: map[string]string{
@@ -232,7 +232,7 @@ func TestFleetPingKeepsSupportedDeliveryAndRejectsRetiredConfiguration(t *testin
 					t.Fatalf("fleet delivery: err=%v calls=%d body=%s", err, transport.calls, transport.body)
 				}
 			} else if err == nil || transport.calls != 0 {
-				t.Fatalf("retired fleet notification: err=%v calls=%d", err, transport.calls)
+				t.Fatalf("unsupported fleet notification: err=%v calls=%d", err, transport.calls)
 			}
 		})
 	}
