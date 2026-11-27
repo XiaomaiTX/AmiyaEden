@@ -24,15 +24,11 @@ BEGIN;
 -- Read-only mode is set before the first query so a preview can never write.
 SET TRANSACTION READ ONLY;
 \endif
-SET LOCAL search_path = pg_catalog;
+SET LOCAL search_path = pg_catalog, pg_temp;
 SET LOCAL lock_timeout = '5s';
-\if :{?cleanup_pre_2_0}
-\if :cleanup_pre_2_0
 -- Fail rather than silently count or delete only rows visible to an RLS policy.
 SET LOCAL row_security = off;
 SET LOCAL client_min_messages = notice;
-\endif
-\endif
 SELECT set_config('retirement.target_database', :'target_database', true) AS db,
        set_config('retirement.target_schema', :'target_schema', true) AS schema,
        set_config('retirement.apply', :'apply', true) AS mode \gset
@@ -77,7 +73,7 @@ BEGIN
     IF mode NOT IN ('true', 'false') THEN
         RAISE EXCEPTION 'apply must be true or false';
     END IF;
-    IF current_database() <> current_setting('retirement.target_database') THEN
+    IF current_database()::text <> current_setting('retirement.target_database') THEN
         RAISE EXCEPTION 'connected database does not match target_database';
     END IF;
     IF target IN ('information_schema', '') OR target LIKE 'pg\_%'
