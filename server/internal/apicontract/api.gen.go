@@ -194,9 +194,9 @@ const (
 
 // Defines values for BusinessErrorCode.
 const (
-	N400 BusinessErrorCode = 400
-	N404 BusinessErrorCode = 404
-	N500 BusinessErrorCode = 500
+	BusinessErrorCodeN400 BusinessErrorCode = 400
+	BusinessErrorCodeN404 BusinessErrorCode = 404
+	BusinessErrorCodeN500 BusinessErrorCode = 500
 )
 
 // Defines values for CaptainRefundApplicationSuccessCode.
@@ -455,6 +455,21 @@ const (
 // Defines values for FleetPapLogListSuccessCode.
 const (
 	FleetPapLogListSuccessCodeN200 FleetPapLogListSuccessCode = 200
+)
+
+// Defines values for FleetQQNotificationStatus.
+const (
+	Queued FleetQQNotificationStatus = "queued"
+)
+
+// Defines values for FleetQQPingAcceptedCode.
+const (
+	FleetQQPingAcceptedCodeN200 FleetQQPingAcceptedCode = 200
+)
+
+// Defines values for FleetQQPingPageSuccessCode.
+const (
+	FleetQQPingPageSuccessCodeN200 FleetQQPingPageSuccessCode = 200
 )
 
 // Defines values for FleetRecordAutoSrpMode.
@@ -800,6 +815,91 @@ const (
 	PapExchangeSuccessCodeN200 PapExchangeSuccessCode = 200
 )
 
+// Defines values for QQOfficialApprovalCapability.
+const (
+	QQOfficialApprovalCapabilityAvailable QQOfficialApprovalCapability = "available"
+	QQOfficialApprovalCapabilityForbidden QQOfficialApprovalCapability = "forbidden"
+	QQOfficialApprovalCapabilityUnknown   QQOfficialApprovalCapability = "unknown"
+)
+
+// Defines values for QQOfficialErrorCode.
+const (
+	QQOfficialErrorCodeN400 QQOfficialErrorCode = 400
+	QQOfficialErrorCodeN404 QQOfficialErrorCode = 404
+	QQOfficialErrorCodeN409 QQOfficialErrorCode = 409
+	QQOfficialErrorCodeN429 QQOfficialErrorCode = 429
+	QQOfficialErrorCodeN503 QQOfficialErrorCode = 503
+)
+
+// Defines values for QQOfficialGroupPageSuccessCode.
+const (
+	QQOfficialGroupPageSuccessCodeN200 QQOfficialGroupPageSuccessCode = 200
+)
+
+// Defines values for QQOfficialGroupSuccessCode.
+const (
+	QQOfficialGroupSuccessCodeN200 QQOfficialGroupSuccessCode = 200
+)
+
+// Defines values for QQOfficialJoinDecision.
+const (
+	QQOfficialJoinDecisionApprove QQOfficialJoinDecision = "approve"
+	QQOfficialJoinDecisionDecline QQOfficialJoinDecision = "decline"
+)
+
+// Defines values for QQOfficialJoinRequestPageSuccessCode.
+const (
+	QQOfficialJoinRequestPageSuccessCodeN200 QQOfficialJoinRequestPageSuccessCode = 200
+)
+
+// Defines values for QQOfficialJoinRequestStatus.
+const (
+	QQOfficialJoinRequestStatusApproved        QQOfficialJoinRequestStatus = "approved"
+	QQOfficialJoinRequestStatusClosedElsewhere QQOfficialJoinRequestStatus = "closed_elsewhere"
+	QQOfficialJoinRequestStatusDeclined        QQOfficialJoinRequestStatus = "declined"
+	QQOfficialJoinRequestStatusExpired         QQOfficialJoinRequestStatus = "expired"
+	QQOfficialJoinRequestStatusFailed          QQOfficialJoinRequestStatus = "failed"
+	QQOfficialJoinRequestStatusPending         QQOfficialJoinRequestStatus = "pending"
+	QQOfficialJoinRequestStatusQueued          QQOfficialJoinRequestStatus = "queued"
+	QQOfficialJoinRequestStatusUnknown         QQOfficialJoinRequestStatus = "unknown"
+)
+
+// Defines values for QQOfficialPushState.
+const (
+	QQOfficialPushStateAllowed QQOfficialPushState = "allowed"
+	QQOfficialPushStateBlocked QQOfficialPushState = "blocked"
+	QQOfficialPushStateUnknown QQOfficialPushState = "unknown"
+)
+
+// Defines values for QQOfficialStatusGatewayState.
+const (
+	Blocked    QQOfficialStatusGatewayState = "blocked"
+	Connected  QQOfficialStatusGatewayState = "connected"
+	Connecting QQOfficialStatusGatewayState = "connecting"
+	Idle       QQOfficialStatusGatewayState = "idle"
+	Retrying   QQOfficialStatusGatewayState = "retrying"
+)
+
+// Defines values for QQOfficialStatusSuccessCode.
+const (
+	QQOfficialStatusSuccessCodeN200 QQOfficialStatusSuccessCode = 200
+)
+
+// Defines values for QQOfficialTaskAcceptedCode.
+const (
+	QQOfficialTaskAcceptedCodeN200 QQOfficialTaskAcceptedCode = 200
+)
+
+// Defines values for QQOfficialTaskDetailSuccessCode.
+const (
+	QQOfficialTaskDetailSuccessCodeN200 QQOfficialTaskDetailSuccessCode = 200
+)
+
+// Defines values for QQOfficialTaskPageSuccessCode.
+const (
+	QQOfficialTaskPageSuccessCodeN200 QQOfficialTaskPageSuccessCode = 200
+)
+
 // Defines values for SalarySettingsSuccessCode.
 const (
 	SalarySettingsSuccessCodeN200 SalarySettingsSuccessCode = 200
@@ -1003,15 +1103,15 @@ const (
 
 // Defines values for SrpReviewInputAction.
 const (
-	Approve SrpReviewInputAction = "approve"
-	Reject  SrpReviewInputAction = "reject"
+	SrpReviewInputActionApprove SrpReviewInputAction = "approve"
+	SrpReviewInputActionReject  SrpReviewInputAction = "reject"
 )
 
 // Defines values for SrpReviewStatus.
 const (
-	SrpReviewStatusApproved  SrpReviewStatus = "approved"
-	SrpReviewStatusRejected  SrpReviewStatus = "rejected"
-	SrpReviewStatusSubmitted SrpReviewStatus = "submitted"
+	Approved  SrpReviewStatus = "approved"
+	Rejected  SrpReviewStatus = "rejected"
+	Submitted SrpReviewStatus = "submitted"
 )
 
 // Defines values for SrpShipPriceSuccessCode.
@@ -1236,7 +1336,7 @@ const (
 
 // Defines values for WelfareSettingsSuccessCode.
 const (
-	WelfareSettingsSuccessCodeN200 WelfareSettingsSuccessCode = 200
+	N200 WelfareSettingsSuccessCode = 200
 )
 
 // AdminAlliancePAPFetchInput defines model for AdminAlliancePAPFetchInput.
@@ -3207,6 +3307,7 @@ type FleetCreateInput struct {
 	SendPing      bool    `json:"send_ping,omitempty"`
 	FleetConfigID *uint   `json:"fleet_config_id"`
 	AutoSrpMode   string  `json:"auto_srp_mode,omitempty"`
+	SendQQPing    bool    `json:"send_qq_ping,omitempty"`
 }
 
 // FleetESIMember defines model for FleetESIMember.
@@ -3423,6 +3524,65 @@ type FleetPapLogListSuccess struct {
 // FleetPapLogListSuccessCode defines model for FleetPapLogListSuccess.Code.
 type FleetPapLogListSuccessCode int
 
+// FleetQQNotification defines model for FleetQQNotification.
+type FleetQQNotification struct {
+	Status    FleetQQNotificationStatus `json:"status"`
+	TaskCount int                       `json:"task_count"`
+}
+
+// FleetQQNotificationStatus defines model for FleetQQNotification.Status.
+type FleetQQNotificationStatus string
+
+// FleetQQPingAccepted defines model for FleetQQPingAccepted.
+type FleetQQPingAccepted struct {
+	Code FleetQQPingAcceptedCode `json:"code"`
+	Data FleetQQPingReceipt      `json:"data"`
+	Msg  string                  `json:"msg"`
+}
+
+// FleetQQPingAcceptedCode defines model for FleetQQPingAccepted.Code.
+type FleetQQPingAcceptedCode int
+
+// FleetQQPingInput defines model for FleetQQPingInput.
+type FleetQQPingInput struct {
+	IdempotencyKey string `binding:"required,uuid" json:"idempotency_key"`
+}
+
+// FleetQQPingPage defines model for FleetQQPingPage.
+type FleetQQPingPage struct {
+	List     []FleetQQPingTask `json:"list"`
+	Page     int               `json:"page"`
+	PageSize int               `json:"pageSize"`
+	Total    int64             `json:"total"`
+}
+
+// FleetQQPingPageSuccess defines model for FleetQQPingPageSuccess.
+type FleetQQPingPageSuccess struct {
+	Code FleetQQPingPageSuccessCode `json:"code"`
+	Data FleetQQPingPage            `json:"data"`
+	Msg  string                     `json:"msg"`
+}
+
+// FleetQQPingPageSuccessCode defines model for FleetQQPingPageSuccess.Code.
+type FleetQQPingPageSuccessCode int
+
+// FleetQQPingReceipt defines model for FleetQQPingReceipt.
+type FleetQQPingReceipt struct {
+	Tasks []QQOfficialTaskReceipt `json:"tasks"`
+}
+
+// FleetQQPingTask defines model for FleetQQPingTask.
+type FleetQQPingTask struct {
+	CreatedAt  time.Time  `json:"created_at"`
+	ExpiresAt  time.Time  `json:"expires_at"`
+	FinishedAt *time.Time `json:"finished_at,omitempty"`
+	ID         string     `json:"id"`
+
+	// Reason Localizable ledger reason key.
+	Reason *string `json:"reason,omitempty"`
+	Status string  `json:"status"`
+}
+
 // FleetRecord defines model for FleetRecord.
 type FleetRecord struct {
 	AutoSrpMode     FleetRecordAutoSrpMode `json:"auto_srp_mode"`
@@ -3438,6 +3598,7 @@ type FleetRecord struct {
 	ID              string                 `json:"id"`
 	Importance      string                 `json:"importance"`
 	PapCount        float64                `json:"pap_count"`
+	QqNotification  *FleetQQNotification   `json:"qq_notification,omitempty"`
 	StartAt         time.Time              `json:"start_at"`
 	Title           string                 `json:"title"`
 	UpdatedAt       time.Time              `json:"updated_at"`
@@ -5356,6 +5517,291 @@ type PapExchangeSuccess struct {
 
 // PapExchangeSuccessCode defines model for PapExchangeSuccess.Code.
 type PapExchangeSuccessCode int
+
+// QQOfficialApprovalCapability defines model for QQOfficialApprovalCapability.
+type QQOfficialApprovalCapability string
+
+// QQOfficialCooldown defines model for QQOfficialCooldown.
+type QQOfficialCooldown struct {
+	// Scope Redacted scope label, never an upstream group identifier.
+	Scope string    `json:"scope"`
+	Until time.Time `json:"until"`
+}
+
+// QQOfficialEnqueueInput defines model for QQOfficialEnqueueInput.
+type QQOfficialEnqueueInput struct {
+	IdempotencyKey string `binding:"required,uuid" json:"idempotency_key"`
+}
+
+// QQOfficialError defines model for QQOfficialError.
+type QQOfficialError struct {
+	Code QQOfficialErrorCode `json:"code"`
+
+	// Msg Safe error message without upstream payloads or credentials.
+	Msg string `json:"msg"`
+}
+
+// QQOfficialErrorCode defines model for QQOfficialError.Code.
+type QQOfficialErrorCode int
+
+// QQOfficialGroup defines model for QQOfficialGroup.
+type QQOfficialGroup struct {
+	Alias                  string                       `json:"alias"`
+	ApprovalCapability     QQOfficialApprovalCapability `json:"approval_capability"`
+	ApprovalEnabled        bool                         `json:"approval_enabled"`
+	Authorized             bool                         `json:"authorized"`
+	FleetCorporationID     *int64                       `json:"fleet_corporation_id,omitempty"`
+	Id                     string                       `json:"id"`
+	NotificationEnabled    bool                         `json:"notification_enabled"`
+	Present                bool                         `json:"present"`
+	PushState              QQOfficialPushState          `json:"push_state"`
+	StructureCorporationID *int64                       `json:"structure_corporation_id,omitempty"`
+	TestVerified           bool                         `json:"test_verified"`
+}
+
+// QQOfficialGroupPage defines model for QQOfficialGroupPage.
+type QQOfficialGroupPage struct {
+	List     []QQOfficialGroup `json:"list"`
+	Page     int               `json:"page"`
+	PageSize int               `json:"pageSize"`
+	Total    int64             `json:"total"`
+}
+
+// QQOfficialGroupPageSuccess defines model for QQOfficialGroupPageSuccess.
+type QQOfficialGroupPageSuccess struct {
+	Code QQOfficialGroupPageSuccessCode `json:"code"`
+	Data QQOfficialGroupPage            `json:"data"`
+	Msg  string                         `json:"msg"`
+}
+
+// QQOfficialGroupPageSuccessCode defines model for QQOfficialGroupPageSuccess.Code.
+type QQOfficialGroupPageSuccessCode int
+
+// QQOfficialGroupSuccess defines model for QQOfficialGroupSuccess.
+type QQOfficialGroupSuccess struct {
+	Code QQOfficialGroupSuccessCode `json:"code"`
+	Data QQOfficialGroup            `json:"data"`
+	Msg  string                     `json:"msg"`
+}
+
+// QQOfficialGroupSuccessCode defines model for QQOfficialGroupSuccess.Code.
+type QQOfficialGroupSuccessCode int
+
+// QQOfficialGroupUpdate defines model for QQOfficialGroupUpdate.
+type QQOfficialGroupUpdate struct {
+	Alias           *string `json:"alias,omitempty"`
+	ApprovalEnabled *bool   `json:"approval_enabled,omitempty"`
+	Authorized      *bool   `json:"authorized,omitempty"`
+
+	// FleetCorporationID Explicit local corporation target; zero clears it.
+	FleetCorporationID  *int64 `json:"fleet_corporation_id,omitempty"`
+	NotificationEnabled *bool  `json:"notification_enabled,omitempty"`
+
+	// StructureCorporationID Explicit local corporation target; zero clears it.
+	StructureCorporationID *int64 `json:"structure_corporation_id,omitempty"`
+}
+
+// QQOfficialGroupVerifyInput defines model for QQOfficialGroupVerifyInput.
+type QQOfficialGroupVerifyInput struct {
+	// GroupOpenID Write-only upstream group identifier for this verification. Never returned.
+	GroupOpenID    string `binding:"required,min=16,max=128" json:"group_openid"`
+	IdempotencyKey string `binding:"required,uuid" json:"idempotency_key"`
+}
+
+// QQOfficialJoinDecision defines model for QQOfficialJoinDecision.
+type QQOfficialJoinDecision string
+
+// QQOfficialJoinDecisionInput defines model for QQOfficialJoinDecisionInput.
+type QQOfficialJoinDecisionInput struct {
+	Decision       QQOfficialJoinDecision `json:"decision"`
+	IdempotencyKey string                 `binding:"required,uuid" json:"idempotency_key"`
+}
+
+// QQOfficialJoinRequest defines model for QQOfficialJoinRequest.
+type QQOfficialJoinRequest struct {
+	AppliedAt time.Time                   `json:"applied_at"`
+	ExpiresAt time.Time                   `json:"expires_at"`
+	GroupID   string                      `json:"group_id"`
+	Id        string                      `json:"id"`
+	Status    QQOfficialJoinRequestStatus `json:"status"`
+	TaskID    *string                     `json:"task_id,omitempty"`
+	Username  string                      `json:"username"`
+}
+
+// QQOfficialJoinRequestPage defines model for QQOfficialJoinRequestPage.
+type QQOfficialJoinRequestPage struct {
+	List     []QQOfficialJoinRequest `json:"list"`
+	Page     int                     `json:"page"`
+	PageSize int                     `json:"pageSize"`
+	Total    int64                   `json:"total"`
+}
+
+// QQOfficialJoinRequestPageSuccess defines model for QQOfficialJoinRequestPageSuccess.
+type QQOfficialJoinRequestPageSuccess struct {
+	Code QQOfficialJoinRequestPageSuccessCode `json:"code"`
+	Data QQOfficialJoinRequestPage            `json:"data"`
+	Msg  string                               `json:"msg"`
+}
+
+// QQOfficialJoinRequestPageSuccessCode defines model for QQOfficialJoinRequestPageSuccess.Code.
+type QQOfficialJoinRequestPageSuccessCode int
+
+// QQOfficialJoinRequestStatus defines model for QQOfficialJoinRequestStatus.
+type QQOfficialJoinRequestStatus string
+
+// QQOfficialPushState defines model for QQOfficialPushState.
+type QQOfficialPushState string
+
+// QQOfficialSettings Update only the supplied settings. Supplying a new AppID requires an AppSecret. Saving new credentials disables delivery and approval writes; enable them separately after verifying setup.
+type QQOfficialSettings struct {
+	AppID *string `json:"app_id,omitempty"`
+
+	// AppSecret Omit to keep the current secret for the same AppID.
+	AppSecret *string `json:"app_secret,omitempty"`
+
+	// ApprovalWritesEnabled Global opt-in for human join decisions. Turning off cancels queued decisions.
+	ApprovalWritesEnabled *bool `json:"approval_writes_enabled,omitempty"`
+	Certified             *bool `json:"certified,omitempty"`
+	Enabled               *bool `json:"enabled,omitempty"`
+	Paused                *bool `json:"paused,omitempty"`
+}
+
+// QQOfficialStatus defines model for QQOfficialStatus.
+type QQOfficialStatus struct {
+	// AppID Current configured AppID; omitted before setup.
+	AppID                 *string `json:"app_id,omitempty"`
+	ApprovalWritesEnabled bool    `json:"approval_writes_enabled"`
+	AttemptsLastMinute    int     `json:"attempts_last_minute"`
+	Certified             bool    `json:"certified"`
+
+	// Configured Whether the stored credentials are usable.
+	Configured bool                 `json:"configured"`
+	Cooldowns  []QQOfficialCooldown `json:"cooldowns"`
+	Enabled    bool                 `json:"enabled"`
+
+	// GatewayState Current Tencent QQ WebSocket gateway state.
+	GatewayState QQOfficialStatusGatewayState `json:"gateway_state"`
+
+	// HasAppSecret Whether an encrypted secret is stored. The secret is never returned.
+	HasAppSecret bool `json:"has_app_secret"`
+
+	// LastEventAt Time when the most recent new group event was committed.
+	LastEventAt        *time.Time `json:"last_event_at,omitempty"`
+	MessageBudget      int        `json:"message_budget"`
+	MessagesLastMinute int        `json:"messages_last_minute"`
+	NextRequestAt      *time.Time `json:"next_request_at,omitempty"`
+	OldestQueuedAt     *time.Time `json:"oldest_queued_at,omitempty"`
+	Paused             bool       `json:"paused"`
+	QueueDepth         int        `json:"queue_depth"`
+	TokenState         string     `json:"token_state"`
+}
+
+// QQOfficialStatusGatewayState Current Tencent QQ WebSocket gateway state.
+type QQOfficialStatusGatewayState string
+
+// QQOfficialStatusSuccess defines model for QQOfficialStatusSuccess.
+type QQOfficialStatusSuccess struct {
+	Code QQOfficialStatusSuccessCode `json:"code"`
+	Data QQOfficialStatus            `json:"data"`
+	Msg  string                      `json:"msg"`
+}
+
+// QQOfficialStatusSuccessCode defines model for QQOfficialStatusSuccess.Code.
+type QQOfficialStatusSuccessCode int
+
+// QQOfficialTask defines model for QQOfficialTask.
+type QQOfficialTask struct {
+	CreatedAt  time.Time  `json:"created_at"`
+	ExpiresAt  time.Time  `json:"expires_at"`
+	FinishedAt *time.Time `json:"finished_at,omitempty"`
+	GroupID    *string    `json:"group_id,omitempty"`
+	Id         string     `json:"id"`
+	Kind       string     `json:"kind"`
+	NextRunAt  time.Time  `json:"next_run_at"`
+
+	// Reason Redacted reason code, not upstream error text.
+	Reason       *string `json:"reason,omitempty"`
+	Source       string  `json:"source"`
+	Status       string  `json:"status"`
+	TraceID      *string `json:"trace_id,omitempty"`
+	UpstreamCode *int    `json:"upstream_code,omitempty"`
+}
+
+// QQOfficialTaskAccepted defines model for QQOfficialTaskAccepted.
+type QQOfficialTaskAccepted struct {
+	Code QQOfficialTaskAcceptedCode `json:"code"`
+	Data QQOfficialTaskReceipt      `json:"data"`
+	Msg  string                     `json:"msg"`
+}
+
+// QQOfficialTaskAcceptedCode defines model for QQOfficialTaskAccepted.Code.
+type QQOfficialTaskAcceptedCode int
+
+// QQOfficialTaskAttempt defines model for QQOfficialTaskAttempt.
+type QQOfficialTaskAttempt struct {
+	At         time.Time  `json:"at"`
+	FinishedAt *time.Time `json:"finished_at,omitempty"`
+	HTTPStatus *int       `json:"http_status,omitempty"`
+
+	// Outcome Redacted outcome code, not an upstream response body.
+	Outcome      *string `json:"outcome,omitempty"`
+	PlatformCode *int    `json:"platform_code,omitempty"`
+	TraceID      *string `json:"trace_id,omitempty"`
+}
+
+// QQOfficialTaskDetail defines model for QQOfficialTaskDetail.
+type QQOfficialTaskDetail struct {
+	Attempts   []QQOfficialTaskAttempt `json:"attempts"`
+	CreatedAt  time.Time               `json:"created_at"`
+	ExpiresAt  time.Time               `json:"expires_at"`
+	FinishedAt *time.Time              `json:"finished_at,omitempty"`
+	GroupID    *string                 `json:"group_id,omitempty"`
+	Id         string                  `json:"id"`
+	Kind       string                  `json:"kind"`
+	NextRunAt  time.Time               `json:"next_run_at"`
+
+	// Reason Redacted reason code, not upstream error text.
+	Reason       *string `json:"reason,omitempty"`
+	Source       string  `json:"source"`
+	Status       string  `json:"status"`
+	TraceID      *string `json:"trace_id,omitempty"`
+	UpstreamCode *int    `json:"upstream_code,omitempty"`
+}
+
+// QQOfficialTaskDetailSuccess defines model for QQOfficialTaskDetailSuccess.
+type QQOfficialTaskDetailSuccess struct {
+	Code QQOfficialTaskDetailSuccessCode `json:"code"`
+	Data QQOfficialTaskDetail            `json:"data"`
+	Msg  string                          `json:"msg"`
+}
+
+// QQOfficialTaskDetailSuccessCode defines model for QQOfficialTaskDetailSuccess.Code.
+type QQOfficialTaskDetailSuccessCode int
+
+// QQOfficialTaskPage defines model for QQOfficialTaskPage.
+type QQOfficialTaskPage struct {
+	List     []QQOfficialTask `json:"list"`
+	Page     int              `json:"page"`
+	PageSize int              `json:"pageSize"`
+	Total    int64            `json:"total"`
+}
+
+// QQOfficialTaskPageSuccess defines model for QQOfficialTaskPageSuccess.
+type QQOfficialTaskPageSuccess struct {
+	Code QQOfficialTaskPageSuccessCode `json:"code"`
+	Data QQOfficialTaskPage            `json:"data"`
+	Msg  string                        `json:"msg"`
+}
+
+// QQOfficialTaskPageSuccessCode defines model for QQOfficialTaskPageSuccess.Code.
+type QQOfficialTaskPageSuccessCode int
+
+// QQOfficialTaskReceipt defines model for QQOfficialTaskReceipt.
+type QQOfficialTaskReceipt struct {
+	ExpiresAt time.Time `json:"expires_at"`
+	Status    string    `json:"status"`
+	TaskID    string    `json:"task_id"`
+}
 
 // SalarySettings defines model for SalarySettings.
 type SalarySettings struct {
@@ -7852,6 +8298,18 @@ type WelfareUpdateInput struct {
 // AnnouncementID defines model for AnnouncementID.
 type AnnouncementID = uint
 
+// QQOfficialCurrent defines model for QQOfficialCurrent.
+type QQOfficialCurrent = int
+
+// QQOfficialLedgerSize defines model for QQOfficialLedgerSize.
+type QQOfficialLedgerSize = int
+
+// QQOfficialLocalID defines model for QQOfficialLocalID.
+type QQOfficialLocalID = string
+
+// QQOfficialSize defines model for QQOfficialSize.
+type QQOfficialSize = int
+
 // AdminAlliancePAPMessageResult defines model for AdminAlliancePAPMessageResult.
 type AdminAlliancePAPMessageResult struct {
 	union json.RawMessage
@@ -8155,6 +8613,30 @@ type PapExchangeResult struct {
 	union json.RawMessage
 }
 
+// QQOfficialAccepted defines model for QQOfficialAccepted.
+type QQOfficialAccepted = QQOfficialTaskAccepted
+
+// QQOfficialBadRequest defines model for QQOfficialBadRequest.
+type QQOfficialBadRequest = QQOfficialError
+
+// QQOfficialConflict defines model for QQOfficialConflict.
+type QQOfficialConflict = QQOfficialError
+
+// QQOfficialNotFound defines model for QQOfficialNotFound.
+type QQOfficialNotFound = QQOfficialError
+
+// QQOfficialRateLimited defines model for QQOfficialRateLimited.
+type QQOfficialRateLimited = QQOfficialError
+
+// QQOfficialStatusResult defines model for QQOfficialStatusResult.
+type QQOfficialStatusResult = QQOfficialStatusSuccess
+
+// QQOfficialTaskResult defines model for QQOfficialTaskResult.
+type QQOfficialTaskResult = QQOfficialTaskDetailSuccess
+
+// QQOfficialUnavailable defines model for QQOfficialUnavailable.
+type QQOfficialUnavailable = QQOfficialError
+
 // SalarySettingsResult defines model for SalarySettingsResult.
 type SalarySettingsResult struct {
 	union json.RawMessage
@@ -8443,6 +8925,12 @@ type GetMembersWithPapParams struct {
 	Size *int `form:"size,omitempty" json:"size,omitempty"`
 }
 
+// ListFleetQQPingResultsParams defines parameters for ListFleetQQPingResults.
+type ListFleetQQPingResultsParams struct {
+	Current *int `form:"current,omitempty" json:"current,omitempty"`
+	Size    *int `form:"size,omitempty" json:"size,omitempty"`
+}
+
 // ListPersonalSkillPlansParams defines parameters for ListPersonalSkillPlans.
 type ListPersonalSkillPlansParams struct {
 	Current *int `form:"current,omitempty" json:"current,omitempty"`
@@ -8691,6 +9179,37 @@ type GetAllAlliancePAPParams struct {
 	Month *int `form:"month,omitempty" json:"month,omitempty"`
 }
 
+// ListQQOfficialGroupsParams defines parameters for ListQQOfficialGroups.
+type ListQQOfficialGroupsParams struct {
+	Current *QQOfficialCurrent `form:"current,omitempty" json:"current,omitempty"`
+	Size    *QQOfficialSize    `form:"size,omitempty" json:"size,omitempty"`
+}
+
+// ListQQOfficialJoinRequestsParams defines parameters for ListQQOfficialJoinRequests.
+type ListQQOfficialJoinRequestsParams struct {
+	Current *QQOfficialCurrent           `form:"current,omitempty" json:"current,omitempty"`
+	Size    *QQOfficialLedgerSize        `form:"size,omitempty" json:"size,omitempty"`
+	Status  *QQOfficialJoinRequestStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// ListQQOfficialTasksParams defines parameters for ListQQOfficialTasks.
+type ListQQOfficialTasksParams struct {
+	Current *QQOfficialCurrent    `form:"current,omitempty" json:"current,omitempty"`
+	Size    *QQOfficialLedgerSize `form:"size,omitempty" json:"size,omitempty"`
+
+	// Status Exact ledger status.
+	Status *string `form:"status,omitempty" json:"status,omitempty"`
+
+	// Kind Exact task kind.
+	Kind *string `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// Source Exact task source.
+	Source *string `form:"source,omitempty" json:"source,omitempty"`
+
+	// GroupId Local group UUID.
+	GroupId *string `form:"group_id,omitempty" json:"group_id,omitempty"`
+}
+
 // AdminListTicketsParams defines parameters for AdminListTickets.
 type AdminListTicketsParams struct {
 	Current *int `form:"current,omitempty" json:"current,omitempty"`
@@ -8926,6 +9445,9 @@ type UpdateFleetJSONRequestBody = FleetUpdateInput
 // ManualAddMembersJSONRequestBody defines body for ManualAddMembers for application/json ContentType.
 type ManualAddMembersJSONRequestBody = FleetManualAddInput
 
+// SendFleetQQPingJSONRequestBody defines body for SendFleetQQPing for application/json ContentType.
+type SendFleetQQPingJSONRequestBody = FleetQQPingInput
+
 // SubmitRecruitQQJSONRequestBody defines body for SubmitRecruitQQ for application/json ContentType.
 type SubmitRecruitQQJSONRequestBody = NewbroQQInput
 
@@ -9093,6 +9615,24 @@ type ImportAlliancePAPJSONRequestBody = AdminAlliancePAPImportInput
 
 // SettleMonthJSONRequestBody defines body for SettleMonth for application/json ContentType.
 type SettleMonthJSONRequestBody = AdminAlliancePAPSettleInput
+
+// VerifyQQOfficialGroupJSONRequestBody defines body for VerifyQQOfficialGroup for application/json ContentType.
+type VerifyQQOfficialGroupJSONRequestBody = QQOfficialGroupVerifyInput
+
+// UpdateQQOfficialGroupJSONRequestBody defines body for UpdateQQOfficialGroup for application/json ContentType.
+type UpdateQQOfficialGroupJSONRequestBody = QQOfficialGroupUpdate
+
+// RefreshQQOfficialJoinRequestsJSONRequestBody defines body for RefreshQQOfficialJoinRequests for application/json ContentType.
+type RefreshQQOfficialJoinRequestsJSONRequestBody = QQOfficialEnqueueInput
+
+// TestQQOfficialGroupJSONRequestBody defines body for TestQQOfficialGroup for application/json ContentType.
+type TestQQOfficialGroupJSONRequestBody = QQOfficialEnqueueInput
+
+// DecideQQOfficialJoinRequestJSONRequestBody defines body for DecideQQOfficialJoinRequest for application/json ContentType.
+type DecideQQOfficialJoinRequestJSONRequestBody = QQOfficialJoinDecisionInput
+
+// UpdateQQOfficialSettingsJSONRequestBody defines body for UpdateQQOfficialSettings for application/json ContentType.
+type UpdateQQOfficialSettingsJSONRequestBody = QQOfficialSettings
 
 // UpdateSalarySettingsJSONRequestBody defines body for UpdateSalarySettings for application/json ContentType.
 type UpdateSalarySettingsJSONRequestBody = SalarySettingsInput
@@ -14682,6 +15222,12 @@ type ServerInterface interface {
 	// (POST /operation/fleets/{id}/ping)
 	PingFleet(c *gin.Context, id string)
 
+	// (GET /operation/fleets/{id}/qq-ping)
+	ListFleetQQPingResults(c *gin.Context, id string, params ListFleetQQPingResultsParams)
+
+	// (POST /operation/fleets/{id}/qq-ping)
+	SendFleetQQPing(c *gin.Context, id string)
+
 	// (POST /operation/fleets/{id}/refresh-esi)
 	RefreshFleetESI(c *gin.Context, id string)
 
@@ -15035,6 +15581,42 @@ type ServerInterface interface {
 
 	// (POST /system/pap/settle)
 	SettleMonth(c *gin.Context)
+
+	// (GET /system/qq-official/groups)
+	ListQQOfficialGroups(c *gin.Context, params ListQQOfficialGroupsParams)
+
+	// (POST /system/qq-official/groups/verify)
+	VerifyQQOfficialGroup(c *gin.Context)
+
+	// (PATCH /system/qq-official/groups/{id})
+	UpdateQQOfficialGroup(c *gin.Context, id QQOfficialLocalID)
+
+	// (GET /system/qq-official/groups/{id}/join-requests)
+	ListQQOfficialJoinRequests(c *gin.Context, id QQOfficialLocalID, params ListQQOfficialJoinRequestsParams)
+
+	// (POST /system/qq-official/groups/{id}/join-requests/refresh)
+	RefreshQQOfficialJoinRequests(c *gin.Context, id QQOfficialLocalID)
+
+	// (POST /system/qq-official/groups/{id}/test-message)
+	TestQQOfficialGroup(c *gin.Context, id QQOfficialLocalID)
+
+	// (POST /system/qq-official/join-requests/{id}/decision)
+	DecideQQOfficialJoinRequest(c *gin.Context, id QQOfficialLocalID)
+
+	// (PUT /system/qq-official/settings)
+	UpdateQQOfficialSettings(c *gin.Context)
+
+	// (GET /system/qq-official/status)
+	GetQQOfficialStatus(c *gin.Context)
+
+	// (GET /system/qq-official/tasks)
+	ListQQOfficialTasks(c *gin.Context, params ListQQOfficialTasksParams)
+
+	// (GET /system/qq-official/tasks/{id})
+	GetQQOfficialTask(c *gin.Context, id QQOfficialLocalID)
+
+	// (POST /system/qq-official/tasks/{id}/cancel)
+	CancelQQOfficialTask(c *gin.Context, id QQOfficialLocalID)
 
 	// (GET /system/role/definitions)
 	ListRoleDefinitions(c *gin.Context)
@@ -18656,6 +19238,111 @@ func (siw *ServerInterfaceWrapper) PingFleet(c *gin.Context) {
 	c.Set(QueryTokenScopes, []string{})
 
 	siw.Handler.PingFleet(c, id)
+}
+
+// ListFleetQQPingResults operation middleware
+func (siw *ServerInterfaceWrapper) ListFleetQQPingResults(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.reportParameterError(c, "listFleetQQPingResults", "path", "id", fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListFleetQQPingResultsParams
+
+	// ------------- Optional query parameter "current" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["current"]; len(values) > 0 {
+
+			if values[0] == "" {
+				delete(query, "current")
+			} else {
+				query["current"] = values[:1]
+			}
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "current", query, &params.Current)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listFleetQQPingResults", "query", "current", fmt.Errorf("Invalid format for parameter current: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *int
+			params.Current = zero
+
+		}
+	}
+
+	// ------------- Optional query parameter "size" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["size"]; len(values) > 0 {
+
+			if values[0] == "" {
+				delete(query, "size")
+			} else {
+				query["size"] = values[:1]
+			}
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "size", query, &params.Size)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listFleetQQPingResults", "query", "size", fmt.Errorf("Invalid format for parameter size: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *int
+			params.Size = zero
+
+		}
+	}
+
+	siw.Handler.ListFleetQQPingResults(c, id, params)
+}
+
+// SendFleetQQPing operation middleware
+func (siw *ServerInterfaceWrapper) SendFleetQQPing(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.reportParameterError(c, "sendFleetQQPing", "path", "id", fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	siw.Handler.SendFleetQQPing(c, id)
 }
 
 // RefreshFleetESI operation middleware
@@ -22374,6 +23061,526 @@ func (siw *ServerInterfaceWrapper) SettleMonth(c *gin.Context) {
 	siw.Handler.SettleMonth(c)
 }
 
+// ListQQOfficialGroups operation middleware
+func (siw *ServerInterfaceWrapper) ListQQOfficialGroups(c *gin.Context) {
+
+	var err error
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListQQOfficialGroupsParams
+
+	// ------------- Optional query parameter "current" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["current"]; len(values) > 0 {
+
+			if values[0] == "" {
+				delete(query, "current")
+			} else {
+				query["current"] = values[:1]
+			}
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "current", query, &params.Current)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialGroups", "query", "current", fmt.Errorf("Invalid format for parameter current: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *QQOfficialCurrent
+			params.Current = zero
+
+		}
+	}
+
+	// ------------- Optional query parameter "size" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["size"]; len(values) > 0 {
+
+			if values[0] == "" {
+				delete(query, "size")
+			} else {
+				query["size"] = values[:1]
+			}
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "size", query, &params.Size)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialGroups", "query", "size", fmt.Errorf("Invalid format for parameter size: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *QQOfficialSize
+			params.Size = zero
+
+		}
+	}
+
+	siw.Handler.ListQQOfficialGroups(c, params)
+}
+
+// VerifyQQOfficialGroup operation middleware
+func (siw *ServerInterfaceWrapper) VerifyQQOfficialGroup(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	siw.Handler.VerifyQQOfficialGroup(c)
+}
+
+// UpdateQQOfficialGroup operation middleware
+func (siw *ServerInterfaceWrapper) UpdateQQOfficialGroup(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id QQOfficialLocalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.reportParameterError(c, "updateQQOfficialGroup", "path", "id", fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	siw.Handler.UpdateQQOfficialGroup(c, id)
+}
+
+// ListQQOfficialJoinRequests operation middleware
+func (siw *ServerInterfaceWrapper) ListQQOfficialJoinRequests(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id QQOfficialLocalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.reportParameterError(c, "listQQOfficialJoinRequests", "path", "id", fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListQQOfficialJoinRequestsParams
+
+	// ------------- Optional query parameter "current" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["current"]; len(values) > 0 {
+
+			if values[0] == "" {
+				delete(query, "current")
+			} else {
+				query["current"] = values[:1]
+			}
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "current", query, &params.Current)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialJoinRequests", "query", "current", fmt.Errorf("Invalid format for parameter current: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *QQOfficialCurrent
+			params.Current = zero
+
+		}
+	}
+
+	// ------------- Optional query parameter "size" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["size"]; len(values) > 0 {
+
+			if values[0] == "" {
+				delete(query, "size")
+			} else {
+				query["size"] = values[:1]
+			}
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "size", query, &params.Size)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialJoinRequests", "query", "size", fmt.Errorf("Invalid format for parameter size: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *QQOfficialLedgerSize
+			params.Size = zero
+
+		}
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["status"]; len(values) > 0 {
+
+			query["status"] = values[:1]
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "status", query, &params.Status)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialJoinRequests", "query", "status", fmt.Errorf("Invalid format for parameter status: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *QQOfficialJoinRequestStatus
+			params.Status = zero
+
+		}
+	}
+
+	siw.Handler.ListQQOfficialJoinRequests(c, id, params)
+}
+
+// RefreshQQOfficialJoinRequests operation middleware
+func (siw *ServerInterfaceWrapper) RefreshQQOfficialJoinRequests(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id QQOfficialLocalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.reportParameterError(c, "refreshQQOfficialJoinRequests", "path", "id", fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	siw.Handler.RefreshQQOfficialJoinRequests(c, id)
+}
+
+// TestQQOfficialGroup operation middleware
+func (siw *ServerInterfaceWrapper) TestQQOfficialGroup(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id QQOfficialLocalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.reportParameterError(c, "testQQOfficialGroup", "path", "id", fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	siw.Handler.TestQQOfficialGroup(c, id)
+}
+
+// DecideQQOfficialJoinRequest operation middleware
+func (siw *ServerInterfaceWrapper) DecideQQOfficialJoinRequest(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id QQOfficialLocalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.reportParameterError(c, "decideQQOfficialJoinRequest", "path", "id", fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	siw.Handler.DecideQQOfficialJoinRequest(c, id)
+}
+
+// UpdateQQOfficialSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateQQOfficialSettings(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	siw.Handler.UpdateQQOfficialSettings(c)
+}
+
+// GetQQOfficialStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetQQOfficialStatus(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	siw.Handler.GetQQOfficialStatus(c)
+}
+
+// ListQQOfficialTasks operation middleware
+func (siw *ServerInterfaceWrapper) ListQQOfficialTasks(c *gin.Context) {
+
+	var err error
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListQQOfficialTasksParams
+
+	// ------------- Optional query parameter "current" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["current"]; len(values) > 0 {
+
+			if values[0] == "" {
+				delete(query, "current")
+			} else {
+				query["current"] = values[:1]
+			}
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "current", query, &params.Current)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialTasks", "query", "current", fmt.Errorf("Invalid format for parameter current: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *QQOfficialCurrent
+			params.Current = zero
+
+		}
+	}
+
+	// ------------- Optional query parameter "size" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["size"]; len(values) > 0 {
+
+			if values[0] == "" {
+				delete(query, "size")
+			} else {
+				query["size"] = values[:1]
+			}
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "size", query, &params.Size)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialTasks", "query", "size", fmt.Errorf("Invalid format for parameter size: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *QQOfficialLedgerSize
+			params.Size = zero
+
+		}
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["status"]; len(values) > 0 {
+
+			query["status"] = values[:1]
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "status", query, &params.Status)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialTasks", "query", "status", fmt.Errorf("Invalid format for parameter status: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *string
+			params.Status = zero
+
+		}
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["kind"]; len(values) > 0 {
+
+			query["kind"] = values[:1]
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "kind", query, &params.Kind)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialTasks", "query", "kind", fmt.Errorf("Invalid format for parameter kind: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *string
+			params.Kind = zero
+
+		}
+	}
+
+	// ------------- Optional query parameter "source" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["source"]; len(values) > 0 {
+
+			query["source"] = values[:1]
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "source", query, &params.Source)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialTasks", "query", "source", fmt.Errorf("Invalid format for parameter source: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *string
+			params.Source = zero
+
+		}
+	}
+
+	// ------------- Optional query parameter "group_id" -------------
+
+	{
+		query := c.Request.URL.Query()
+
+		// Match Gin's first-value behavior for scalars without truncating arrays.
+		if values := query["group_id"]; len(values) > 0 {
+
+			query["group_id"] = values[:1]
+
+		}
+
+		fallback := false
+
+		err = runtime.BindQueryParameter("form", true, false, "group_id", query, &params.GroupId)
+		if err != nil {
+			if !fallback {
+				siw.reportParameterError(c, "listQQOfficialTasks", "query", "group_id", fmt.Errorf("Invalid format for parameter group_id: %w", err), http.StatusBadRequest)
+				return
+			}
+			var zero *string
+			params.GroupId = zero
+
+		}
+	}
+
+	siw.Handler.ListQQOfficialTasks(c, params)
+}
+
+// GetQQOfficialTask operation middleware
+func (siw *ServerInterfaceWrapper) GetQQOfficialTask(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id QQOfficialLocalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.reportParameterError(c, "getQQOfficialTask", "path", "id", fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	siw.Handler.GetQQOfficialTask(c, id)
+}
+
+// CancelQQOfficialTask operation middleware
+func (siw *ServerInterfaceWrapper) CancelQQOfficialTask(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id QQOfficialLocalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.reportParameterError(c, "cancelQQOfficialTask", "path", "id", fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	c.Set(QueryTokenScopes, []string{})
+
+	siw.Handler.CancelQQOfficialTask(c, id)
+}
+
 // ListRoleDefinitions operation middleware
 func (siw *ServerInterfaceWrapper) ListRoleDefinitions(c *gin.Context) {
 
@@ -24397,6 +25604,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/operation/fleets/:id/pap", handlers("getPapLogs", []string{"jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"}, wrapper.GetPapLogs)...)
 	router.POST(options.BaseURL+"/operation/fleets/:id/pap", handlers("issuePap", []string{"jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"}, wrapper.IssuePap)...)
 	router.POST(options.BaseURL+"/operation/fleets/:id/ping", handlers("pingFleet", []string{"jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"}, wrapper.PingFleet)...)
+	router.GET(options.BaseURL+"/operation/fleets/:id/qq-ping", handlers("listFleetQQPingResults", []string{"jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"}, wrapper.ListFleetQQPingResults)...)
+	router.POST(options.BaseURL+"/operation/fleets/:id/qq-ping", handlers("sendFleetQQPing", []string{"jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"}, wrapper.SendFleetQQPing)...)
 	router.POST(options.BaseURL+"/operation/fleets/:id/refresh-esi", handlers("refreshFleetESI", []string{"jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"}, wrapper.RefreshFleetESI)...)
 	router.POST(options.BaseURL+"/recruit/:code/submit", handlers("submitRecruitQQ", []string{}, wrapper.SubmitRecruitQQ)...)
 	router.POST(options.BaseURL+"/sde/names", handlers("getSdeNames", []string{}, wrapper.GetSdeNames)...)
@@ -24515,6 +25724,18 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/system/pap/fetch", handlers("triggerFetch", []string{"jwt", "login", "role:admin", "cap:system.manage"}, wrapper.TriggerFetch)...)
 	router.POST(options.BaseURL+"/system/pap/import", handlers("importAlliancePAP", []string{"jwt", "login", "role:admin", "cap:system.manage"}, wrapper.ImportAlliancePAP)...)
 	router.POST(options.BaseURL+"/system/pap/settle", handlers("settleMonth", []string{"jwt", "login", "role:admin", "cap:system.manage"}, wrapper.SettleMonth)...)
+	router.GET(options.BaseURL+"/system/qq-official/groups", handlers("listQQOfficialGroups", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.ListQQOfficialGroups)...)
+	router.POST(options.BaseURL+"/system/qq-official/groups/verify", handlers("verifyQQOfficialGroup", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.VerifyQQOfficialGroup)...)
+	router.PATCH(options.BaseURL+"/system/qq-official/groups/:id", handlers("updateQQOfficialGroup", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.UpdateQQOfficialGroup)...)
+	router.GET(options.BaseURL+"/system/qq-official/groups/:id/join-requests", handlers("listQQOfficialJoinRequests", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.ListQQOfficialJoinRequests)...)
+	router.POST(options.BaseURL+"/system/qq-official/groups/:id/join-requests/refresh", handlers("refreshQQOfficialJoinRequests", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.RefreshQQOfficialJoinRequests)...)
+	router.POST(options.BaseURL+"/system/qq-official/groups/:id/test-message", handlers("testQQOfficialGroup", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.TestQQOfficialGroup)...)
+	router.POST(options.BaseURL+"/system/qq-official/join-requests/:id/decision", handlers("decideQQOfficialJoinRequest", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.DecideQQOfficialJoinRequest)...)
+	router.PUT(options.BaseURL+"/system/qq-official/settings", handlers("updateQQOfficialSettings", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.UpdateQQOfficialSettings)...)
+	router.GET(options.BaseURL+"/system/qq-official/status", handlers("getQQOfficialStatus", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.GetQQOfficialStatus)...)
+	router.GET(options.BaseURL+"/system/qq-official/tasks", handlers("listQQOfficialTasks", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.ListQQOfficialTasks)...)
+	router.GET(options.BaseURL+"/system/qq-official/tasks/:id", handlers("getQQOfficialTask", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.GetQQOfficialTask)...)
+	router.POST(options.BaseURL+"/system/qq-official/tasks/:id/cancel", handlers("cancelQQOfficialTask", []string{"jwt", "login", "role:super_admin", "cap:system.manage"}, wrapper.CancelQQOfficialTask)...)
 	router.GET(options.BaseURL+"/system/role/definitions", handlers("listRoleDefinitions", []string{"jwt", "login", "role:admin", "cap:system.manage"}, wrapper.ListRoleDefinitions)...)
 	router.GET(options.BaseURL+"/system/salary-settings", handlers("getSalarySettings", []string{"jwt", "login", "role:admin", "cap:system.manage", "role:admin,super_admin"}, wrapper.GetSalarySettings)...)
 	router.PUT(options.BaseURL+"/system/salary-settings", handlers("updateSalarySettings", []string{"jwt", "login", "role:admin", "cap:system.manage", "role:admin,super_admin"}, wrapper.UpdateSalarySettings)...)
@@ -24837,6 +26058,22 @@ type MyFleetPapLogListResultJSONResponse struct {
 type PapExchangeResultJSONResponse struct {
 	union json.RawMessage
 }
+
+type QQOfficialAcceptedJSONResponse QQOfficialTaskAccepted
+
+type QQOfficialBadRequestJSONResponse QQOfficialError
+
+type QQOfficialConflictJSONResponse QQOfficialError
+
+type QQOfficialNotFoundJSONResponse QQOfficialError
+
+type QQOfficialRateLimitedJSONResponse QQOfficialError
+
+type QQOfficialStatusResultJSONResponse QQOfficialStatusSuccess
+
+type QQOfficialTaskResultJSONResponse QQOfficialTaskDetailSuccess
+
+type QQOfficialUnavailableJSONResponse QQOfficialError
 
 type SalarySettingsResultJSONResponse struct {
 	union json.RawMessage
@@ -28683,6 +29920,37 @@ func (response CreateFleet403JSONResponse) VisitCreateFleetResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CreateFleet409JSONResponse struct{ QQOfficialConflictJSONResponse }
+
+func (response CreateFleet409JSONResponse) VisitCreateFleetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateFleet429JSONResponse struct {
+	QQOfficialRateLimitedJSONResponse
+}
+
+func (response CreateFleet429JSONResponse) VisitCreateFleetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateFleet503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response CreateFleet503JSONResponse) VisitCreateFleetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetCharacterFleetInfoRequestObject struct {
 	CharacterId int64 `json:"character_id"`
 }
@@ -29365,6 +30633,160 @@ type PingFleet403JSONResponse struct{ ForbiddenJSONResponse }
 func (response PingFleet403JSONResponse) VisitPingFleetResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListFleetQQPingResultsRequestObject struct {
+	Id     string `json:"id"`
+	Params ListFleetQQPingResultsParams
+}
+
+type ListFleetQQPingResultsResponseObject interface {
+	VisitListFleetQQPingResultsResponse(w http.ResponseWriter) error
+}
+
+type ListFleetQQPingResults200JSONResponse FleetQQPingPageSuccess
+
+func (response ListFleetQQPingResults200JSONResponse) VisitListFleetQQPingResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListFleetQQPingResults400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response ListFleetQQPingResults400JSONResponse) VisitListFleetQQPingResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListFleetQQPingResults401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListFleetQQPingResults401JSONResponse) VisitListFleetQQPingResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListFleetQQPingResults403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListFleetQQPingResults403JSONResponse) VisitListFleetQQPingResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListFleetQQPingResults404JSONResponse struct{ QQOfficialNotFoundJSONResponse }
+
+func (response ListFleetQQPingResults404JSONResponse) VisitListFleetQQPingResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListFleetQQPingResults503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response ListFleetQQPingResults503JSONResponse) VisitListFleetQQPingResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SendFleetQQPingRequestObject struct {
+	Id   string `json:"id"`
+	Body *SendFleetQQPingJSONRequestBody
+}
+
+type SendFleetQQPingResponseObject interface {
+	VisitSendFleetQQPingResponse(w http.ResponseWriter) error
+}
+
+type SendFleetQQPing202JSONResponse FleetQQPingAccepted
+
+func (response SendFleetQQPing202JSONResponse) VisitSendFleetQQPingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SendFleetQQPing400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response SendFleetQQPing400JSONResponse) VisitSendFleetQQPingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SendFleetQQPing401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SendFleetQQPing401JSONResponse) VisitSendFleetQQPingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SendFleetQQPing403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SendFleetQQPing403JSONResponse) VisitSendFleetQQPingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SendFleetQQPing404JSONResponse struct{ QQOfficialNotFoundJSONResponse }
+
+func (response SendFleetQQPing404JSONResponse) VisitSendFleetQQPingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SendFleetQQPing409JSONResponse struct{ QQOfficialConflictJSONResponse }
+
+func (response SendFleetQQPing409JSONResponse) VisitSendFleetQQPingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SendFleetQQPing429JSONResponse struct {
+	QQOfficialRateLimitedJSONResponse
+}
+
+func (response SendFleetQQPing429JSONResponse) VisitSendFleetQQPingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SendFleetQQPing503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response SendFleetQQPing503JSONResponse) VisitSendFleetQQPingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -33562,6 +34984,861 @@ func (response SettleMonth403JSONResponse) VisitSettleMonthResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListQQOfficialGroupsRequestObject struct {
+	Params ListQQOfficialGroupsParams
+}
+
+type ListQQOfficialGroupsResponseObject interface {
+	VisitListQQOfficialGroupsResponse(w http.ResponseWriter) error
+}
+
+type ListQQOfficialGroups200JSONResponse QQOfficialGroupPageSuccess
+
+func (response ListQQOfficialGroups200JSONResponse) VisitListQQOfficialGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialGroups400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response ListQQOfficialGroups400JSONResponse) VisitListQQOfficialGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialGroups401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListQQOfficialGroups401JSONResponse) VisitListQQOfficialGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialGroups403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListQQOfficialGroups403JSONResponse) VisitListQQOfficialGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialGroups503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response ListQQOfficialGroups503JSONResponse) VisitListQQOfficialGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type VerifyQQOfficialGroupRequestObject struct {
+	Body *VerifyQQOfficialGroupJSONRequestBody
+}
+
+type VerifyQQOfficialGroupResponseObject interface {
+	VisitVerifyQQOfficialGroupResponse(w http.ResponseWriter) error
+}
+
+type VerifyQQOfficialGroup202JSONResponse struct{ QQOfficialAcceptedJSONResponse }
+
+func (response VerifyQQOfficialGroup202JSONResponse) VisitVerifyQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type VerifyQQOfficialGroup400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response VerifyQQOfficialGroup400JSONResponse) VisitVerifyQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type VerifyQQOfficialGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response VerifyQQOfficialGroup401JSONResponse) VisitVerifyQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type VerifyQQOfficialGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response VerifyQQOfficialGroup403JSONResponse) VisitVerifyQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type VerifyQQOfficialGroup409JSONResponse struct{ QQOfficialConflictJSONResponse }
+
+func (response VerifyQQOfficialGroup409JSONResponse) VisitVerifyQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type VerifyQQOfficialGroup429JSONResponse struct {
+	QQOfficialRateLimitedJSONResponse
+}
+
+func (response VerifyQQOfficialGroup429JSONResponse) VisitVerifyQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type VerifyQQOfficialGroup503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response VerifyQQOfficialGroup503JSONResponse) VisitVerifyQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialGroupRequestObject struct {
+	Id   QQOfficialLocalID `json:"id"`
+	Body *UpdateQQOfficialGroupJSONRequestBody
+}
+
+type UpdateQQOfficialGroupResponseObject interface {
+	VisitUpdateQQOfficialGroupResponse(w http.ResponseWriter) error
+}
+
+type UpdateQQOfficialGroup200JSONResponse QQOfficialGroupSuccess
+
+func (response UpdateQQOfficialGroup200JSONResponse) VisitUpdateQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialGroup400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response UpdateQQOfficialGroup400JSONResponse) VisitUpdateQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateQQOfficialGroup401JSONResponse) VisitUpdateQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateQQOfficialGroup403JSONResponse) VisitUpdateQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialGroup404JSONResponse struct{ QQOfficialNotFoundJSONResponse }
+
+func (response UpdateQQOfficialGroup404JSONResponse) VisitUpdateQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialGroup409JSONResponse struct{ QQOfficialConflictJSONResponse }
+
+func (response UpdateQQOfficialGroup409JSONResponse) VisitUpdateQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialGroup503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response UpdateQQOfficialGroup503JSONResponse) VisitUpdateQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialJoinRequestsRequestObject struct {
+	Id     QQOfficialLocalID `json:"id"`
+	Params ListQQOfficialJoinRequestsParams
+}
+
+type ListQQOfficialJoinRequestsResponseObject interface {
+	VisitListQQOfficialJoinRequestsResponse(w http.ResponseWriter) error
+}
+
+type ListQQOfficialJoinRequests200JSONResponse QQOfficialJoinRequestPageSuccess
+
+func (response ListQQOfficialJoinRequests200JSONResponse) VisitListQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialJoinRequests400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response ListQQOfficialJoinRequests400JSONResponse) VisitListQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialJoinRequests401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListQQOfficialJoinRequests401JSONResponse) VisitListQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialJoinRequests403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListQQOfficialJoinRequests403JSONResponse) VisitListQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialJoinRequests404JSONResponse struct{ QQOfficialNotFoundJSONResponse }
+
+func (response ListQQOfficialJoinRequests404JSONResponse) VisitListQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialJoinRequests503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response ListQQOfficialJoinRequests503JSONResponse) VisitListQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RefreshQQOfficialJoinRequestsRequestObject struct {
+	Id   QQOfficialLocalID `json:"id"`
+	Body *RefreshQQOfficialJoinRequestsJSONRequestBody
+}
+
+type RefreshQQOfficialJoinRequestsResponseObject interface {
+	VisitRefreshQQOfficialJoinRequestsResponse(w http.ResponseWriter) error
+}
+
+type RefreshQQOfficialJoinRequests202JSONResponse struct{ QQOfficialAcceptedJSONResponse }
+
+func (response RefreshQQOfficialJoinRequests202JSONResponse) VisitRefreshQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RefreshQQOfficialJoinRequests400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response RefreshQQOfficialJoinRequests400JSONResponse) VisitRefreshQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RefreshQQOfficialJoinRequests401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RefreshQQOfficialJoinRequests401JSONResponse) VisitRefreshQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RefreshQQOfficialJoinRequests403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RefreshQQOfficialJoinRequests403JSONResponse) VisitRefreshQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RefreshQQOfficialJoinRequests404JSONResponse struct{ QQOfficialNotFoundJSONResponse }
+
+func (response RefreshQQOfficialJoinRequests404JSONResponse) VisitRefreshQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RefreshQQOfficialJoinRequests409JSONResponse struct{ QQOfficialConflictJSONResponse }
+
+func (response RefreshQQOfficialJoinRequests409JSONResponse) VisitRefreshQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RefreshQQOfficialJoinRequests429JSONResponse struct {
+	QQOfficialRateLimitedJSONResponse
+}
+
+func (response RefreshQQOfficialJoinRequests429JSONResponse) VisitRefreshQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RefreshQQOfficialJoinRequests503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response RefreshQQOfficialJoinRequests503JSONResponse) VisitRefreshQQOfficialJoinRequestsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type TestQQOfficialGroupRequestObject struct {
+	Id   QQOfficialLocalID `json:"id"`
+	Body *TestQQOfficialGroupJSONRequestBody
+}
+
+type TestQQOfficialGroupResponseObject interface {
+	VisitTestQQOfficialGroupResponse(w http.ResponseWriter) error
+}
+
+type TestQQOfficialGroup202JSONResponse struct{ QQOfficialAcceptedJSONResponse }
+
+func (response TestQQOfficialGroup202JSONResponse) VisitTestQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type TestQQOfficialGroup400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response TestQQOfficialGroup400JSONResponse) VisitTestQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type TestQQOfficialGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response TestQQOfficialGroup401JSONResponse) VisitTestQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type TestQQOfficialGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response TestQQOfficialGroup403JSONResponse) VisitTestQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type TestQQOfficialGroup404JSONResponse struct{ QQOfficialNotFoundJSONResponse }
+
+func (response TestQQOfficialGroup404JSONResponse) VisitTestQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type TestQQOfficialGroup409JSONResponse struct{ QQOfficialConflictJSONResponse }
+
+func (response TestQQOfficialGroup409JSONResponse) VisitTestQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type TestQQOfficialGroup429JSONResponse struct {
+	QQOfficialRateLimitedJSONResponse
+}
+
+func (response TestQQOfficialGroup429JSONResponse) VisitTestQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type TestQQOfficialGroup503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response TestQQOfficialGroup503JSONResponse) VisitTestQQOfficialGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DecideQQOfficialJoinRequestRequestObject struct {
+	Id   QQOfficialLocalID `json:"id"`
+	Body *DecideQQOfficialJoinRequestJSONRequestBody
+}
+
+type DecideQQOfficialJoinRequestResponseObject interface {
+	VisitDecideQQOfficialJoinRequestResponse(w http.ResponseWriter) error
+}
+
+type DecideQQOfficialJoinRequest202JSONResponse struct{ QQOfficialAcceptedJSONResponse }
+
+func (response DecideQQOfficialJoinRequest202JSONResponse) VisitDecideQQOfficialJoinRequestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DecideQQOfficialJoinRequest400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response DecideQQOfficialJoinRequest400JSONResponse) VisitDecideQQOfficialJoinRequestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DecideQQOfficialJoinRequest401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DecideQQOfficialJoinRequest401JSONResponse) VisitDecideQQOfficialJoinRequestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DecideQQOfficialJoinRequest403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DecideQQOfficialJoinRequest403JSONResponse) VisitDecideQQOfficialJoinRequestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DecideQQOfficialJoinRequest404JSONResponse struct{ QQOfficialNotFoundJSONResponse }
+
+func (response DecideQQOfficialJoinRequest404JSONResponse) VisitDecideQQOfficialJoinRequestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DecideQQOfficialJoinRequest409JSONResponse struct{ QQOfficialConflictJSONResponse }
+
+func (response DecideQQOfficialJoinRequest409JSONResponse) VisitDecideQQOfficialJoinRequestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DecideQQOfficialJoinRequest429JSONResponse struct {
+	QQOfficialRateLimitedJSONResponse
+}
+
+func (response DecideQQOfficialJoinRequest429JSONResponse) VisitDecideQQOfficialJoinRequestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DecideQQOfficialJoinRequest503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response DecideQQOfficialJoinRequest503JSONResponse) VisitDecideQQOfficialJoinRequestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialSettingsRequestObject struct {
+	Body *UpdateQQOfficialSettingsJSONRequestBody
+}
+
+type UpdateQQOfficialSettingsResponseObject interface {
+	VisitUpdateQQOfficialSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateQQOfficialSettings200JSONResponse struct {
+	QQOfficialStatusResultJSONResponse
+}
+
+func (response UpdateQQOfficialSettings200JSONResponse) VisitUpdateQQOfficialSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialSettings400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response UpdateQQOfficialSettings400JSONResponse) VisitUpdateQQOfficialSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialSettings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateQQOfficialSettings401JSONResponse) VisitUpdateQQOfficialSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialSettings403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateQQOfficialSettings403JSONResponse) VisitUpdateQQOfficialSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialSettings409JSONResponse struct{ QQOfficialConflictJSONResponse }
+
+func (response UpdateQQOfficialSettings409JSONResponse) VisitUpdateQQOfficialSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQQOfficialSettings503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response UpdateQQOfficialSettings503JSONResponse) VisitUpdateQQOfficialSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQQOfficialStatusRequestObject struct {
+}
+
+type GetQQOfficialStatusResponseObject interface {
+	VisitGetQQOfficialStatusResponse(w http.ResponseWriter) error
+}
+
+type GetQQOfficialStatus200JSONResponse struct {
+	QQOfficialStatusResultJSONResponse
+}
+
+func (response GetQQOfficialStatus200JSONResponse) VisitGetQQOfficialStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQQOfficialStatus401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetQQOfficialStatus401JSONResponse) VisitGetQQOfficialStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQQOfficialStatus403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetQQOfficialStatus403JSONResponse) VisitGetQQOfficialStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQQOfficialStatus503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response GetQQOfficialStatus503JSONResponse) VisitGetQQOfficialStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialTasksRequestObject struct {
+	Params ListQQOfficialTasksParams
+}
+
+type ListQQOfficialTasksResponseObject interface {
+	VisitListQQOfficialTasksResponse(w http.ResponseWriter) error
+}
+
+type ListQQOfficialTasks200JSONResponse QQOfficialTaskPageSuccess
+
+func (response ListQQOfficialTasks200JSONResponse) VisitListQQOfficialTasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialTasks400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response ListQQOfficialTasks400JSONResponse) VisitListQQOfficialTasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialTasks401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListQQOfficialTasks401JSONResponse) VisitListQQOfficialTasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialTasks403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListQQOfficialTasks403JSONResponse) VisitListQQOfficialTasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListQQOfficialTasks503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response ListQQOfficialTasks503JSONResponse) VisitListQQOfficialTasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQQOfficialTaskRequestObject struct {
+	Id QQOfficialLocalID `json:"id"`
+}
+
+type GetQQOfficialTaskResponseObject interface {
+	VisitGetQQOfficialTaskResponse(w http.ResponseWriter) error
+}
+
+type GetQQOfficialTask200JSONResponse struct {
+	QQOfficialTaskResultJSONResponse
+}
+
+func (response GetQQOfficialTask200JSONResponse) VisitGetQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQQOfficialTask400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response GetQQOfficialTask400JSONResponse) VisitGetQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQQOfficialTask401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetQQOfficialTask401JSONResponse) VisitGetQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQQOfficialTask403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetQQOfficialTask403JSONResponse) VisitGetQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQQOfficialTask404JSONResponse struct{ QQOfficialNotFoundJSONResponse }
+
+func (response GetQQOfficialTask404JSONResponse) VisitGetQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQQOfficialTask503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response GetQQOfficialTask503JSONResponse) VisitGetQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelQQOfficialTaskRequestObject struct {
+	Id QQOfficialLocalID `json:"id"`
+}
+
+type CancelQQOfficialTaskResponseObject interface {
+	VisitCancelQQOfficialTaskResponse(w http.ResponseWriter) error
+}
+
+type CancelQQOfficialTask200JSONResponse struct {
+	QQOfficialTaskResultJSONResponse
+}
+
+func (response CancelQQOfficialTask200JSONResponse) VisitCancelQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelQQOfficialTask400JSONResponse struct {
+	QQOfficialBadRequestJSONResponse
+}
+
+func (response CancelQQOfficialTask400JSONResponse) VisitCancelQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelQQOfficialTask401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CancelQQOfficialTask401JSONResponse) VisitCancelQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelQQOfficialTask403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelQQOfficialTask403JSONResponse) VisitCancelQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelQQOfficialTask404JSONResponse struct{ QQOfficialNotFoundJSONResponse }
+
+func (response CancelQQOfficialTask404JSONResponse) VisitCancelQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelQQOfficialTask409JSONResponse struct{ QQOfficialConflictJSONResponse }
+
+func (response CancelQQOfficialTask409JSONResponse) VisitCancelQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelQQOfficialTask503JSONResponse struct {
+	QQOfficialUnavailableJSONResponse
+}
+
+func (response CancelQQOfficialTask503JSONResponse) VisitCancelQQOfficialTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListRoleDefinitionsRequestObject struct {
 }
 
@@ -36831,6 +39108,12 @@ type StrictServerInterface interface {
 	// (POST /operation/fleets/{id}/ping)
 	PingFleet(ctx context.Context, request PingFleetRequestObject) (PingFleetResponseObject, error)
 
+	// (GET /operation/fleets/{id}/qq-ping)
+	ListFleetQQPingResults(ctx context.Context, request ListFleetQQPingResultsRequestObject) (ListFleetQQPingResultsResponseObject, error)
+
+	// (POST /operation/fleets/{id}/qq-ping)
+	SendFleetQQPing(ctx context.Context, request SendFleetQQPingRequestObject) (SendFleetQQPingResponseObject, error)
+
 	// (POST /operation/fleets/{id}/refresh-esi)
 	RefreshFleetESI(ctx context.Context, request RefreshFleetESIRequestObject) (RefreshFleetESIResponseObject, error)
 
@@ -37184,6 +39467,42 @@ type StrictServerInterface interface {
 
 	// (POST /system/pap/settle)
 	SettleMonth(ctx context.Context, request SettleMonthRequestObject) (SettleMonthResponseObject, error)
+
+	// (GET /system/qq-official/groups)
+	ListQQOfficialGroups(ctx context.Context, request ListQQOfficialGroupsRequestObject) (ListQQOfficialGroupsResponseObject, error)
+
+	// (POST /system/qq-official/groups/verify)
+	VerifyQQOfficialGroup(ctx context.Context, request VerifyQQOfficialGroupRequestObject) (VerifyQQOfficialGroupResponseObject, error)
+
+	// (PATCH /system/qq-official/groups/{id})
+	UpdateQQOfficialGroup(ctx context.Context, request UpdateQQOfficialGroupRequestObject) (UpdateQQOfficialGroupResponseObject, error)
+
+	// (GET /system/qq-official/groups/{id}/join-requests)
+	ListQQOfficialJoinRequests(ctx context.Context, request ListQQOfficialJoinRequestsRequestObject) (ListQQOfficialJoinRequestsResponseObject, error)
+
+	// (POST /system/qq-official/groups/{id}/join-requests/refresh)
+	RefreshQQOfficialJoinRequests(ctx context.Context, request RefreshQQOfficialJoinRequestsRequestObject) (RefreshQQOfficialJoinRequestsResponseObject, error)
+
+	// (POST /system/qq-official/groups/{id}/test-message)
+	TestQQOfficialGroup(ctx context.Context, request TestQQOfficialGroupRequestObject) (TestQQOfficialGroupResponseObject, error)
+
+	// (POST /system/qq-official/join-requests/{id}/decision)
+	DecideQQOfficialJoinRequest(ctx context.Context, request DecideQQOfficialJoinRequestRequestObject) (DecideQQOfficialJoinRequestResponseObject, error)
+
+	// (PUT /system/qq-official/settings)
+	UpdateQQOfficialSettings(ctx context.Context, request UpdateQQOfficialSettingsRequestObject) (UpdateQQOfficialSettingsResponseObject, error)
+
+	// (GET /system/qq-official/status)
+	GetQQOfficialStatus(ctx context.Context, request GetQQOfficialStatusRequestObject) (GetQQOfficialStatusResponseObject, error)
+
+	// (GET /system/qq-official/tasks)
+	ListQQOfficialTasks(ctx context.Context, request ListQQOfficialTasksRequestObject) (ListQQOfficialTasksResponseObject, error)
+
+	// (GET /system/qq-official/tasks/{id})
+	GetQQOfficialTask(ctx context.Context, request GetQQOfficialTaskRequestObject) (GetQQOfficialTaskResponseObject, error)
+
+	// (POST /system/qq-official/tasks/{id}/cancel)
+	CancelQQOfficialTask(ctx context.Context, request CancelQQOfficialTaskRequestObject) (CancelQQOfficialTaskResponseObject, error)
 
 	// (GET /system/role/definitions)
 	ListRoleDefinitions(ctx context.Context, request ListRoleDefinitionsRequestObject) (ListRoleDefinitionsResponseObject, error)
@@ -45079,6 +47398,98 @@ func (r *PingFleet200JSONResponse) FromBusinessError(value BusinessError) error 
 	return nil
 }
 
+// ListFleetQQPingResults adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) ListFleetQQPingResults(ctx *gin.Context, id string, params ListFleetQQPingResultsParams) {
+	var request ListFleetQQPingResultsRequestObject
+	request.Id = id
+	request.Params = params
+
+	result, err := sh.ssi.ListFleetQQPingResults(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "listFleetQQPingResults", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitListFleetQQPingResultsResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "listFleetQQPingResults", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "listFleetQQPingResults", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// SendFleetQQPing adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) SendFleetQQPing(ctx *gin.Context, id string) {
+	var request SendFleetQQPingRequestObject
+	request.Id = id
+
+	policy := StrictGinBindingPolicy{}
+	if ctx.Request.Body == nil || ctx.Request.Body == http.NoBody {
+
+		if !policy.AllowEmptyBody {
+			sh.reportError(ctx, "sendFleetQQPing", io.EOF, http.StatusBadRequest)
+			return
+		}
+
+	} else {
+		// Preserve only the operation's explicit legacy limit. JSON is
+		// decoded from the stream, as Gin ShouldBindJSON did.
+		if policy.MaxBodyBytes > 0 {
+			ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, policy.MaxBodyBytes)
+		}
+		contentType, contentParams, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
+		_ = contentParams
+
+		// The legacy JSON-only endpoints use Gin ShouldBindJSON,
+		// independent of the header sent by the caller.
+		_ = err
+		contentType = "application/json"
+
+		switch {
+
+		case matchesStrictGinContentType("application/json", contentType) || contentType == "":
+
+			var body SendFleetQQPingJSONRequestBody
+			if err := json.NewDecoder(ctx.Request.Body).Decode(&body); err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					sh.reportError(ctx, "sendFleetQQPing", err, http.StatusRequestEntityTooLarge)
+					return
+				}
+				if errors.Is(err, io.EOF) && (policy.AllowEmptyBody || false) {
+					break
+				}
+				if !policy.AllowMalformedJSON {
+					sh.reportError(ctx, "sendFleetQQPing", err, http.StatusBadRequest)
+					return
+				}
+				ctx.Set(strictGinJSONDecodeErrorKey, err)
+			} else if err := binding.Validator.ValidateStruct(&body); err != nil && !policy.AllowInvalidBinding {
+				sh.reportError(ctx, "sendFleetQQPing", err, http.StatusBadRequest)
+				return
+			}
+			request.Body = &body
+
+		default:
+			sh.reportError(ctx, "sendFleetQQPing", fmt.Errorf("unsupported Content-Type: %q", contentType), http.StatusUnsupportedMediaType)
+			return
+		}
+	}
+
+	result, err := sh.ssi.SendFleetQQPing(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "sendFleetQQPing", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitSendFleetQQPingResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "sendFleetQQPing", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "sendFleetQQPing", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
 // RefreshFleetESI adapts a generated Gin request to the strict server interface.
 func (sh *strictHandler) RefreshFleetESI(ctx *gin.Context, id string) {
 	var request RefreshFleetESIRequestObject
@@ -52216,6 +54627,555 @@ func (r *SettleMonth200JSONResponse) FromBusinessError(value BusinessError) erro
 	}
 	r.union = data
 	return nil
+}
+
+// ListQQOfficialGroups adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) ListQQOfficialGroups(ctx *gin.Context, params ListQQOfficialGroupsParams) {
+	var request ListQQOfficialGroupsRequestObject
+	request.Params = params
+
+	result, err := sh.ssi.ListQQOfficialGroups(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "listQQOfficialGroups", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitListQQOfficialGroupsResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "listQQOfficialGroups", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "listQQOfficialGroups", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// VerifyQQOfficialGroup adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) VerifyQQOfficialGroup(ctx *gin.Context) {
+	var request VerifyQQOfficialGroupRequestObject
+
+	policy := StrictGinBindingPolicy{
+		MaxBodyBytes: 2048}
+	if ctx.Request.Body == nil || ctx.Request.Body == http.NoBody {
+
+		if !policy.AllowEmptyBody {
+			sh.reportError(ctx, "verifyQQOfficialGroup", io.EOF, http.StatusBadRequest)
+			return
+		}
+
+	} else {
+		// Preserve only the operation's explicit legacy limit. JSON is
+		// decoded from the stream, as Gin ShouldBindJSON did.
+		if policy.MaxBodyBytes > 0 {
+			ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, policy.MaxBodyBytes)
+		}
+		contentType, contentParams, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
+		_ = contentParams
+
+		// The legacy JSON-only endpoints use Gin ShouldBindJSON,
+		// independent of the header sent by the caller.
+		_ = err
+		contentType = "application/json"
+
+		switch {
+
+		case matchesStrictGinContentType("application/json", contentType) || contentType == "":
+
+			var body VerifyQQOfficialGroupJSONRequestBody
+			if err := json.NewDecoder(ctx.Request.Body).Decode(&body); err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					sh.reportError(ctx, "verifyQQOfficialGroup", err, http.StatusRequestEntityTooLarge)
+					return
+				}
+				if errors.Is(err, io.EOF) && (policy.AllowEmptyBody || false) {
+					break
+				}
+				if !policy.AllowMalformedJSON {
+					sh.reportError(ctx, "verifyQQOfficialGroup", err, http.StatusBadRequest)
+					return
+				}
+				ctx.Set(strictGinJSONDecodeErrorKey, err)
+			} else if err := binding.Validator.ValidateStruct(&body); err != nil && !policy.AllowInvalidBinding {
+				sh.reportError(ctx, "verifyQQOfficialGroup", err, http.StatusBadRequest)
+				return
+			}
+			request.Body = &body
+
+		default:
+			sh.reportError(ctx, "verifyQQOfficialGroup", fmt.Errorf("unsupported Content-Type: %q", contentType), http.StatusUnsupportedMediaType)
+			return
+		}
+	}
+
+	result, err := sh.ssi.VerifyQQOfficialGroup(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "verifyQQOfficialGroup", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitVerifyQQOfficialGroupResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "verifyQQOfficialGroup", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "verifyQQOfficialGroup", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// UpdateQQOfficialGroup adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) UpdateQQOfficialGroup(ctx *gin.Context, id QQOfficialLocalID) {
+	var request UpdateQQOfficialGroupRequestObject
+	request.Id = id
+
+	policy := StrictGinBindingPolicy{}
+	if ctx.Request.Body == nil || ctx.Request.Body == http.NoBody {
+
+		if !policy.AllowEmptyBody {
+			sh.reportError(ctx, "updateQQOfficialGroup", io.EOF, http.StatusBadRequest)
+			return
+		}
+
+	} else {
+		// Preserve only the operation's explicit legacy limit. JSON is
+		// decoded from the stream, as Gin ShouldBindJSON did.
+		if policy.MaxBodyBytes > 0 {
+			ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, policy.MaxBodyBytes)
+		}
+		contentType, contentParams, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
+		_ = contentParams
+
+		// The legacy JSON-only endpoints use Gin ShouldBindJSON,
+		// independent of the header sent by the caller.
+		_ = err
+		contentType = "application/json"
+
+		switch {
+
+		case matchesStrictGinContentType("application/json", contentType) || contentType == "":
+
+			var body UpdateQQOfficialGroupJSONRequestBody
+			if err := json.NewDecoder(ctx.Request.Body).Decode(&body); err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					sh.reportError(ctx, "updateQQOfficialGroup", err, http.StatusRequestEntityTooLarge)
+					return
+				}
+				if errors.Is(err, io.EOF) && (policy.AllowEmptyBody || false) {
+					break
+				}
+				if !policy.AllowMalformedJSON {
+					sh.reportError(ctx, "updateQQOfficialGroup", err, http.StatusBadRequest)
+					return
+				}
+				ctx.Set(strictGinJSONDecodeErrorKey, err)
+			} else if err := binding.Validator.ValidateStruct(&body); err != nil && !policy.AllowInvalidBinding {
+				sh.reportError(ctx, "updateQQOfficialGroup", err, http.StatusBadRequest)
+				return
+			}
+			request.Body = &body
+
+		default:
+			sh.reportError(ctx, "updateQQOfficialGroup", fmt.Errorf("unsupported Content-Type: %q", contentType), http.StatusUnsupportedMediaType)
+			return
+		}
+	}
+
+	result, err := sh.ssi.UpdateQQOfficialGroup(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "updateQQOfficialGroup", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitUpdateQQOfficialGroupResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "updateQQOfficialGroup", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "updateQQOfficialGroup", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// ListQQOfficialJoinRequests adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) ListQQOfficialJoinRequests(ctx *gin.Context, id QQOfficialLocalID, params ListQQOfficialJoinRequestsParams) {
+	var request ListQQOfficialJoinRequestsRequestObject
+	request.Id = id
+	request.Params = params
+
+	result, err := sh.ssi.ListQQOfficialJoinRequests(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "listQQOfficialJoinRequests", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitListQQOfficialJoinRequestsResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "listQQOfficialJoinRequests", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "listQQOfficialJoinRequests", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// RefreshQQOfficialJoinRequests adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) RefreshQQOfficialJoinRequests(ctx *gin.Context, id QQOfficialLocalID) {
+	var request RefreshQQOfficialJoinRequestsRequestObject
+	request.Id = id
+
+	policy := StrictGinBindingPolicy{
+		MaxBodyBytes: 2048}
+	if ctx.Request.Body == nil || ctx.Request.Body == http.NoBody {
+
+		if !policy.AllowEmptyBody {
+			sh.reportError(ctx, "refreshQQOfficialJoinRequests", io.EOF, http.StatusBadRequest)
+			return
+		}
+
+	} else {
+		// Preserve only the operation's explicit legacy limit. JSON is
+		// decoded from the stream, as Gin ShouldBindJSON did.
+		if policy.MaxBodyBytes > 0 {
+			ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, policy.MaxBodyBytes)
+		}
+		contentType, contentParams, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
+		_ = contentParams
+
+		// The legacy JSON-only endpoints use Gin ShouldBindJSON,
+		// independent of the header sent by the caller.
+		_ = err
+		contentType = "application/json"
+
+		switch {
+
+		case matchesStrictGinContentType("application/json", contentType) || contentType == "":
+
+			var body RefreshQQOfficialJoinRequestsJSONRequestBody
+			if err := json.NewDecoder(ctx.Request.Body).Decode(&body); err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					sh.reportError(ctx, "refreshQQOfficialJoinRequests", err, http.StatusRequestEntityTooLarge)
+					return
+				}
+				if errors.Is(err, io.EOF) && (policy.AllowEmptyBody || false) {
+					break
+				}
+				if !policy.AllowMalformedJSON {
+					sh.reportError(ctx, "refreshQQOfficialJoinRequests", err, http.StatusBadRequest)
+					return
+				}
+				ctx.Set(strictGinJSONDecodeErrorKey, err)
+			} else if err := binding.Validator.ValidateStruct(&body); err != nil && !policy.AllowInvalidBinding {
+				sh.reportError(ctx, "refreshQQOfficialJoinRequests", err, http.StatusBadRequest)
+				return
+			}
+			request.Body = &body
+
+		default:
+			sh.reportError(ctx, "refreshQQOfficialJoinRequests", fmt.Errorf("unsupported Content-Type: %q", contentType), http.StatusUnsupportedMediaType)
+			return
+		}
+	}
+
+	result, err := sh.ssi.RefreshQQOfficialJoinRequests(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "refreshQQOfficialJoinRequests", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitRefreshQQOfficialJoinRequestsResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "refreshQQOfficialJoinRequests", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "refreshQQOfficialJoinRequests", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// TestQQOfficialGroup adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) TestQQOfficialGroup(ctx *gin.Context, id QQOfficialLocalID) {
+	var request TestQQOfficialGroupRequestObject
+	request.Id = id
+
+	policy := StrictGinBindingPolicy{
+		MaxBodyBytes: 2048}
+	if ctx.Request.Body == nil || ctx.Request.Body == http.NoBody {
+
+		if !policy.AllowEmptyBody {
+			sh.reportError(ctx, "testQQOfficialGroup", io.EOF, http.StatusBadRequest)
+			return
+		}
+
+	} else {
+		// Preserve only the operation's explicit legacy limit. JSON is
+		// decoded from the stream, as Gin ShouldBindJSON did.
+		if policy.MaxBodyBytes > 0 {
+			ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, policy.MaxBodyBytes)
+		}
+		contentType, contentParams, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
+		_ = contentParams
+
+		// The legacy JSON-only endpoints use Gin ShouldBindJSON,
+		// independent of the header sent by the caller.
+		_ = err
+		contentType = "application/json"
+
+		switch {
+
+		case matchesStrictGinContentType("application/json", contentType) || contentType == "":
+
+			var body TestQQOfficialGroupJSONRequestBody
+			if err := json.NewDecoder(ctx.Request.Body).Decode(&body); err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					sh.reportError(ctx, "testQQOfficialGroup", err, http.StatusRequestEntityTooLarge)
+					return
+				}
+				if errors.Is(err, io.EOF) && (policy.AllowEmptyBody || false) {
+					break
+				}
+				if !policy.AllowMalformedJSON {
+					sh.reportError(ctx, "testQQOfficialGroup", err, http.StatusBadRequest)
+					return
+				}
+				ctx.Set(strictGinJSONDecodeErrorKey, err)
+			} else if err := binding.Validator.ValidateStruct(&body); err != nil && !policy.AllowInvalidBinding {
+				sh.reportError(ctx, "testQQOfficialGroup", err, http.StatusBadRequest)
+				return
+			}
+			request.Body = &body
+
+		default:
+			sh.reportError(ctx, "testQQOfficialGroup", fmt.Errorf("unsupported Content-Type: %q", contentType), http.StatusUnsupportedMediaType)
+			return
+		}
+	}
+
+	result, err := sh.ssi.TestQQOfficialGroup(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "testQQOfficialGroup", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitTestQQOfficialGroupResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "testQQOfficialGroup", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "testQQOfficialGroup", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// DecideQQOfficialJoinRequest adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) DecideQQOfficialJoinRequest(ctx *gin.Context, id QQOfficialLocalID) {
+	var request DecideQQOfficialJoinRequestRequestObject
+	request.Id = id
+
+	policy := StrictGinBindingPolicy{
+		MaxBodyBytes: 2048}
+	if ctx.Request.Body == nil || ctx.Request.Body == http.NoBody {
+
+		if !policy.AllowEmptyBody {
+			sh.reportError(ctx, "decideQQOfficialJoinRequest", io.EOF, http.StatusBadRequest)
+			return
+		}
+
+	} else {
+		// Preserve only the operation's explicit legacy limit. JSON is
+		// decoded from the stream, as Gin ShouldBindJSON did.
+		if policy.MaxBodyBytes > 0 {
+			ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, policy.MaxBodyBytes)
+		}
+		contentType, contentParams, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
+		_ = contentParams
+
+		// The legacy JSON-only endpoints use Gin ShouldBindJSON,
+		// independent of the header sent by the caller.
+		_ = err
+		contentType = "application/json"
+
+		switch {
+
+		case matchesStrictGinContentType("application/json", contentType) || contentType == "":
+
+			var body DecideQQOfficialJoinRequestJSONRequestBody
+			if err := json.NewDecoder(ctx.Request.Body).Decode(&body); err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					sh.reportError(ctx, "decideQQOfficialJoinRequest", err, http.StatusRequestEntityTooLarge)
+					return
+				}
+				if errors.Is(err, io.EOF) && (policy.AllowEmptyBody || false) {
+					break
+				}
+				if !policy.AllowMalformedJSON {
+					sh.reportError(ctx, "decideQQOfficialJoinRequest", err, http.StatusBadRequest)
+					return
+				}
+				ctx.Set(strictGinJSONDecodeErrorKey, err)
+			} else if err := binding.Validator.ValidateStruct(&body); err != nil && !policy.AllowInvalidBinding {
+				sh.reportError(ctx, "decideQQOfficialJoinRequest", err, http.StatusBadRequest)
+				return
+			}
+			request.Body = &body
+
+		default:
+			sh.reportError(ctx, "decideQQOfficialJoinRequest", fmt.Errorf("unsupported Content-Type: %q", contentType), http.StatusUnsupportedMediaType)
+			return
+		}
+	}
+
+	result, err := sh.ssi.DecideQQOfficialJoinRequest(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "decideQQOfficialJoinRequest", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitDecideQQOfficialJoinRequestResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "decideQQOfficialJoinRequest", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "decideQQOfficialJoinRequest", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// UpdateQQOfficialSettings adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) UpdateQQOfficialSettings(ctx *gin.Context) {
+	var request UpdateQQOfficialSettingsRequestObject
+
+	policy := StrictGinBindingPolicy{
+		MaxBodyBytes: 8192}
+	if ctx.Request.Body == nil || ctx.Request.Body == http.NoBody {
+
+		if !policy.AllowEmptyBody {
+			sh.reportError(ctx, "updateQQOfficialSettings", io.EOF, http.StatusBadRequest)
+			return
+		}
+
+	} else {
+		// Preserve only the operation's explicit legacy limit. JSON is
+		// decoded from the stream, as Gin ShouldBindJSON did.
+		if policy.MaxBodyBytes > 0 {
+			ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, policy.MaxBodyBytes)
+		}
+		contentType, contentParams, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
+		_ = contentParams
+
+		// The legacy JSON-only endpoints use Gin ShouldBindJSON,
+		// independent of the header sent by the caller.
+		_ = err
+		contentType = "application/json"
+
+		switch {
+
+		case matchesStrictGinContentType("application/json", contentType) || contentType == "":
+
+			var body UpdateQQOfficialSettingsJSONRequestBody
+			if err := json.NewDecoder(ctx.Request.Body).Decode(&body); err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					sh.reportError(ctx, "updateQQOfficialSettings", err, http.StatusRequestEntityTooLarge)
+					return
+				}
+				if errors.Is(err, io.EOF) && (policy.AllowEmptyBody || false) {
+					break
+				}
+				if !policy.AllowMalformedJSON {
+					sh.reportError(ctx, "updateQQOfficialSettings", err, http.StatusBadRequest)
+					return
+				}
+				ctx.Set(strictGinJSONDecodeErrorKey, err)
+			} else if err := binding.Validator.ValidateStruct(&body); err != nil && !policy.AllowInvalidBinding {
+				sh.reportError(ctx, "updateQQOfficialSettings", err, http.StatusBadRequest)
+				return
+			}
+			request.Body = &body
+
+		default:
+			sh.reportError(ctx, "updateQQOfficialSettings", fmt.Errorf("unsupported Content-Type: %q", contentType), http.StatusUnsupportedMediaType)
+			return
+		}
+	}
+
+	result, err := sh.ssi.UpdateQQOfficialSettings(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "updateQQOfficialSettings", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitUpdateQQOfficialSettingsResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "updateQQOfficialSettings", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "updateQQOfficialSettings", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// GetQQOfficialStatus adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) GetQQOfficialStatus(ctx *gin.Context) {
+	var request GetQQOfficialStatusRequestObject
+
+	result, err := sh.ssi.GetQQOfficialStatus(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "getQQOfficialStatus", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitGetQQOfficialStatusResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "getQQOfficialStatus", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "getQQOfficialStatus", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// ListQQOfficialTasks adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) ListQQOfficialTasks(ctx *gin.Context, params ListQQOfficialTasksParams) {
+	var request ListQQOfficialTasksRequestObject
+	request.Params = params
+
+	result, err := sh.ssi.ListQQOfficialTasks(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "listQQOfficialTasks", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitListQQOfficialTasksResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "listQQOfficialTasks", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "listQQOfficialTasks", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// GetQQOfficialTask adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) GetQQOfficialTask(ctx *gin.Context, id QQOfficialLocalID) {
+	var request GetQQOfficialTaskRequestObject
+	request.Id = id
+
+	result, err := sh.ssi.GetQQOfficialTask(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "getQQOfficialTask", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitGetQQOfficialTaskResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "getQQOfficialTask", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "getQQOfficialTask", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
+}
+
+// CancelQQOfficialTask adapts a generated Gin request to the strict server interface.
+func (sh *strictHandler) CancelQQOfficialTask(ctx *gin.Context, id QQOfficialLocalID) {
+	var request CancelQQOfficialTaskRequestObject
+	request.Id = id
+
+	result, err := sh.ssi.CancelQQOfficialTask(ctx, request)
+	if err != nil {
+		sh.reportError(ctx, "cancelQQOfficialTask", err, http.StatusInternalServerError)
+		return
+	}
+	if result != nil {
+		if err := result.VisitCancelQQOfficialTaskResponse(ctx.Writer); err != nil {
+			sh.reportError(ctx, "cancelQQOfficialTask", err, http.StatusInternalServerError)
+		}
+	} else if !ctx.Writer.Written() && !ctx.IsAborted() {
+		sh.reportError(ctx, "cancelQQOfficialTask", errors.New("missing strict response"), http.StatusInternalServerError)
+	}
 }
 
 // ListRoleDefinitions adapts a generated Gin request to the strict server interface.

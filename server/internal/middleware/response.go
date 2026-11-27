@@ -40,7 +40,8 @@ func (w *bodyWriter) Written() bool { return w.written }
 
 func (w *bodyWriter) Status() int {
 	if w.statusCode == 0 {
-		return http.StatusOK
+		// Gin seeds an unmatched route's status before running middleware.
+		return w.ResponseWriter.Status()
 	}
 	return w.statusCode
 }

@@ -59,7 +59,7 @@ source_of_truth:
 
 - 迁移期间，`docs/architecture/`、`docs/api/`、`docs/standards/` 和 `docs/features/current/` 描述双端必须一致的行为，并在实现映射处注明 Vue/React 状态。
 - Vue-only 的实现限制只能出现在明确的迁移阶段说明中，不得继续作为产品行为或通用工程规则。
-- 当前 React capability/menu/button parity、主要壳层基座及 Galaxy Registry、QQ Governance 的完整业务同构已完成；后续工作聚焦全量跨角色回归、双端契约与文案对齐，以及 shadcn/ui 组件收敛，不将其重新描述为 0A 权限缺口。
+- 当前 React capability/menu/button parity、主要壳层基座及 Galaxy Registry 的完整业务同构已完成；后续工作聚焦全量跨角色回归、双端契约与文案对齐，以及 shadcn/ui 组件收敛，不将其重新描述为 0A 权限缺口。
 - 功能文档的 React 状态统一引用 `migration-scope-baseline.md`，不在各 feature 文档维护第二套迁移清单。
 - 不覆盖 `docs/ai/repo-rules.md`、`docs/architecture/`、`docs/api/`、`docs/features/current/` 的当前权威定义。
 - 落地后转正路径：
@@ -85,5 +85,3 @@ source_of_truth:
 ## 已实现：军团技能达标页面
 
 已新增 `/dashboard/skill-readiness`，Vue 与 React 路由、菜单、wrapper、类型、本地化和页面均已实现；权限为 Login、admin/super_admin、`menu.dashboard`。页面包含军团多选、共享军团方案单选、全范围统计、分页用户表格、角色展开及方案比对/全部技能详情；筛选与分页保存在 URL。行为和后端契约见 [军团技能达标查询](../../../features/current/dashboard-skill-readiness.md)。
-
-范围变更：QQ Bot 运维、群治理和 QQ 通知均已下线，不再属于双前端迁移或验收范围。

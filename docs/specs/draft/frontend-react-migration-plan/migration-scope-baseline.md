@@ -85,6 +85,7 @@ source_of_truth:
 | D | `/system/auto-role` | `/system/auto-role` | P1 | `system-manage.ts` | `roles: super_admin` | 真实页 | FE-owner(TBD) |
 | D | `/system/user-center` | `/system/user-center` | P1 | `system-manage.ts` | `isHide`, `isHideTab` | 真实页 | FE-owner(TBD) |
 | D | `/system/webhook` | `/system/webhook` | P1 | `webhook.ts` | `roles: super_admin` | 真实页 | FE-owner(TBD) |
+| D | `/system/qq-official` | `/system/qq-official` | P1 | OpenAPI `qq-official` | `login`, `role: super_admin`, `system.manage` | 真实页 | frontend |
 | D | `/system/basic-config` | `/system/basic-config` | P1 | `sys-config.ts` | `roles: super_admin` | 真实页 | FE-owner(TBD) |
 | 收尾 | `@views/auth/login/index.vue` | `/auth/login` | P1 | `auth.ts` | 静态路由 | 真实页 | FE-owner(TBD) |
 | 收尾 | `@views/auth/callback/index.vue` | `/auth/callback` | P1 | `auth.ts` | 静态路由 | 真实页 | FE-owner(TBD) |
@@ -153,5 +154,3 @@ source_of_truth:
 | 测试与交付 | `vue-tsc`、`test:unit`、Vue build | `tsc -b`、`test`、API contract、React build | 已纳入规范 | 双端命令和模块回归均可执行 |
 
 文档适配完成定义：所有 active 规范使用行为级表述；每个 current feature doc 通过本文引用迁移状态；所有 Vue-only 限制都明确标注为过渡期限制或历史归档内容。
-
-范围变更：QQ Bot 运维、群治理和 QQ 通知均已下线，不再属于双前端迁移或验收范围。

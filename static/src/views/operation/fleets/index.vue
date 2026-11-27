@@ -36,9 +36,18 @@
       v-model="dialogVisible"
       :title="editingFleet ? $t('fleet.edit') : $t('fleet.create')"
       width="520px"
+      :close-on-click-modal="!submitLoading"
+      :close-on-press-escape="!submitLoading"
+      :show-close="!submitLoading"
       destroy-on-close
     >
-      <ElForm ref="formRef" :model="formData" :rules="formRules" label-width="100px">
+      <ElForm
+        ref="formRef"
+        :model="formData"
+        :rules="formRules"
+        :disabled="submitLoading"
+        label-width="100px"
+      >
         <ElFormItem :label="$t('fleet.fields.title')" prop="title">
           <ElInput v-model="formData.title" :placeholder="$t('fleet.fields.titlePlaceholder')" />
         </ElFormItem>
@@ -123,9 +132,16 @@
           <ElSwitch v-model="formData.send_ping" />
           <span class="ml-2 text-xs text-gray-400">{{ $t('fleet.fields.sendPingHint') }}</span>
         </ElFormItem>
+        <ElFormItem v-if="!editingFleet" :label="$t('fleet.qqPing.createOption')">
+          <ElSwitch v-model="formData.send_qq_ping" :aria-label="$t('fleet.qqPing.createOption')" />
+          <span class="ml-2 text-xs text-gray-400">{{ $t('fleet.qqPing.createHint') }}</span>
+        </ElFormItem>
+        <ElAlert v-if="qqCreateError" :title="qqCreateError" type="error" :closable="false" />
       </ElForm>
       <template #footer>
-        <ElButton @click="dialogVisible = false">{{ $t('common.cancel') }}</ElButton>
+        <ElButton :disabled="submitLoading" @click="dialogVisible = false">
+          {{ $t('common.cancel') }}
+        </ElButton>
         <ElButton type="primary" :loading="submitLoading" @click="handleSubmit">
           {{ $t('common.confirm') }}
         </ElButton>
@@ -169,6 +185,11 @@
   import { formatTime } from '@utils/common'
   import { useUserStore } from '@/store/modules/user'
   import { resolveAutoSrpModeOnFleetConfigChange } from './autoSrpDefaults'
+  import {
+    fleetQQPingErrorKey,
+    isFleetCreationUnconfirmed,
+    isFleetQQAdmissionError
+  } from '../fleet-detail/qqPing'
 
   defineOptions({ name: 'Fleets' })
 
@@ -352,6 +373,7 @@
   // ─── 创建 / 编辑 ───
   const dialogVisible = ref(false)
   const submitLoading = ref(false)
+  const qqCreateError = ref('')
   const formRef = ref<FormInstance>()
   const editingFleet = ref<FleetListItem | null>(null)
   const autoSrpModeTouched = ref(false)
@@ -364,6 +386,7 @@
     character_id: number | undefined
     time_range: [string, string] | null
     send_ping: boolean
+    send_qq_ping: boolean
     fleet_config_id: number | undefined
     auto_srp_mode: FleetListItem['auto_srp_mode']
   }>({
@@ -374,6 +397,7 @@
     character_id: undefined,
     time_range: null,
     send_ping: true,
+    send_qq_ping: false,
     fleet_config_id: undefined,
     auto_srp_mode: 'disabled'
   })
@@ -408,6 +432,8 @@
     formData.character_id = undefined
     formData.time_range = null
     formData.send_ping = true
+    formData.send_qq_ping = false
+    qqCreateError.value = ''
     formData.fleet_config_id = undefined
     formData.auto_srp_mode = 'disabled'
     editingFleet.value = null
@@ -421,6 +447,7 @@
   }
 
   function openEditDialog(row: FleetListItem) {
+    qqCreateError.value = ''
     editingFleet.value = row
     formData.title = row.title
     formData.description = row.description
@@ -450,10 +477,12 @@
   }
 
   async function handleSubmit() {
-    if (!formRef.value) return
-    await formRef.value.validate()
+    if (!dialogVisible.value || !formRef.value || submitLoading.value) return
     submitLoading.value = true
+    qqCreateError.value = ''
+    const sendQQ = !editingFleet.value && formData.send_qq_ping
     try {
+      if (!(await formRef.value.validate().catch(() => false))) return
       const [start_at, end_at] = formData.time_range || ['', '']
       if (editingFleet.value) {
         await unwrapContract(
@@ -474,26 +503,43 @@
       } else {
         const { importance, character_id } = formData
         if (importance === undefined || character_id === undefined) return
-        await unwrapContract(
-          createFleet({
-            title: formData.title,
-            description: formData.description,
-            importance,
-            pap_count: formData.pap_count,
-            character_id,
-            start_at,
-            end_at,
-            send_ping: formData.send_ping,
-            fleet_config_id: formData.fleet_config_id ?? null,
-            auto_srp_mode: formData.auto_srp_mode
-          })
+        const created = await unwrapContract(
+          createFleet(
+            {
+              title: formData.title,
+              description: formData.description,
+              importance,
+              pap_count: formData.pap_count,
+              character_id,
+              start_at,
+              end_at,
+              send_ping: formData.send_ping,
+              send_qq_ping: sendQQ,
+              fleet_config_id: formData.fleet_config_id ?? null,
+              auto_srp_mode: formData.auto_srp_mode
+            },
+            { showErrorMessage: false }
+          )
         )
-        ElMessage.success(t('fleet.createSuccess'))
+        const notification = created.qq_notification
+        ElMessage.success(
+          notification?.status === 'queued'
+            ? t('fleet.qqPing.createdQueued', { count: notification.task_count })
+            : t('fleet.createSuccess')
+        )
       }
       dialogVisible.value = false
       refreshData()
-    } catch (e: any) {
-      ElMessage.error(e?.message ?? t('common.error'))
+    } catch (error) {
+      if (sendQQ && isFleetQQAdmissionError(error)) {
+        qqCreateError.value = t('fleet.qqPing.createRejected', {
+          reason: t(fleetQQPingErrorKey(error))
+        })
+      } else if (sendQQ && isFleetCreationUnconfirmed(error)) {
+        qqCreateError.value = t('fleet.qqPing.createUnconfirmed')
+      } else {
+        ElMessage.error(error instanceof Error ? error.message : t('common.error'))
+      }
     } finally {
       submitLoading.value = false
     }

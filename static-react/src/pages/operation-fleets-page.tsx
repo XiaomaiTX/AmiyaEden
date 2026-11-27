@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listMyEveCharacters } from '@/api/generated/client'
 import { listFleets, syncESIMembers, type FleetListItem } from '@/api/generated/client'
@@ -24,6 +24,11 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useI18n } from '@/i18n'
+import {
+  fleetQQPingErrorKey,
+  isFleetCreationUnconfirmed,
+  isFleetQQAdmissionError,
+} from '@/lib/fleet-qq-ping'
 import { useSessionStore } from '@/stores'
 import type { EveCharacter } from '@/types/api/auth'
 import type {
@@ -43,6 +48,7 @@ type FleetFormState = {
   end_at: string
   fleet_config_id: number | ''
   send_ping: boolean
+  send_qq_ping: boolean
   auto_srp_mode: FleetAutoSrpMode
 }
 
@@ -56,6 +62,7 @@ const defaultFormState: FleetFormState = {
   end_at: '',
   fleet_config_id: '',
   send_ping: true,
+  send_qq_ping: false,
   auto_srp_mode: 'disabled',
 }
 
@@ -103,6 +110,9 @@ export function OperationFleetsPage() {
   const [fleetConfigs, setFleetConfigs] = useState<FleetConfigItem[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const submitPending = useRef(false)
+  const [submitError, setSubmitError] = useState('')
+  const [queuedCount, setQueuedCount] = useState<number | null>(null)
   const [editingFleet, setEditingFleet] = useState<FleetListItem | null>(null)
   const [papFleetId, setPapFleetId] = useState<string | null>(null)
   const [form, setForm] = useState<FleetFormState>(defaultFormState)
@@ -179,11 +189,15 @@ export function OperationFleetsPage() {
   const openCreateDialog = useCallback(() => {
     setEditingFleet(null)
     setForm(defaultFormState)
+    setSubmitError('')
+    setQueuedCount(null)
     setDialogOpen(true)
   }, [])
 
   const openEditDialog = useCallback((fleet: FleetListItem) => {
     setEditingFleet(fleet)
+    setSubmitError('')
+    setQueuedCount(null)
     setForm({
       title: fleet.title,
       description: fleet.description ?? '',
@@ -194,27 +208,31 @@ export function OperationFleetsPage() {
       end_at: toLocalInputValue(fleet.end_at),
       fleet_config_id: fleet.fleet_config_id ?? '',
       send_ping: true,
+      send_qq_ping: false,
       auto_srp_mode: fleet.auto_srp_mode,
     })
     setDialogOpen(true)
   }, [])
 
   const submit = useCallback(async () => {
+    if (submitPending.current) return
     if (!form.title.trim()) {
-      setError(t('fleet.manage.requiredTitle'))
+      setSubmitError(t('fleet.manage.requiredTitle'))
       return
     }
     if (!form.character_id) {
-      setError(t('fleet.manage.requiredFc'))
+      setSubmitError(t('fleet.manage.requiredFc'))
       return
     }
     if (!form.start_at || !form.end_at) {
-      setError(t('fleet.manage.requiredTimeRange'))
+      setSubmitError(t('fleet.manage.requiredTimeRange'))
       return
     }
 
+    submitPending.current = true
     setSaving(true)
-    setError(null)
+    setSubmitError('')
+    const sendQQ = !editingFleet && form.send_qq_ping
     try {
       const payload = {
         title: form.title.trim(),
@@ -230,24 +248,36 @@ export function OperationFleetsPage() {
 
       if (editingFleet) {
         await unwrapContract(updateFleet(editingFleet.id, payload), 'update fleet failed')
-        setError(null)
       } else {
-        await unwrapContract(
+        const created = await unwrapContract(
           createFleet({
             ...payload,
             importance: createImportance(form.importance),
             send_ping: form.send_ping,
+            send_qq_ping: sendQQ,
           }),
-          'create fleet failed'
+          t('fleet.manage.saveFailed')
         )
+        if (created.qq_notification?.status === 'queued') {
+          setQueuedCount(created.qq_notification.task_count)
+        }
       }
 
       setDialogOpen(false)
       setEditingFleet(null)
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
-      setError(getErrorMessage(caughtError, t('fleet.manage.saveFailed')))
+      if (sendQQ && isFleetQQAdmissionError(caughtError)) {
+        setSubmitError(
+          t('fleet.qqPing.createRejected', { reason: t(fleetQQPingErrorKey(caughtError)) })
+        )
+      } else if (sendQQ && isFleetCreationUnconfirmed(caughtError)) {
+        setSubmitError(t('fleet.qqPing.createUnconfirmed'))
+      } else {
+        setSubmitError(getErrorMessage(caughtError, t('fleet.manage.saveFailed')))
+      }
     } finally {
+      submitPending.current = false
       setSaving(false)
     }
   }, [editingFleet, form, t])
@@ -435,6 +465,7 @@ export function OperationFleetsPage() {
             <label className="space-y-1">
               <span className="text-sm text-muted-foreground">{t('fleet.fields.importance')}</span>
               <Select
+                aria-label={t('fleet.fields.importance')}
                 selectedKey={String(importance ?? '')}
                 onSelectionChange={(key) =>
                   ((value) => {
@@ -469,6 +500,11 @@ export function OperationFleetsPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {queuedCount !== null ? (
+        <p className="text-sm text-muted-foreground" role="status">
+          {t('fleet.qqPing.createdQueued', { count: queuedCount })}
+        </p>
+      ) : null}
       {loading ? (
         <p className="text-sm text-muted-foreground">{t('fleet.manage.loading')}</p>
       ) : null}
@@ -501,6 +537,7 @@ export function OperationFleetsPage() {
         open={dialogOpen}
         title={editingFleet ? t('fleet.manage.edit') : t('fleet.manage.create')}
         onClose={() => {
+          if (submitPending.current) return
           setDialogOpen(false)
           setEditingFleet(null)
           setForm(defaultFormState)
@@ -527,7 +564,12 @@ export function OperationFleetsPage() {
           </>
         }
       >
-        <div className="grid gap-4 md:grid-cols-2">
+        {submitError ? (
+          <p className="mb-4 text-sm text-destructive" role="alert">
+            {submitError}
+          </p>
+        ) : null}
+        <fieldset disabled={saving} className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.title')}</span>
             <Input
@@ -550,6 +592,7 @@ export function OperationFleetsPage() {
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.importance')}</span>
             <Select
+              aria-label={t('fleet.fields.importance')}
               selectedKey={String(form.importance ?? '')}
               onSelectionChange={(key) =>
                 ((value) =>
@@ -583,6 +626,7 @@ export function OperationFleetsPage() {
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.fc')}</span>
             <Select
+              aria-label={t('fleet.fields.fc')}
               selectedKey={String(form.character_id ?? '')}
               onSelectionChange={(key) =>
                 ((value) =>
@@ -611,6 +655,7 @@ export function OperationFleetsPage() {
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.fleetConfig')}</span>
             <Select
+              aria-label={t('fleet.fields.fleetConfig')}
               selectedKey={String(form.fleet_config_id ?? '')}
               onSelectionChange={(key) =>
                 ((value) =>
@@ -636,6 +681,7 @@ export function OperationFleetsPage() {
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.autoSrpMode')}</span>
             <Select
+              aria-label={t('fleet.fields.autoSrpMode')}
               selectedKey={String(form.auto_srp_mode ?? '')}
               onSelectionChange={(key) =>
                 ((value) =>
@@ -676,17 +722,40 @@ export function OperationFleetsPage() {
             />
           </label>
           {!editingFleet ? (
-            <label className="flex items-center gap-2 md:col-span-2">
-              <Checkbox
-                isSelected={form.send_ping}
-                onChange={(checked) =>
-                  setForm((current) => ({ ...current, send_ping: checked === true }))
-                }
-              />
-              <span className="text-sm text-muted-foreground">{t('fleet.fields.sendPing')}</span>
-            </label>
+            <>
+              <div className="flex items-center gap-2 md:col-span-2">
+                <Checkbox
+                  aria-labelledby="fleet-create-ping-label"
+                  isDisabled={saving}
+                  isSelected={form.send_ping}
+                  onChange={(checked) =>
+                    setForm((current) => ({ ...current, send_ping: checked === true }))
+                  }
+                />
+                <span id="fleet-create-ping-label" className="text-sm text-muted-foreground">
+                  {t('fleet.fields.sendPing')}
+                </span>
+              </div>
+              <div className="flex items-start gap-2 md:col-span-2">
+                <Checkbox
+                  aria-labelledby="fleet-create-qq-ping-label"
+                  aria-describedby="fleet-create-qq-ping-hint"
+                  isDisabled={saving}
+                  isSelected={form.send_qq_ping}
+                  onChange={(checked) =>
+                    setForm((current) => ({ ...current, send_qq_ping: checked === true }))
+                  }
+                />
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p id="fleet-create-qq-ping-label">{t('fleet.qqPing.createOption')}</p>
+                  <p id="fleet-create-qq-ping-hint" className="text-xs">
+                    {t('fleet.qqPing.createHint')}
+                  </p>
+                </div>
+              </div>
+            </>
           ) : null}
-        </div>
+        </fieldset>
       </ShopDialog>
     </section>
   )

@@ -18,6 +18,8 @@ func RegisterAll(reg *taskregistry.Registry) {
 	registerMentorRewardTask(reg)
 	registerNewbroRecruitmentTask(reg)
 	registerAuditArchiveTask(reg)
+	registerQQOfficialCleanup(reg)
+	registerQQOfficialStructureScan(reg)
 	registerAdmissionEvidenceCleanup(reg)
 	registerGalaxyRegistryValidationTask(reg)
 	registerStructureFuelRateSyncTask(reg)

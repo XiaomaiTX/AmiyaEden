@@ -32,6 +32,7 @@ let unauthorizedTimer: NodeJS.Timeout | null = null
 /** 扩展 AxiosRequestConfig */
 interface ContractAxiosRequestConfig extends AxiosRequestConfig {
   showErrorMessage?: boolean
+  sensitive?: boolean
 }
 
 const { VITE_API_URL, VITE_WITH_CREDENTIALS } = import.meta.env
@@ -85,9 +86,11 @@ axiosInstance.interceptors.response.use(
       response.data = (await body) as BaseResponse
     }
     const { code, msg, data } = response.data ?? {}
-    if (code === ApiStatus.unauthorized) handleUnauthorizedError(msg)
+    const config: ContractAxiosRequestConfig = response.config
+    if (code === ApiStatus.unauthorized) handleUnauthorizedError(config.sensitive ? undefined : msg)
     if (typeof code === 'number' && code !== ApiStatus.success) {
-      const config: ContractAxiosRequestConfig = response.config
+      // Sensitive requests must not surface raw error details, even if an upstream reflects input.
+      if (config.sensitive) throw createHttpError($t('httpMsg.requestFailed'), code)
       showError(
         new HttpError(msg || $t('httpMsg.requestFailed'), code, { data }),
         config.showErrorMessage !== false
@@ -96,7 +99,11 @@ axiosInstance.interceptors.response.use(
     return response
   },
   (error) => {
-    if (error.response?.status === ApiStatus.unauthorized) handleUnauthorizedError()
+    const status = error.response?.status
+    if (status === ApiStatus.unauthorized) handleUnauthorizedError()
+    if (error.config?.sensitive) {
+      throw createHttpError($t('httpMsg.requestFailed'), status || ApiStatus.error)
+    }
     return Promise.reject(handleError(error))
   }
 )
@@ -143,7 +150,7 @@ export async function request<T>(config: ContractAxiosRequestConfig): Promise<T>
     const response = await axiosInstance.request<T>(config)
     return response.data
   } catch (error) {
-    if (error instanceof HttpError && error.code !== ApiStatus.unauthorized) {
+    if (!config.sensitive && error instanceof HttpError && error.code !== ApiStatus.unauthorized) {
       showError(error, config.showErrorMessage !== false)
     }
     throw error

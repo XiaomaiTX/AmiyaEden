@@ -166,7 +166,7 @@ React 迁移侧对应职责：
 4. 对应 repository / api wrapper
 5. 关联类型与文档边界
 
-QQ Bot 的调度、群治理和通知模块已移除；不再提供服务提交/消费契约或双前端运维页。共享系统管理及用户 QQ 联系方式保留，见 [下线边界](../features/current/qq-group-governance.md)。
+[QQ 官方机器人](../features/current/qq-official.md)：调度、群授权及业务提交由 `server/internal/service/qq_official*.go` 管理；私有协议包不暴露给业务端。Vue、React 和 Go 同步使用 [OpenAPI 模块](../../contracts/modules/qq-official.yaml)；群事件由后台主动连接 QQ 官方 WebSocket 网关接收，不注册 HTTP 回调路由。见[调度架构](qq-official-dispatch.md)。
 
 统一工资管理：`service/salary.go`、`handler/salary.go`、`model/salary.go` 和 `bootstrap/salary_migration.go`；双端 `/system/salary`。各业务最终完成事务调用工资服务，不在审批初审或自动发放路径计操作工资；参见[工资管理](../features/current/operation-salaries.md)。
 

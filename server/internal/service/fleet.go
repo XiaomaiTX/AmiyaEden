@@ -108,37 +108,44 @@ type CreateFleetRequest struct {
 	Importance    string  `json:"importance" binding:"required,oneof=strat_op cta other"`
 	PapCount      float64 `json:"pap_count"`
 	CharacterID   int64   `json:"character_id" binding:"required"` // FC 人物 ID
-	SendPing      bool    `json:"send_ping"`                       // 是否发送非 QQ Webhook Ping
+	SendPing      bool    `json:"send_ping"`                       // 是否发送 Webhook Ping
+	SendQQPing    bool    `json:"send_qq_ping"`                    // 是否在创建时提交 QQ 官方通知
 	FleetConfigID *uint   `json:"fleet_config_id"`                 // 舰队配置 ID
 	AutoSrpMode   string  `json:"auto_srp_mode"`                   // disabled/submit_only/auto_approve
 }
 
 // CreateFleet 创建舰队
 func (s *FleetService) CreateFleet(userID uint, req *CreateFleetRequest) (*model.Fleet, error) {
+	fleet, _, err := s.CreateFleetContext(context.Background(), userID, req)
+	return fleet, err
+}
+
+// CreateFleetContext returns the number of durable QQ tasks, if selected.
+func (s *FleetService) CreateFleetContext(ctx context.Context, userID uint, req *CreateFleetRequest) (*model.Fleet, int, error) {
 	if err := validatePapCountHalfStep(req.PapCount); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// 验证人物属于当前用户
 	char, err := s.charRepo.GetByCharacterID(req.CharacterID)
 	if err != nil {
-		return nil, errors.New("人物不存在")
+		return nil, 0, errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return nil, errors.New("该人物不属于当前用户")
+		return nil, 0, errors.New("该人物不属于当前用户")
 	}
 
 	startAt, err := time.Parse(time.RFC3339, req.StartAt)
 	if err != nil {
-		return nil, errors.New("起始时间格式错误（需 RFC3339）")
+		return nil, 0, errors.New("起始时间格式错误（需 RFC3339）")
 	}
 	endAt, err := time.Parse(time.RFC3339, req.EndAt)
 	if err != nil {
-		return nil, errors.New("结束时间格式错误（需 RFC3339）")
+		return nil, 0, errors.New("结束时间格式错误（需 RFC3339）")
 	}
 
 	if endAt.Before(startAt) {
-		return nil, errors.New("结束时间不能早于起始时间")
+		return nil, 0, errors.New("结束时间不能早于起始时间")
 	}
 
 	fleet := &model.Fleet{
@@ -156,8 +163,7 @@ func (s *FleetService) CreateFleet(userID uint, req *CreateFleetRequest) (*model
 		AutoSrpMode:     normalizeAutoSrpMode(req.AutoSrpMode),
 	}
 
-	// 自动从 ESI 拉取当前 ESI 舰队 ID
-	ctx := context.Background()
+	// 自动从 ESI 拉取当前 ESI 舰队 ID（不在数据库事务内）
 	if accessToken, tokenErr := s.ssoSvc.GetValidToken(ctx, req.CharacterID); tokenErr == nil {
 		path := fmt.Sprintf("/characters/%d/fleet/", req.CharacterID)
 		var info CharacterFleetInfo
@@ -171,21 +177,22 @@ func (s *FleetService) CreateFleet(userID uint, req *CreateFleetRequest) (*model
 	}
 
 	fleet.CreatedAt = time.Now().UTC().Truncate(time.Microsecond)
-	if err := s.repo.Create(fleet); err != nil {
-		return nil, err
+	taskCount, err := s.persistFleetWithOptionalQQ(ctx, fleet, req.SendQQPing)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	// 确保 FC 用户有钱包
 	_, _ = s.walletSvc.GetMyWallet(userID)
 
-	// Non-QQ webhooks remain independent. A notification error cannot undo a committed fleet.
+	// A webhook error cannot undo a committed fleet.
 	if req.SendPing {
 		if pingErr := s.webhookSvc.SendFleetPing(fleet); pingErr != nil {
 			global.Logger.Warn("CreateFleet: webhook ping 失败", zap.Error(pingErr))
 		}
 	}
 
-	return fleet, nil
+	return fleet, taskCount, nil
 }
 
 // PingFleet 手动触发舰队 Ping（仅 FC 或管理员）

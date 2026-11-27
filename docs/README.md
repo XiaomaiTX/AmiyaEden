@@ -110,13 +110,11 @@ source_of_truth:
 
 - [仪表盘军团技能达标查询](features/current/dashboard-skill-readiness.md)：后端提供统计和技能明细，Vue 与 React 均使用生成客户端。
 
+## QQ 官方机器人
+
+- [功能与权限](features/current/qq-official.md)、[接入和运维](guides/qq-official-operations.md)、[统一调度架构](architecture/qq-official-dispatch.md)。
+
 ## 2.0.0 升级清理
 
 - [手动清理 2.0.0 以前的残留](guides/pre-2.0-cleanup.md)
-
-## QQ Bot 下线
-
-- [当前下线边界](features/current/qq-group-governance.md)
-- [PostgreSQL / Redis 清理与恢复](guides/qq-bot-retirement-cleanup.md)
-- [待评审业务场景](specs/draft/qq-bot-business-scenarios.md)
-- 历史资料（不代表当前能力）：[OneBot V11 设计](architecture/qqbot-dispatch.md)、[验证记录](guides/qqbot-verification.md)、[调度说明](features/current/qqbot.md)、[通知与群业务说明](features/current/qq-notifications.md)
+- [OneBot / NapCat 下线后的 PostgreSQL 与 Redis 清理](guides/qq-bot-retirement-cleanup.md)

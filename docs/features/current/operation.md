@@ -2,10 +2,11 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-11-26
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/fleet.go
+  - server/internal/service/qq_official_fleet_business.go
   - server/internal/service/fleet_config.go
   - server/internal/service/auto_srp.go
   - server/internal/service/pap_exchange.go
@@ -27,6 +28,13 @@ source_of_truth:
 - 舰队配置装配物品的独立装备设置：重要性、惩罚、替代品
 - 舰队级自动 SRP 模式：`disabled` / `submit_only` / `auto_approve`
 - 创建舰队时，选择舰队配置会默认把自动 SRP 模式设为 `auto_approve`
+
+## 舰队 QQ 官方提醒
+
+- 创建时默认不发 QQ；仅明确勾选 QQ 官方提醒才会入队，原 Webhook Ping 是独立选项。
+- 明确勾选时，建队与 QQ 入队必须同事务提交；如果功能不可用、没有有效目标、舰队已经开始或队列已满，创建请求会失败。QQ 平台在事务提交后才被调用，平台失败不会回滚舰队。
+- 手动发送与查看投递结果复用舰队管理权限。相同 UUID 的手动请求在账本保留期内返回原任务，不会重复入队；队列受理不是送达，实际状态以账本为准。
+- 目标仅限匹配舰队 FC 人物军团的授权 QQ 通知群。发送前重新读取舰队和人物军团；任务最多有效 10 分钟，最迟在开队时过期。文案只用固定标签与 UTC 开始时间，不包含舰队标题、描述、链接或提及。
 
 ## 入口
 

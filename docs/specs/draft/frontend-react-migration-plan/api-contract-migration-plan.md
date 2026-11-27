@@ -66,5 +66,3 @@ source_of_truth:
 - 防护：静态检查禁止 `static/src` 引用和 `Api.` 全局命名空间残留。
 - 风险：Vue 侧持续新增业务域造成 React 类型出口滞后。
 - 防护：将“漂移追赶项”纳入 `migration-scope-baseline.md`，每发现一个新业务域立即补建 React 类型出口与 wrapper，不留空白引用。
-
-范围变更：QQ Bot 运维、群治理和 QQ 通知均已下线，不再属于双前端迁移或验收范围。

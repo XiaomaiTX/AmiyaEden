@@ -20,6 +20,7 @@ import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
 import type { FleetInvite, FleetMemberWithPap as MemberWithPap } from '@/api/generated/client'
 import { formatDateTime, getErrorMessage, ShopBadge, ShopDialog } from './shop-page-utils'
+import { FleetQQPingPanel } from './operation-fleet-qq-ping-panel'
 
 function importanceBadgeClass(value: string) {
   switch (value) {
@@ -474,6 +475,10 @@ export function OperationFleetDetailPage() {
           pageSizeLabel: t('welfareMy.pageSize'),
         }}
       />
+
+      {canManageFleet && fleet?.id === fleetId ? (
+        <FleetQQPingPanel key={fleetId} fleetId={fleetId} />
+      ) : null}
 
       <DataTable
         columns={inviteColumns}

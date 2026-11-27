@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   Ban,
+  Bot,
   Brain,
   ChartNoAxesColumn,
   ClipboardList,
@@ -190,6 +191,7 @@ const sidebarSections: { labelKey: string; entries: MenuEntrySpec[] }[] = [
       { path: 'system/task-manager', icon: ListChecks },
       { path: 'system/audit', icon: ClipboardList },
       { path: 'system/webhook', icon: Webhook },
+      { path: 'system/qq-official', icon: Bot },
       { path: 'system/basic-config', icon: Settings },
     ],
   },

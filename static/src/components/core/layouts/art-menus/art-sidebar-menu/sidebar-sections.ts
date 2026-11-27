@@ -161,6 +161,7 @@ const sections: readonly {
       { path: '/system/task-manager', icon: 'ri:task-line' },
       { path: '/system/audit', icon: 'ri:file-search-line' },
       { path: '/system/webhook', icon: 'ri:notification-line' },
+      { path: '/system/qq-official', icon: 'ri:robot-line' },
       { path: '/system/basic-config', icon: 'ri:settings-3-line' }
     ]
   }

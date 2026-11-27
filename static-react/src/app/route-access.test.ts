@@ -91,11 +91,26 @@ describe('route access evaluation', () => {
     expect(readinessRoute?.meta?.corpCapabilitiesAny).toEqual(['menu.dashboard'])
   })
 
-  test('removes the bot route without removing non-QQ webhook settings', () => {
-    expect(appRouteSpecs.find(({ path }) => path === 'system/qqbot')).toBeUndefined()
+  test('routes webhook settings to its system page', () => {
     expect(appRouteSpecs.find(({ path }) => path === 'system/webhook')?.pageType).toBe(
       'system-webhook'
     )
+  })
+
+  test('QQ Official console requires a logged-in super administrator', () => {
+    const route = appRouteSpecs.find((item) => item.path === 'system/qq-official')
+    const superAdmin = { ...session, roles: ['super_admin'], corpCapabilities: [] }
+    expect(route?.pageType).toBe('system-qq-official')
+    expect(route?.meta?.corpCapabilitiesAny).toEqual(['system.manage'])
+    expect(evaluateRouteAccess(route?.meta, superAdmin)).toBe('allow')
+    expect(evaluateRouteAccess(route?.meta, { ...superAdmin, isLoggedIn: false })).toBe('login')
+    expect(
+      evaluateRouteAccess(route?.meta, {
+        ...session,
+        roles: ['admin'],
+        corpCapabilities: ['system.manage'],
+      })
+    ).toBe('forbidden')
   })
 
   test('keeps ticket category reads separate from category mutations', () => {

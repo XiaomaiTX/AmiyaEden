@@ -45,6 +45,8 @@ func main() {
 	// 初始化 Redis
 	bootstrap.InitRedis()
 
+	bootstrap.InitQQOfficial()
+
 	// 初始化定时任务
 	taskSvc := bootstrap.InitCron()
 

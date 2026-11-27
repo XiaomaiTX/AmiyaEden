@@ -7,9 +7,11 @@ import (
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"context"
-	"github.com/gin-gonic/gin"
+	"errors"
 	"math"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // FleetHandler 舰队 HTTP 处理器
@@ -51,9 +53,27 @@ func (h *FleetHandler) CreateFleet(ctx context.Context, request apicontract.Crea
 		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
 	}
 	userID, _ := fleetStrictActor(ctx)
-	data, failure := h.createFleet(userID, *request.Body)
-	if failure != nil {
-		return out, out.FromBusinessError(failure.contract())
+	req := request.Body
+	fleet, taskCount, err := h.svc.CreateFleetContext(officialRequestContext(ctx), userID, &service.CreateFleetRequest{
+		Title: req.Title, Description: req.Description, StartAt: req.StartAt, EndAt: req.EndAt,
+		Importance: req.Importance, PapCount: req.PapCount, CharacterID: req.CharacterID,
+		SendPing: req.SendPing, SendQQPing: req.SendQQPing, FleetConfigID: req.FleetConfigID, AutoSrpMode: req.AutoSrpMode,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrQQOfficialCapacity):
+			return apicontract.CreateFleet429JSONResponse{QQOfficialRateLimitedJSONResponse: apicontract.QQOfficialRateLimitedJSONResponse(fleetQQError(429, err))}, nil
+		case errors.Is(err, service.ErrQQOfficialConflict), errors.Is(err, service.ErrQQOfficialNoTargets), errors.Is(err, service.ErrQQOfficialExpired):
+			return apicontract.CreateFleet409JSONResponse{QQOfficialConflictJSONResponse: apicontract.QQOfficialConflictJSONResponse(fleetQQError(409, err))}, nil
+		case errors.Is(err, service.ErrQQOfficialUnavailable), errors.Is(err, service.ErrQQOfficialDisabled), errors.Is(err, service.ErrQQOfficialInvalid):
+			return apicontract.CreateFleet503JSONResponse{QQOfficialUnavailableJSONResponse: apicontract.QQOfficialUnavailableJSONResponse(fleetQQError(503, err))}, nil
+		default:
+			return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+		}
+	}
+	data := fleetRecordDTO(*fleet)
+	if taskCount > 0 {
+		data.QqNotification = &apicontract.FleetQQNotification{Status: apicontract.Queued, TaskCount: taskCount}
 	}
 	return out, out.FromFleetRecordSuccess(apicontract.FleetRecordSuccess{Code: response.CodeOK, Msg: "success", Data: data})
 }
@@ -297,16 +317,78 @@ func (h *FleetHandler) PingFleet(ctx context.Context, request apicontract.PingFl
 	return out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
 }
 
-func (h *FleetHandler) createFleet(userID uint, req apicontract.FleetCreateInput) (apicontract.FleetRecord, *fleetOperationFailure) {
-	fleet, err := h.svc.CreateFleet(userID, &service.CreateFleetRequest{
-		Title: req.Title, Description: req.Description, StartAt: req.StartAt, EndAt: req.EndAt,
-		Importance: req.Importance, PapCount: req.PapCount, CharacterID: req.CharacterID,
-		SendPing: req.SendPing, FleetConfigID: req.FleetConfigID, AutoSrpMode: req.AutoSrpMode,
-	})
-	if err != nil {
-		return apicontract.FleetRecord{}, &fleetOperationFailure{code: response.CodeBizError, message: err.Error()}
+func fleetQQError(code int, err error) apicontract.QQOfficialError {
+	for _, reason := range []error{service.ErrQQOfficialInvalid, service.ErrQQOfficialNotFound, service.ErrQQOfficialConflict,
+		service.ErrQQOfficialNoTargets, service.ErrQQOfficialExpired, service.ErrQQOfficialCapacity, service.ErrQQOfficialDisabled} {
+		if errors.Is(err, reason) {
+			return officialError(code, reason)
+		}
 	}
-	return fleetRecordDTO(*fleet), nil
+	return officialError(code, service.ErrQQOfficialUnavailable)
+}
+
+func (h *FleetHandler) SendFleetQQPing(ctx context.Context, request apicontract.SendFleetQQPingRequestObject) (apicontract.SendFleetQQPingResponseObject, error) {
+	var rows []model.QQOfficialTask
+	err := service.ErrQQOfficialInvalid
+	if request.Body != nil {
+		userID, roles := fleetStrictActor(ctx)
+		rows, err = h.svc.SendFleetQQPing(officialRequestContext(ctx), request.Id, request.Body.IdempotencyKey, userID, roles)
+	}
+	if err == nil {
+		tasks := make([]apicontract.QQOfficialTaskReceipt, 0, len(rows))
+		for _, row := range rows {
+			tasks = append(tasks, apicontract.QQOfficialTaskReceipt{TaskID: row.ID, Status: row.Status, ExpiresAt: row.ExpiresAt})
+		}
+		return apicontract.SendFleetQQPing202JSONResponse{Code: response.CodeOK, Msg: "success", Data: apicontract.FleetQQPingReceipt{Tasks: tasks}}, nil
+	}
+	if errors.Is(err, service.ErrFleetQQForbidden) {
+		return apicontract.SendFleetQQPing403JSONResponse{ForbiddenJSONResponse: apicontract.ForbiddenJSONResponse{Code: response.CodeForbidden, Msg: "forbidden"}}, nil
+	}
+	code := officialErrorCode(err)
+	failure := fleetQQError(code, err)
+	switch code {
+	case 400:
+		return apicontract.SendFleetQQPing400JSONResponse{QQOfficialBadRequestJSONResponse: apicontract.QQOfficialBadRequestJSONResponse(failure)}, nil
+	case 404:
+		return apicontract.SendFleetQQPing404JSONResponse{QQOfficialNotFoundJSONResponse: apicontract.QQOfficialNotFoundJSONResponse(failure)}, nil
+	case 409:
+		return apicontract.SendFleetQQPing409JSONResponse{QQOfficialConflictJSONResponse: apicontract.QQOfficialConflictJSONResponse(failure)}, nil
+	case 429:
+		return apicontract.SendFleetQQPing429JSONResponse{QQOfficialRateLimitedJSONResponse: apicontract.QQOfficialRateLimitedJSONResponse(failure)}, nil
+	default:
+		return apicontract.SendFleetQQPing503JSONResponse{QQOfficialUnavailableJSONResponse: apicontract.QQOfficialUnavailableJSONResponse(failure)}, nil
+	}
+}
+
+func (h *FleetHandler) ListFleetQQPingResults(ctx context.Context, request apicontract.ListFleetQQPingResultsRequestObject) (apicontract.ListFleetQQPingResultsResponseObject, error) {
+	page, size := fleetValueOr(request.Params.Current, 1), fleetValueOr(request.Params.Size, 20)
+	var rows []model.QQOfficialTask
+	var total int64
+	err := service.ErrQQOfficialInvalid
+	if page >= 1 && page <= 10000 && size >= 1 && size <= 100 {
+		userID, roles := fleetStrictActor(ctx)
+		rows, total, err = h.svc.ListFleetQQPingResults(officialRequestContext(ctx), request.Id, userID, roles, (page-1)*size, size)
+	}
+	if err == nil {
+		list := make([]apicontract.FleetQQPingTask, 0, len(rows))
+		for _, row := range rows {
+			list = append(list, apicontract.FleetQQPingTask{ID: row.ID, Status: row.Status, Reason: officialOptional(row.Reason), CreatedAt: row.CreatedAt, ExpiresAt: row.ExpiresAt, FinishedAt: row.FinishedAt})
+		}
+		return apicontract.ListFleetQQPingResults200JSONResponse{Code: response.CodeOK, Msg: "success", Data: apicontract.FleetQQPingPage{List: list, Total: total, Page: page, PageSize: size}}, nil
+	}
+	if errors.Is(err, service.ErrFleetQQForbidden) {
+		return apicontract.ListFleetQQPingResults403JSONResponse{ForbiddenJSONResponse: apicontract.ForbiddenJSONResponse{Code: response.CodeForbidden, Msg: "forbidden"}}, nil
+	}
+	code := officialErrorCode(err)
+	failure := fleetQQError(code, err)
+	switch code {
+	case 400:
+		return apicontract.ListFleetQQPingResults400JSONResponse{QQOfficialBadRequestJSONResponse: apicontract.QQOfficialBadRequestJSONResponse(failure)}, nil
+	case 404:
+		return apicontract.ListFleetQQPingResults404JSONResponse{QQOfficialNotFoundJSONResponse: apicontract.QQOfficialNotFoundJSONResponse(failure)}, nil
+	default:
+		return apicontract.ListFleetQQPingResults503JSONResponse{QQOfficialUnavailableJSONResponse: apicontract.QQOfficialUnavailableJSONResponse(failure)}, nil
+	}
 }
 
 func (h *FleetHandler) listFleets(params apicontract.ListFleetsParams) (apicontract.FleetPage, *fleetOperationFailure) {

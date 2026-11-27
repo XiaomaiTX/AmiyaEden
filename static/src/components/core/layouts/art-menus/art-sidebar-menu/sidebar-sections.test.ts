@@ -61,6 +61,7 @@ test('left navigation projects the complete visible menu into ordered sections w
           '/system/task-manager',
           '/system/audit',
           '/system/webhook',
+          '/system/qq-official',
           '/system/basic-config'
         ]
       ]

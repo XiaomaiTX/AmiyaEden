@@ -10,12 +10,27 @@ import (
 	"go.uber.org/zap"
 )
 
+// qqOfficialSettingsPath accepts write-only credentials. Rejected query
+// strings can contain those credentials, so never record them in request logs.
+const qqOfficialSettingsPath = "/api/v1/system/qq-official/settings"
+
+func isQQOfficialSettingsPath(path string) bool {
+	return path == qqOfficialSettingsPath || path == qqOfficialSettingsPath+"/"
+}
+
+func loggedRequestQuery(r *http.Request) string {
+	if isQQOfficialSettingsPath(r.URL.Path) {
+		return ""
+	}
+	return r.URL.RawQuery
+}
+
 // ZapLogger Gin 请求日志中间件（基于 zap）
 func ZapLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
+		query := loggedRequestQuery(c.Request)
 
 		c.Next()
 
@@ -33,7 +48,9 @@ func ZapLogger() gin.HandlerFunc {
 			zap.String("request-id", c.GetString("request-id")),
 		}
 
-		if len(c.Errors) > 0 {
+		// Binding or response errors on this write-only route must not log
+		// request-derived values; log the status instead.
+		if !isQQOfficialSettingsPath(path) && len(c.Errors) > 0 {
 			for _, e := range c.Errors.Errors() {
 				global.Logger.Error(e, fields...)
 			}

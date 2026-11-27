@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
-import axios, { type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios'
 import { createServer } from 'vite'
 import type { completeEveRegistration, getEveRegistration } from './generated/client'
 import { unwrapContract } from './response'
@@ -64,15 +64,18 @@ test('generated operations use the real Vue HTTP and Axios adapters', async (t) 
   const requests: InternalAxiosRequestConfig[] = []
   const success = { code: 200, msg: 'ok', data: null }
   let body: string | Blob = JSON.stringify(success)
+  let status = 200
   const adapter: AxiosAdapter = async (config) => {
     requests.push(config)
-    return {
+    const response = {
       config,
-      status: 200,
-      statusText: 'OK',
+      status,
+      statusText: String(status),
       headers: { 'content-type': body instanceof Blob ? body.type : 'application/json' },
       data: body
     }
+    if (status >= 400) throw new AxiosError(String(body), undefined, config, undefined, response)
+    return response
   }
   const originalAdapter = axios.defaults.adapter
   axios.defaults.adapter = adapter
@@ -81,7 +84,8 @@ test('generated operations use the real Vue HTTP and Axios adapters', async (t) 
     createAdmission,
     getAdmissionEvidence,
     listFleets,
-    runSkillPlanCompletionCheck
+    runSkillPlanCompletionCheck,
+    updateQQOfficialSettings
   } = await (async () => {
     try {
       return (await server.ssrLoadModule(
@@ -143,7 +147,7 @@ test('generated operations use the real Vue HTTP and Axios adapters', async (t) 
   body = new Blob([JSON.stringify({ code: 404, msg: 'missing evidence', data: null })], {
     type: 'application/problem+json;charset=utf-8'
   })
-  t.mock.method(console, 'error', () => {})
+  const log = t.mock.method(console, 'error', () => {})
   assert.deepEqual(await getAdmissionEvidence(42, 'launcher', { showErrorMessage: false }), {
     code: 404,
     msg: 'missing evidence',
@@ -157,4 +161,17 @@ test('generated operations use the real Vue HTTP and Axios adapters', async (t) 
     unwrapContract(listFleets({ current: 2, size: 20 }, { showErrorMessage: false })),
     { name: 'HttpError', code: 409, message: 'fleet busy' }
   )
+
+  // Do not log or propagate an error body that unexpectedly reflects a write-only credential.
+  const secret = 'fixture-secret'
+  const logCount = log.mock.callCount()
+  for (const httpStatus of [200, 400]) {
+    status = httpStatus
+    body = JSON.stringify({ code: 400, msg: secret, data: { app_secret: secret } })
+    await assert.rejects(
+      updateQQOfficialSettings({ app_id: '10001', app_secret: secret }, { sensitive: true }),
+      { name: 'HttpError', code: 400, message: 'httpMsg.requestFailed', data: undefined }
+    )
+  }
+  assert.equal(log.mock.callCount(), logCount)
 })

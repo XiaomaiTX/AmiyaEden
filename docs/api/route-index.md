@@ -70,9 +70,10 @@ source_of_truth:
 | 系统配置、自动职权、书签、黑名单 | [system-config.yaml](../../contracts/modules/system-config.yaml)、[auto-role.yaml](../../contracts/modules/auto-role.yaml)、[bookmarks-blacklist.yaml](../../contracts/modules/bookmarks-blacklist.yaml) | [系统管理](../features/current/administration.md)                                                                                                       |
 | SDE 查询与配置                   | [openapi.yaml](../../contracts/openapi.yaml)、[system-config.yaml](../../contracts/modules/system-config.yaml)                                                                                           | [SDE](../features/current/sde.md)                                                                                                                       |
 | 图片上传                         | [uploads.yaml](../../contracts/modules/uploads.yaml)                                                                                                                                                     | —（限制见契约 `x-gin-body` 与对应页面）                                                                                                                 |
+| QQ 官方机器人与任务 | [qq-official.yaml](../../contracts/modules/qq-official.yaml)、[fleets.yaml](../../contracts/modules/fleets.yaml) | [QQ 官方机器人](../features/current/qq-official.md) |
 
 ## 维护约定
 
 - 新增或调整接口：先改契约并重新生成；本文件只在业务域或阅读入口变化时同步，不新增路径和权限表。
-- 已移除的接口不在这里保留兼容登记；QQ Bot 相关路由见[下线边界](../features/current/qq-group-governance.md)。
+- 已移除的接口不在这里保留兼容登记。
 - 需要接口细节时直接打开契约片段或生成客户端，不要从本文件转抄。

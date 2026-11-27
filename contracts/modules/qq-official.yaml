@@ -1,0 +1,483 @@
+paths:
+  /system/qq-official/status:
+    get:
+      operationId: getQQOfficialStatus
+      x-gin-access: &qqOfficialAccess [jwt, login, 'role:super_admin', 'cap:system.manage']
+      responses:
+        '200': { $ref: '#/components/responses/QQOfficialStatusResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+  /system/qq-official/settings:
+    put:
+      operationId: updateQQOfficialSettings
+      description: This endpoint rejects query strings. Send the admin JWT in Authorization and settings in the JSON body.
+      x-gin-access: *qqOfficialAccess
+      x-gin-body: { maxBytes: 8192 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QQOfficialSettings' }
+      responses:
+        '200': { $ref: '#/components/responses/QQOfficialStatusResult' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/QQOfficialConflict' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+  /system/qq-official/groups:
+    get:
+      operationId: listQQOfficialGroups
+      x-gin-access: *qqOfficialAccess
+      parameters:
+        - $ref: '#/components/parameters/QQOfficialCurrent'
+        - $ref: '#/components/parameters/QQOfficialSize'
+      responses:
+        '200':
+          description: Page of locally recorded groups, without upstream group identifiers.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QQOfficialGroupPageSuccess' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+  /system/qq-official/groups/verify:
+    post:
+      operationId: verifyQQOfficialGroup
+      description: Queue only the allowlisted bot_state verification for a pre-existing group. Acceptance does not authorize the group or enable notifications.
+      x-gin-access: *qqOfficialAccess
+      x-gin-body: { maxBytes: 2048 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QQOfficialGroupVerifyInput' }
+      responses: &qqOfficialSubmit
+        '202': { $ref: '#/components/responses/QQOfficialAccepted' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/QQOfficialConflict' }
+        '429': { $ref: '#/components/responses/QQOfficialRateLimited' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+  /system/qq-official/groups/{id}:
+    parameters:
+      - $ref: '#/components/parameters/QQOfficialLocalID'
+    patch:
+      operationId: updateQQOfficialGroup
+      x-gin-access: *qqOfficialAccess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QQOfficialGroupUpdate' }
+      responses:
+        '200':
+          description: Updated local group record.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QQOfficialGroupSuccess' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/QQOfficialNotFound' }
+        '409': { $ref: '#/components/responses/QQOfficialConflict' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+  /system/qq-official/groups/{id}/test-message:
+    parameters:
+      - $ref: '#/components/parameters/QQOfficialLocalID'
+    post:
+      operationId: testQQOfficialGroup
+      description: Queue a fixed server-defined test message for this local group.
+      x-gin-access: *qqOfficialAccess
+      x-gin-body: { maxBytes: 2048 }
+      requestBody: &qqOfficialEnqueueBody
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QQOfficialEnqueueInput' }
+      responses: &qqOfficialResourceSubmit
+        '202': { $ref: '#/components/responses/QQOfficialAccepted' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/QQOfficialNotFound' }
+        '409': { $ref: '#/components/responses/QQOfficialConflict' }
+        '429': { $ref: '#/components/responses/QQOfficialRateLimited' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+  /system/qq-official/tasks:
+    get:
+      operationId: listQQOfficialTasks
+      x-gin-access: *qqOfficialAccess
+      parameters:
+        - $ref: '#/components/parameters/QQOfficialCurrent'
+        - $ref: '#/components/parameters/QQOfficialLedgerSize'
+        - { name: status, in: query, schema: { type: string }, description: Exact ledger status. }
+        - { name: kind, in: query, schema: { type: string }, description: Exact task kind. }
+        - { name: source, in: query, schema: { type: string }, description: Exact task source. }
+        - { name: group_id, in: query, schema: { type: string, format: uuid, x-go-type: string }, description: Local group UUID. }
+      responses:
+        '200':
+          description: Filtered task ledger page.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QQOfficialTaskPageSuccess' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+  /system/qq-official/tasks/{id}:
+    parameters:
+      - $ref: '#/components/parameters/QQOfficialLocalID'
+    get:
+      operationId: getQQOfficialTask
+      x-gin-access: *qqOfficialAccess
+      responses:
+        '200': { $ref: '#/components/responses/QQOfficialTaskResult' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/QQOfficialNotFound' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+  /system/qq-official/tasks/{id}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/QQOfficialLocalID'
+    post:
+      operationId: cancelQQOfficialTask
+      description: Cancel an eligible task in the local ledger without making an upstream request or enqueueing another task.
+      x-gin-access: *qqOfficialAccess
+      responses:
+        '200': { $ref: '#/components/responses/QQOfficialTaskResult' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/QQOfficialNotFound' }
+        '409': { $ref: '#/components/responses/QQOfficialConflict' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+  /system/qq-official/groups/{id}/join-requests:
+    parameters:
+      - $ref: '#/components/parameters/QQOfficialLocalID'
+    get:
+      operationId: listQQOfficialJoinRequests
+      description: Read the local join request ledger, without contacting QQ.
+      x-gin-access: *qqOfficialAccess
+      parameters:
+        - $ref: '#/components/parameters/QQOfficialCurrent'
+        - $ref: '#/components/parameters/QQOfficialLedgerSize'
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/QQOfficialJoinRequestStatus' } }
+      responses:
+        '200':
+          description: Page of locally recorded join requests for this group.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QQOfficialJoinRequestPageSuccess' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/QQOfficialNotFound' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+  /system/qq-official/groups/{id}/join-requests/refresh:
+    parameters:
+      - $ref: '#/components/parameters/QQOfficialLocalID'
+    post:
+      operationId: refreshQQOfficialJoinRequests
+      description: Queue an explicit refresh of this group's join request ledger.
+      x-gin-access: *qqOfficialAccess
+      x-gin-body: { maxBytes: 2048 }
+      requestBody: *qqOfficialEnqueueBody
+      responses: *qqOfficialResourceSubmit
+  /system/qq-official/join-requests/{id}/decision:
+    parameters:
+      - $ref: '#/components/parameters/QQOfficialLocalID'
+    post:
+      operationId: decideQQOfficialJoinRequest
+      description: Queue a decision for this pending local request. No operator-provided text is sent upstream.
+      x-gin-access: *qqOfficialAccess
+      x-gin-body: { maxBytes: 2048 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QQOfficialJoinDecisionInput' }
+      responses: *qqOfficialResourceSubmit
+components:
+  parameters:
+    QQOfficialLocalID:
+      name: id
+      in: path
+      required: true
+      description: Local record UUID, never an upstream identifier.
+      schema: { type: string, format: uuid, x-go-type: string }
+    QQOfficialCurrent:
+      name: current
+      in: query
+      schema: { type: integer, default: 1, minimum: 1, maximum: 10000 }
+    QQOfficialSize:
+      name: size
+      in: query
+      schema: { type: integer, default: 20, minimum: 1, maximum: 200 }
+    QQOfficialLedgerSize:
+      name: size
+      in: query
+      schema: { type: integer, default: 200, minimum: 1, maximum: 200 }
+  responses:
+    QQOfficialStatusResult:
+      description: Redacted QQ Official runtime status and current settings.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/QQOfficialStatusSuccess' }
+    QQOfficialTaskResult:
+      description: Task ledger entry and redacted attempt history.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/QQOfficialTaskDetailSuccess' }
+    QQOfficialAccepted:
+      description: Task accepted for asynchronous execution, or the receipt for its idempotent replay. This does not mean the upstream action succeeded.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/QQOfficialTaskAccepted' }
+    QQOfficialBadRequest:
+      description: Invalid input.
+      content: &qqOfficialErrorContent
+        application/json:
+          schema: { $ref: '#/components/schemas/QQOfficialError' }
+    QQOfficialNotFound:
+      description: The referenced local record does not exist.
+      content: *qqOfficialErrorContent
+    QQOfficialConflict:
+      description: The requested change conflicts with current state or an existing idempotency key.
+      content: *qqOfficialErrorContent
+    QQOfficialRateLimited:
+      description: A local admission, cooldown, or rate limit prevents accepting this task now.
+      content: *qqOfficialErrorContent
+    QQOfficialUnavailable:
+      description: The local integration or required infrastructure is unavailable.
+      content: *qqOfficialErrorContent
+  schemas:
+    QQOfficialError:
+      type: object
+      required: [code, msg]
+      properties:
+        code: { type: integer, enum: [400, 404, 409, 429, 503] }
+        msg: { type: string, description: Safe error message without upstream payloads or credentials. }
+    QQOfficialCooldown:
+      type: object
+      required: [scope, until]
+      properties:
+        scope: { type: string, description: 'Redacted scope label, never an upstream group identifier.' }
+        until: { type: string, format: date-time }
+    QQOfficialStatus:
+      type: object
+      required: [configured, has_app_secret, enabled, paused, certified, approval_writes_enabled, token_state, gateway_state, queue_depth, attempts_last_minute, messages_last_minute, message_budget, cooldowns]
+      properties:
+        configured: { type: boolean, description: Whether the stored credentials are usable. }
+        app_id: { type: string, x-go-name: AppID, description: Current configured AppID; omitted before setup. }
+        has_app_secret: { type: boolean, description: Whether an encrypted secret is stored. The secret is never returned. }
+        enabled: { type: boolean }
+        paused: { type: boolean }
+        certified: { type: boolean }
+        approval_writes_enabled: { type: boolean }
+        token_state: { type: string }
+        gateway_state: { type: string, enum: [idle, connecting, connected, retrying, blocked], description: Current Tencent QQ WebSocket gateway state. }
+        last_event_at: { type: string, format: date-time, description: Time when the most recent new group event was committed. }
+        next_request_at: { type: string, format: date-time }
+        oldest_queued_at: { type: string, format: date-time }
+        queue_depth: { type: integer }
+        attempts_last_minute: { type: integer }
+        messages_last_minute: { type: integer }
+        message_budget: { type: integer }
+        cooldowns: { type: array, items: { $ref: '#/components/schemas/QQOfficialCooldown' } }
+    QQOfficialSettings:
+      type: object
+      description: Update only the supplied settings. Supplying a new AppID requires an AppSecret. Saving new credentials disables delivery and approval writes; enable them separately after verifying setup.
+      minProperties: 1
+      properties:
+        app_id: { type: string, minLength: 1, maxLength: 32, pattern: '^[0-9]+$', x-go-name: AppID }
+        app_secret: { type: string, minLength: 1, maxLength: 4096, writeOnly: true, x-go-name: AppSecret, description: Omit to keep the current secret for the same AppID. }
+        approval_writes_enabled: { type: boolean, description: Global opt-in for human join decisions. Turning off cancels queued decisions. }
+        enabled: { type: boolean }
+        paused: { type: boolean }
+        certified: { type: boolean }
+    QQOfficialPushState:
+      type: string
+      enum: [unknown, allowed, blocked]
+    QQOfficialApprovalCapability:
+      type: string
+      enum: [unknown, available, forbidden]
+    QQOfficialGroup:
+      type: object
+      required: [id, alias, present, authorized, notification_enabled, test_verified, approval_enabled, push_state, approval_capability]
+      properties:
+        id: { type: string, format: uuid, x-go-type: string }
+        alias: { type: string }
+        present: { type: boolean }
+        authorized: { type: boolean }
+        notification_enabled: { type: boolean }
+        test_verified: { type: boolean }
+        approval_enabled: { type: boolean }
+        push_state: { $ref: '#/components/schemas/QQOfficialPushState' }
+        approval_capability: { $ref: '#/components/schemas/QQOfficialApprovalCapability' }
+        fleet_corporation_id: { type: integer, format: int64, minimum: 1, x-go-name: FleetCorporationID }
+        structure_corporation_id: { type: integer, format: int64, minimum: 1, x-go-name: StructureCorporationID }
+    QQOfficialGroupUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        alias: { type: string, maxLength: 80 }
+        authorized: { type: boolean }
+        notification_enabled: { type: boolean }
+        approval_enabled: { type: boolean }
+        fleet_corporation_id: { type: integer, format: int64, minimum: 0, x-go-name: FleetCorporationID, description: Explicit local corporation target; zero clears it. }
+        structure_corporation_id: { type: integer, format: int64, minimum: 0, x-go-name: StructureCorporationID, description: Explicit local corporation target; zero clears it. }
+    QQOfficialEnqueueInput:
+      type: object
+      additionalProperties: false
+      required: [idempotency_key]
+      properties:
+        idempotency_key: &qqOfficialIdempotencyKey { type: string, format: uuid, x-go-type: string, x-oapi-codegen-extra-tags: { binding: 'required,uuid' } }
+    QQOfficialGroupVerifyInput:
+      type: object
+      additionalProperties: false
+      required: [group_openid, idempotency_key]
+      properties:
+        group_openid: { type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$', x-go-name: GroupOpenID, x-oapi-codegen-extra-tags: { binding: 'required,min=16,max=128' }, description: Write-only upstream group identifier for this verification. Never returned. }
+        idempotency_key: *qqOfficialIdempotencyKey
+    QQOfficialJoinDecision:
+      type: string
+      enum: [approve, decline]
+    QQOfficialJoinDecisionInput:
+      type: object
+      additionalProperties: false
+      required: [decision, idempotency_key]
+      properties:
+        decision: { $ref: '#/components/schemas/QQOfficialJoinDecision' }
+        idempotency_key: *qqOfficialIdempotencyKey
+    QQOfficialTaskReceipt:
+      type: object
+      required: [task_id, status, expires_at]
+      properties:
+        task_id: { type: string, format: uuid, x-go-type: string, x-go-name: TaskID }
+        status: { type: string }
+        expires_at: { type: string, format: date-time }
+    QQOfficialTask:
+      type: object
+      required: [id, source, kind, status, expires_at, next_run_at, created_at]
+      properties:
+        id: { type: string, format: uuid, x-go-type: string }
+        group_id: { type: string, format: uuid, x-go-type: string, x-go-name: GroupID }
+        source: { type: string }
+        kind: { type: string }
+        status: { type: string }
+        reason: { type: string, description: 'Redacted reason code, not upstream error text.' }
+        trace_id: { type: string, x-go-name: TraceID }
+        upstream_code: { type: integer }
+        expires_at: { type: string, format: date-time }
+        next_run_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time }
+    QQOfficialTaskAttempt:
+      type: object
+      required: [at]
+      properties:
+        at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time }
+        outcome: { type: string, description: 'Redacted outcome code, not an upstream response body.' }
+        platform_code: { type: integer }
+        trace_id: { type: string, x-go-name: TraceID }
+        http_status: { type: integer, x-go-name: HTTPStatus }
+    QQOfficialTaskDetail:
+      allOf:
+        - $ref: '#/components/schemas/QQOfficialTask'
+        - type: object
+          required: [attempts]
+          properties:
+            attempts: { type: array, items: { $ref: '#/components/schemas/QQOfficialTaskAttempt' } }
+    QQOfficialJoinRequestStatus:
+      type: string
+      enum: [pending, queued, approved, declined, closed_elsewhere, unknown, expired, failed]
+    QQOfficialJoinRequest:
+      type: object
+      required: [id, group_id, username, applied_at, expires_at, status]
+      properties:
+        id: { type: string, format: uuid, x-go-type: string }
+        group_id: { type: string, format: uuid, x-go-type: string, x-go-name: GroupID }
+        username: { type: string }
+        applied_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        status: { $ref: '#/components/schemas/QQOfficialJoinRequestStatus' }
+        task_id: { type: string, format: uuid, x-go-type: string, x-go-name: TaskID }
+    QQOfficialGroupPage:
+      type: object
+      required: &qqOfficialPageFields [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/QQOfficialGroup' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer, x-go-name: PageSize }
+    QQOfficialTaskPage:
+      type: object
+      required: *qqOfficialPageFields
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/QQOfficialTask' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer, x-go-name: PageSize }
+    QQOfficialJoinRequestPage:
+      type: object
+      required: *qqOfficialPageFields
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/QQOfficialJoinRequest' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer, x-go-name: PageSize }
+    QQOfficialStatusSuccess:
+      type: object
+      required: &qqOfficialEnvelopeFields [code, msg, data]
+      properties:
+        code: &qqOfficialSuccessCode { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/QQOfficialStatus' }
+    QQOfficialGroupSuccess:
+      type: object
+      required: *qqOfficialEnvelopeFields
+      properties:
+        code: *qqOfficialSuccessCode
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/QQOfficialGroup' }
+    QQOfficialGroupPageSuccess:
+      type: object
+      required: *qqOfficialEnvelopeFields
+      properties:
+        code: *qqOfficialSuccessCode
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/QQOfficialGroupPage' }
+    QQOfficialTaskAccepted:
+      type: object
+      required: *qqOfficialEnvelopeFields
+      properties:
+        code: *qqOfficialSuccessCode
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/QQOfficialTaskReceipt' }
+    QQOfficialTaskPageSuccess:
+      type: object
+      required: *qqOfficialEnvelopeFields
+      properties:
+        code: *qqOfficialSuccessCode
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/QQOfficialTaskPage' }
+    QQOfficialTaskDetailSuccess:
+      type: object
+      required: *qqOfficialEnvelopeFields
+      properties:
+        code: *qqOfficialSuccessCode
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/QQOfficialTaskDetail' }
+    QQOfficialJoinRequestPageSuccess:
+      type: object
+      required: *qqOfficialEnvelopeFields
+      properties:
+        code: *qqOfficialSuccessCode
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/QQOfficialJoinRequestPage' }

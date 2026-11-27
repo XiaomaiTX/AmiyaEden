@@ -35,6 +35,9 @@ paths:
         '200': { $ref: '#/components/responses/FleetRecordResult' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/QQOfficialConflict' }
+        '429': { $ref: '#/components/responses/QQOfficialRateLimited' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
   /operation/fleets/me:
     get:
       operationId: getMyFleets
@@ -300,6 +303,54 @@ paths:
         '200': { $ref: '#/components/responses/FleetNullResult' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/{id}/qq-ping:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: sendFleetQQPing
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FleetQQPingInput' }
+      responses:
+        '202':
+          description: Durable tasks accepted, or the result of replaying the same idempotency key. Acceptance does not indicate delivery.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FleetQQPingAccepted' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/QQOfficialNotFound' }
+        '409': { $ref: '#/components/responses/QQOfficialConflict' }
+        '429': { $ref: '#/components/responses/QQOfficialRateLimited' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
+    get:
+      operationId: listFleetQQPingResults
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      parameters:
+        - name: current
+          in: query
+          schema: { type: integer, default: 1, minimum: 1, maximum: 10000 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: Redacted fleet notification tasks, newest first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FleetQQPingPageSuccess' }
+        '400': { $ref: '#/components/responses/QQOfficialBadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/QQOfficialNotFound' }
+        '503': { $ref: '#/components/responses/QQOfficialUnavailable' }
 components:
   responses:
     FleetPageResult:
@@ -536,6 +587,55 @@ components:
         send_ping: { type: boolean, x-order: 8, x-go-type-skip-optional-pointer: true }
         fleet_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FleetConfigID, x-order: 9, nullable: true }
         auto_srp_mode: { type: string, x-go-name: AutoSrpMode, x-order: 10, x-go-type-skip-optional-pointer: true }
+        send_qq_ping: { type: boolean, default: false, x-go-name: SendQQPing, x-order: 11, x-go-type-skip-optional-pointer: true }
+    FleetQQPingInput:
+      type: object
+      required: [idempotency_key]
+      properties:
+        idempotency_key: { type: string, format: uuid, x-go-type: string, x-oapi-codegen-extra-tags: { binding: 'required,uuid' } }
+    FleetQQPingAccepted:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetQQPingReceipt' }
+    FleetQQPingReceipt:
+      type: object
+      required: [tasks]
+      properties:
+        tasks: { type: array, items: { $ref: '#/components/schemas/QQOfficialTaskReceipt' } }
+    FleetQQPingPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetQQPingPage' }
+    FleetQQPingPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/FleetQQPingTask' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    FleetQQPingTask:
+      type: object
+      required: [id, status, created_at, expires_at]
+      properties:
+        id: { type: string, x-go-name: ID }
+        status: { type: string }
+        reason: { type: string, description: Localizable ledger reason key. }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time }
+    FleetQQNotification:
+      type: object
+      required: [status, task_count]
+      properties:
+        status: { type: string, enum: [queued] }
+        task_count: { type: integer }
     FleetUpdateInput:
       type: object
       properties:
@@ -580,6 +680,7 @@ components:
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
         deleted_at: { type: string, format: date-time }
+        qq_notification: { $ref: '#/components/schemas/FleetQQNotification', description: Present only for an explicit QQ notification request at creation. }
     FleetListItem:
       type: object
       required: [id, title, description, start_at, end_at, importance, pap_count, fc_user_id, fc_character_id, fc_character_name, auto_srp_mode, created_at, updated_at]

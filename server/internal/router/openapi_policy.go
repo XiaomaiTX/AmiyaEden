@@ -68,6 +68,10 @@ func handleOpenAPIError(c *gin.Context, operation string, err error, status int)
 	if c.Writer.Written() {
 		return
 	}
+	if strings.Contains(operation, "QQOfficial") || operation == "sendFleetQQPing" || operation == "listFleetQQPingResults" {
+		c.JSON(http.StatusBadRequest, apicontract.QQOfficialError{Code: 400, Msg: "invalid_input"})
+		return
+	}
 	code, message := response.CodeParamError, "请求参数错误"
 	var parameter *apicontract.GinParameterError
 	_ = errors.As(err, &parameter)

@@ -56,15 +56,12 @@ func TestRegisterAllRegistersExpectedTaskDefinitions(t *testing.T) {
 		"auto_srp":                       {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeTriggered, cron: "", hasRun: false},
 		"recruit_link_check":             {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 2 * * *", hasRun: true},
 		"audit_archive_daily":            {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 5 * * *", hasRun: true},
+		"qq_official_structure_scan":     {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "@every 1h", hasRun: true},
+		"qq_official_cleanup":            {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 17 * * * *", hasRun: true},
 		"galaxy_registry_validation":     {category: taskregistry.TaskCategoryESI, taskType: taskregistry.TaskTypeRecurring, cron: "@every 5m", hasRun: true},
 		"structure_fuel_rate_sync":       {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "@every 240h", hasRun: true},
 	}
 
-	for _, name := range []string{"qq_group_business", "qq_structure_alert", "qq_group_governance_reconcile", "qq_governance_maintenance", "corporation_structure_alert_scan"} {
-		if _, ok := reg.Get(name); ok {
-			t.Fatalf("retired task %s is registered", name)
-		}
-	}
 	all := reg.All()
 	if len(all) != len(want) {
 		t.Fatalf("registered task count = %d, want %d", len(all), len(want))

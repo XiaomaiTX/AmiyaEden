@@ -61,6 +61,7 @@ export type AppPageType =
   | 'system-auto-role'
   | 'system-user-center'
   | 'system-webhook'
+  | 'system-qq-official'
   | 'system-basic-config'
   | 'system-newbro-settings'
   | 'srp-apply'
@@ -709,6 +710,13 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     meta: { roles: ['super_admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
   },
   {
+    path: 'system/qq-official',
+    titleKey: 'nav.system.qqOfficial',
+    pageType: 'system-qq-official',
+    batch: 'D',
+    meta: { roles: ['super_admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
+  },
+  {
     path: 'system/newbro-settings',
     titleKey: 'refund.settings',
     pageType: 'system-newbro-settings',
@@ -798,6 +806,7 @@ const appRouteOrder = [
   'system/auto-role',
   'system/user-center',
   'system/webhook',
+  'system/qq-official',
   'system/newbro-settings',
   'system/basic-config',
 ] as const

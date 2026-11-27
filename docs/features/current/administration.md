@@ -21,8 +21,6 @@ source_of_truth:
   - static/src/views/system
 ---
 
-系统管理侧栏中，QQ Bot 管理紧接 Webhook 通知排列，Vue 与 React 前端保持一致。
-
 # System 管理模块
 
 ## 当前能力
@@ -41,6 +39,7 @@ source_of_truth:
 - 联盟 PAP 列表、抓取、导入、月度归档（钱包兑换暂不启用）
 - 军团 PAP 兑换汇率配置（Skirmish / Strategic / CTA 三种类型，外加 FC 工资、每月工资上限与人工发放奖励，影响舰队 PAP 发放与福利/商城人工发放时的钱包行为）
 - Webhook 配置与测试
+- [QQ 官方机器人](qq-official.md)授权群、任务运维和受控人工审批
 - 联盟黑名单：从联盟公开 Google Sheet 同步本地黑名单，供管理员浏览与搜索（见下文“联盟黑名单”）
 
 ## Webhook 通知类型
@@ -50,8 +49,6 @@ source_of_truth:
 - `discord` — Discord 频道 Webhook，URL 走 HTTPS 域名白名单
 - `feishu` — 飞书自定义机器人
 - `dingtalk` — 钉钉自定义机器人
-
-QQ Bot 通知已下线；旧类型不会映射到其他通知渠道。仅当现存类型为退役的 OneBot 类型时，才按 [清理指南](../../guides/qq-bot-retirement-cleanup.md) 关闭并清理共享 Webhook URL 和类型。
 
 ## 入口
 

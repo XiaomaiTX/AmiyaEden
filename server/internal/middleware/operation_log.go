@@ -55,7 +55,7 @@ func OperationLog() gin.HandlerFunc {
 			IP:         c.ClientIP(),
 			Method:     c.Request.Method,
 			Path:       path,
-			Query:      c.Request.URL.RawQuery,
+			Query:      loggedRequestQuery(c.Request),
 			StatusCode: c.Writer.Status(),
 			BizCode:    biz,
 			LatencyMs:  latencyMs,

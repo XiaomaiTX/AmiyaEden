@@ -2479,6 +2479,73 @@ export interface FleetCreateInput {
    */
   fleet_config_id?: number | null;
   auto_srp_mode?: string;
+  send_qq_ping?: boolean;
+}
+
+export interface FleetQQPingInput {
+  idempotency_key: string;
+}
+
+export type FleetQQPingAcceptedCode = typeof FleetQQPingAcceptedCode[keyof typeof FleetQQPingAcceptedCode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const FleetQQPingAcceptedCode = {
+  NUMBER_200: 200,
+} as const;
+
+export interface FleetQQPingAccepted {
+  code: FleetQQPingAcceptedCode;
+  msg: string;
+  data: FleetQQPingReceipt;
+}
+
+export interface FleetQQPingReceipt {
+  tasks: QQOfficialTaskReceipt[];
+}
+
+export type FleetQQPingPageSuccessCode = typeof FleetQQPingPageSuccessCode[keyof typeof FleetQQPingPageSuccessCode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const FleetQQPingPageSuccessCode = {
+  NUMBER_200: 200,
+} as const;
+
+export interface FleetQQPingPageSuccess {
+  code: FleetQQPingPageSuccessCode;
+  msg: string;
+  data: FleetQQPingPage;
+}
+
+export interface FleetQQPingPage {
+  list: FleetQQPingTask[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface FleetQQPingTask {
+  id: string;
+  status: string;
+  /** Localizable ledger reason key. */
+  reason?: string;
+  created_at: string;
+  expires_at: string;
+  finished_at?: string;
+}
+
+export type FleetQQNotificationStatus = typeof FleetQQNotificationStatus[keyof typeof FleetQQNotificationStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const FleetQQNotificationStatus = {
+  queued: 'queued',
+} as const;
+
+export interface FleetQQNotification {
+  status: FleetQQNotificationStatus;
+  task_count: number;
 }
 
 export interface FleetUpdateInput {
@@ -2549,6 +2616,8 @@ export interface FleetRecord {
   created_at: string;
   updated_at: string;
   deleted_at?: string;
+  /** Present only for an explicit QQ notification request at creation. */
+  qq_notification?: FleetQQNotification;
 }
 
 export type FleetListItemAutoSrpMode = typeof FleetListItemAutoSrpMode[keyof typeof FleetListItemAutoSrpMode];
@@ -4945,6 +5014,358 @@ export interface PapExchangeRateInput {
    * @exclusiveMinimum
    */
   rate: number;
+}
+
+export type QQOfficialErrorCode = typeof QQOfficialErrorCode[keyof typeof QQOfficialErrorCode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialErrorCode = {
+  NUMBER_400: 400,
+  NUMBER_404: 404,
+  NUMBER_409: 409,
+  NUMBER_429: 429,
+  NUMBER_503: 503,
+} as const;
+
+export interface QQOfficialError {
+  code: QQOfficialErrorCode;
+  /** Safe error message without upstream payloads or credentials. */
+  msg: string;
+}
+
+export interface QQOfficialCooldown {
+  /** Redacted scope label, never an upstream group identifier. */
+  scope: string;
+  until: string;
+}
+
+/**
+ * Current Tencent QQ WebSocket gateway state.
+ */
+export type QQOfficialStatusGatewayState = typeof QQOfficialStatusGatewayState[keyof typeof QQOfficialStatusGatewayState];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialStatusGatewayState = {
+  idle: 'idle',
+  connecting: 'connecting',
+  connected: 'connected',
+  retrying: 'retrying',
+  blocked: 'blocked',
+} as const;
+
+export interface QQOfficialStatus {
+  /** Whether the stored credentials are usable. */
+  configured: boolean;
+  /** Current configured AppID; omitted before setup. */
+  app_id?: string;
+  /** Whether an encrypted secret is stored. The secret is never returned. */
+  has_app_secret: boolean;
+  enabled: boolean;
+  paused: boolean;
+  certified: boolean;
+  approval_writes_enabled: boolean;
+  token_state: string;
+  /** Current Tencent QQ WebSocket gateway state. */
+  gateway_state: QQOfficialStatusGatewayState;
+  /** Time when the most recent new group event was committed. */
+  last_event_at?: string;
+  next_request_at?: string;
+  oldest_queued_at?: string;
+  queue_depth: number;
+  attempts_last_minute: number;
+  messages_last_minute: number;
+  message_budget: number;
+  cooldowns: QQOfficialCooldown[];
+}
+
+/**
+ * Update only the supplied settings. Supplying a new AppID requires an AppSecret. Saving new credentials disables delivery and approval writes; enable them separately after verifying setup.
+ */
+export interface QQOfficialSettings {
+  /**
+   * @minLength 1
+   * @maxLength 32
+   * @pattern ^[0-9]+$
+   */
+  app_id?: string;
+  /**
+   * Omit to keep the current secret for the same AppID.
+   * @minLength 1
+   * @maxLength 4096
+   */
+  app_secret?: string;
+  /** Global opt-in for human join decisions. Turning off cancels queued decisions. */
+  approval_writes_enabled?: boolean;
+  enabled?: boolean;
+  paused?: boolean;
+  certified?: boolean;
+}
+
+export type QQOfficialPushState = typeof QQOfficialPushState[keyof typeof QQOfficialPushState];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialPushState = {
+  unknown: 'unknown',
+  allowed: 'allowed',
+  blocked: 'blocked',
+} as const;
+
+export type QQOfficialApprovalCapability = typeof QQOfficialApprovalCapability[keyof typeof QQOfficialApprovalCapability];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialApprovalCapability = {
+  unknown: 'unknown',
+  available: 'available',
+  forbidden: 'forbidden',
+} as const;
+
+export interface QQOfficialGroup {
+  id: string;
+  alias: string;
+  present: boolean;
+  authorized: boolean;
+  notification_enabled: boolean;
+  test_verified: boolean;
+  approval_enabled: boolean;
+  push_state: QQOfficialPushState;
+  approval_capability: QQOfficialApprovalCapability;
+  /** @minimum 1 */
+  fleet_corporation_id?: number;
+  /** @minimum 1 */
+  structure_corporation_id?: number;
+}
+
+export interface QQOfficialGroupUpdate {
+  /** @maxLength 80 */
+  alias?: string;
+  authorized?: boolean;
+  notification_enabled?: boolean;
+  approval_enabled?: boolean;
+  /**
+   * Explicit local corporation target; zero clears it.
+   * @minimum 0
+   */
+  fleet_corporation_id?: number;
+  /**
+   * Explicit local corporation target; zero clears it.
+   * @minimum 0
+   */
+  structure_corporation_id?: number;
+}
+
+export interface QQOfficialEnqueueInput {
+  idempotency_key: string;
+}
+
+export interface QQOfficialGroupVerifyInput {
+  /**
+   * Write-only upstream group identifier for this verification. Never returned.
+   * @minLength 16
+   * @maxLength 128
+   * @pattern ^[A-Za-z0-9_-]+$
+   */
+  group_openid: string;
+  idempotency_key: string;
+}
+
+export type QQOfficialJoinDecision = typeof QQOfficialJoinDecision[keyof typeof QQOfficialJoinDecision];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialJoinDecision = {
+  approve: 'approve',
+  decline: 'decline',
+} as const;
+
+export interface QQOfficialJoinDecisionInput {
+  decision: QQOfficialJoinDecision;
+  idempotency_key: string;
+}
+
+export interface QQOfficialTaskReceipt {
+  task_id: string;
+  status: string;
+  expires_at: string;
+}
+
+export interface QQOfficialTask {
+  id: string;
+  group_id?: string;
+  source: string;
+  kind: string;
+  status: string;
+  /** Redacted reason code, not upstream error text. */
+  reason?: string;
+  trace_id?: string;
+  upstream_code?: number;
+  expires_at: string;
+  next_run_at: string;
+  created_at: string;
+  finished_at?: string;
+}
+
+export interface QQOfficialTaskAttempt {
+  at: string;
+  finished_at?: string;
+  /** Redacted outcome code, not an upstream response body. */
+  outcome?: string;
+  platform_code?: number;
+  trace_id?: string;
+  http_status?: number;
+}
+
+export type QQOfficialTaskDetailAllOf = {
+  attempts: QQOfficialTaskAttempt[];
+};
+
+export type QQOfficialTaskDetail = QQOfficialTask & QQOfficialTaskDetailAllOf;
+
+export type QQOfficialJoinRequestStatus = typeof QQOfficialJoinRequestStatus[keyof typeof QQOfficialJoinRequestStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialJoinRequestStatus = {
+  pending: 'pending',
+  queued: 'queued',
+  approved: 'approved',
+  declined: 'declined',
+  closed_elsewhere: 'closed_elsewhere',
+  unknown: 'unknown',
+  expired: 'expired',
+  failed: 'failed',
+} as const;
+
+export interface QQOfficialJoinRequest {
+  id: string;
+  group_id: string;
+  username: string;
+  applied_at: string;
+  expires_at: string;
+  status: QQOfficialJoinRequestStatus;
+  task_id?: string;
+}
+
+export interface QQOfficialGroupPage {
+  list: QQOfficialGroup[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface QQOfficialTaskPage {
+  list: QQOfficialTask[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface QQOfficialJoinRequestPage {
+  list: QQOfficialJoinRequest[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export type QQOfficialStatusSuccessCode = typeof QQOfficialStatusSuccessCode[keyof typeof QQOfficialStatusSuccessCode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialStatusSuccessCode = {
+  NUMBER_200: 200,
+} as const;
+
+export interface QQOfficialStatusSuccess {
+  code: QQOfficialStatusSuccessCode;
+  msg: string;
+  data: QQOfficialStatus;
+}
+
+export type QQOfficialGroupSuccessCode = typeof QQOfficialGroupSuccessCode[keyof typeof QQOfficialGroupSuccessCode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialGroupSuccessCode = {
+  NUMBER_200: 200,
+} as const;
+
+export interface QQOfficialGroupSuccess {
+  code: QQOfficialGroupSuccessCode;
+  msg: string;
+  data: QQOfficialGroup;
+}
+
+export type QQOfficialGroupPageSuccessCode = typeof QQOfficialGroupPageSuccessCode[keyof typeof QQOfficialGroupPageSuccessCode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialGroupPageSuccessCode = {
+  NUMBER_200: 200,
+} as const;
+
+export interface QQOfficialGroupPageSuccess {
+  code: QQOfficialGroupPageSuccessCode;
+  msg: string;
+  data: QQOfficialGroupPage;
+}
+
+export type QQOfficialTaskAcceptedCode = typeof QQOfficialTaskAcceptedCode[keyof typeof QQOfficialTaskAcceptedCode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialTaskAcceptedCode = {
+  NUMBER_200: 200,
+} as const;
+
+export interface QQOfficialTaskAccepted {
+  code: QQOfficialTaskAcceptedCode;
+  msg: string;
+  data: QQOfficialTaskReceipt;
+}
+
+export type QQOfficialTaskPageSuccessCode = typeof QQOfficialTaskPageSuccessCode[keyof typeof QQOfficialTaskPageSuccessCode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialTaskPageSuccessCode = {
+  NUMBER_200: 200,
+} as const;
+
+export interface QQOfficialTaskPageSuccess {
+  code: QQOfficialTaskPageSuccessCode;
+  msg: string;
+  data: QQOfficialTaskPage;
+}
+
+export type QQOfficialTaskDetailSuccessCode = typeof QQOfficialTaskDetailSuccessCode[keyof typeof QQOfficialTaskDetailSuccessCode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialTaskDetailSuccessCode = {
+  NUMBER_200: 200,
+} as const;
+
+export interface QQOfficialTaskDetailSuccess {
+  code: QQOfficialTaskDetailSuccessCode;
+  msg: string;
+  data: QQOfficialTaskDetail;
+}
+
+export type QQOfficialJoinRequestPageSuccessCode = typeof QQOfficialJoinRequestPageSuccessCode[keyof typeof QQOfficialJoinRequestPageSuccessCode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QQOfficialJoinRequestPageSuccessCode = {
+  NUMBER_200: 200,
+} as const;
+
+export interface QQOfficialJoinRequestPageSuccess {
+  code: QQOfficialJoinRequestPageSuccessCode;
+  msg: string;
+  data: QQOfficialJoinRequestPage;
 }
 
 export interface ShopProductListInput {
@@ -7918,6 +8339,46 @@ export type MentorRewardProcessResultResultEnvelopeResponse = MentorRewardProces
 
 export type PapExchangeResultResponse = PapExchangeSuccess | BusinessError;
 
+/**
+ * Redacted QQ Official runtime status and current settings.
+ */
+export type QQOfficialStatusResultResponse = QQOfficialStatusSuccess;
+
+/**
+ * Task ledger entry and redacted attempt history.
+ */
+export type QQOfficialTaskResultResponse = QQOfficialTaskDetailSuccess;
+
+/**
+ * Task accepted for asynchronous execution, or the receipt for its idempotent replay. This does not mean the upstream action succeeded.
+ */
+export type QQOfficialAcceptedResponse = QQOfficialTaskAccepted;
+
+/**
+ * Invalid input.
+ */
+export type QQOfficialBadRequestResponse = QQOfficialError;
+
+/**
+ * The referenced local record does not exist.
+ */
+export type QQOfficialNotFoundResponse = QQOfficialError;
+
+/**
+ * The requested change conflicts with current state or an existing idempotency key.
+ */
+export type QQOfficialConflictResponse = QQOfficialError;
+
+/**
+ * A local admission, cooldown, or rate limit prevents accepting this task now.
+ */
+export type QQOfficialRateLimitedResponse = QQOfficialError;
+
+/**
+ * The local integration or required infrastructure is unavailable.
+ */
+export type QQOfficialUnavailableResponse = QQOfficialError;
+
 export type ShopProductPageResultResponse = ShopProductPageSuccess | BusinessError;
 
 export type ShopProductResultResponse = ShopProductSuccess | BusinessError;
@@ -7969,6 +8430,12 @@ export type SkillReadinessBodyBody = SkillReadinessRequest;
 export type ImageUploadBody = {
   file: Blob;
 };
+
+export type QQOfficialCurrentParameter = number;
+
+export type QQOfficialSizeParameter = number;
+
+export type QQOfficialLedgerSizeParameter = number;
 
 export type ListAnnouncementsParams = {
 /**
@@ -8234,6 +8701,19 @@ year?: number;
 month?: number;
 };
 
+export type ListFleetQQPingResultsParams = {
+/**
+ * @minimum 1
+ * @maximum 10000
+ */
+current?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+size?: number;
+};
+
 export type ListMyEntriesParams = {
 current?: number;
 /**
@@ -8439,6 +8919,62 @@ export type ApproveCaptainRefund200 = CaptainRefundReviewSuccess | BusinessError
 export type RejectCaptainRefund200 = CaptainRefundReviewSuccess | BusinessError;
 
 export type UpdateCaptainRefundSettings200 = CaptainRefundSettingsSuccess | BusinessError;
+
+export type ListQQOfficialGroupsParams = {
+/**
+ * @minimum 1
+ * @maximum 10000
+ */
+current?: QQOfficialCurrentParameter;
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+size?: QQOfficialSizeParameter;
+};
+
+export type ListQQOfficialTasksParams = {
+/**
+ * @minimum 1
+ * @maximum 10000
+ */
+current?: QQOfficialCurrentParameter;
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+size?: QQOfficialLedgerSizeParameter;
+/**
+ * Exact ledger status.
+ */
+status?: string;
+/**
+ * Exact task kind.
+ */
+kind?: string;
+/**
+ * Exact task source.
+ */
+source?: string;
+/**
+ * Local group UUID.
+ */
+group_id?: string;
+};
+
+export type ListQQOfficialJoinRequestsParams = {
+/**
+ * @minimum 1
+ * @maximum 10000
+ */
+current?: QQOfficialCurrentParameter;
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+size?: QQOfficialLedgerSizeParameter;
+status?: QQOfficialJoinRequestStatus;
+};
 
 export type ListSkillPlansParams = {
 current?: number;
@@ -9994,6 +10530,29 @@ export const pingFleet = (
       options);
     }
   
+export const sendFleetQQPing = (
+    id: string,
+    fleetQQPingInput: FleetQQPingInput,
+ options?: SecondParameter<typeof contractRequest<FleetQQPingAccepted>>,) => {
+      return contractRequest<FleetQQPingAccepted>(
+      {url: `/api/v1/operation/fleets/${id}/qq-ping`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: fleetQQPingInput
+    },
+      options);
+    }
+  
+export const listFleetQQPingResults = (
+    id: string,
+    params?: ListFleetQQPingResultsParams,
+ options?: SecondParameter<typeof contractRequest<FleetQQPingPageSuccess>>,) => {
+      return contractRequest<FleetQQPingPageSuccess>(
+      {url: `/api/v1/operation/fleets/${id}/qq-ping`, method: 'GET',
+        params
+    },
+      options);
+    }
+  
 export const getHall = (
     
  options?: SecondParameter<typeof contractRequest<HallPublicResultResponse>>,) => {
@@ -10795,6 +11354,155 @@ export const setPapExchangeRates = (
       {url: `/api/v1/system/pap-exchange/rates`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: papExchangeInput
+    },
+      options);
+    }
+  
+export const getQQOfficialStatus = (
+    
+ options?: SecondParameter<typeof contractRequest<QQOfficialStatusResultResponse>>,) => {
+      return contractRequest<QQOfficialStatusResultResponse>(
+      {url: `/api/v1/system/qq-official/status`, method: 'GET'
+    },
+      options);
+    }
+  
+/**
+ * This endpoint rejects query strings. Send the admin JWT in Authorization and settings in the JSON body.
+ */
+export const updateQQOfficialSettings = (
+    qQOfficialSettings: QQOfficialSettings,
+ options?: SecondParameter<typeof contractRequest<QQOfficialStatusResultResponse>>,) => {
+      return contractRequest<QQOfficialStatusResultResponse>(
+      {url: `/api/v1/system/qq-official/settings`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: qQOfficialSettings
+    },
+      options);
+    }
+  
+export const listQQOfficialGroups = (
+    params?: ListQQOfficialGroupsParams,
+ options?: SecondParameter<typeof contractRequest<QQOfficialGroupPageSuccess>>,) => {
+      return contractRequest<QQOfficialGroupPageSuccess>(
+      {url: `/api/v1/system/qq-official/groups`, method: 'GET',
+        params
+    },
+      options);
+    }
+  
+/**
+ * Queue only the allowlisted bot_state verification for a pre-existing group. Acceptance does not authorize the group or enable notifications.
+ */
+export const verifyQQOfficialGroup = (
+    qQOfficialGroupVerifyInput: QQOfficialGroupVerifyInput,
+ options?: SecondParameter<typeof contractRequest<QQOfficialAcceptedResponse>>,) => {
+      return contractRequest<QQOfficialAcceptedResponse>(
+      {url: `/api/v1/system/qq-official/groups/verify`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: qQOfficialGroupVerifyInput
+    },
+      options);
+    }
+  
+export const updateQQOfficialGroup = (
+    id: string,
+    qQOfficialGroupUpdate: QQOfficialGroupUpdate,
+ options?: SecondParameter<typeof contractRequest<QQOfficialGroupSuccess>>,) => {
+      return contractRequest<QQOfficialGroupSuccess>(
+      {url: `/api/v1/system/qq-official/groups/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: qQOfficialGroupUpdate
+    },
+      options);
+    }
+  
+/**
+ * Queue a fixed server-defined test message for this local group.
+ */
+export const testQQOfficialGroup = (
+    id: string,
+    qQOfficialEnqueueInput: QQOfficialEnqueueInput,
+ options?: SecondParameter<typeof contractRequest<QQOfficialAcceptedResponse>>,) => {
+      return contractRequest<QQOfficialAcceptedResponse>(
+      {url: `/api/v1/system/qq-official/groups/${id}/test-message`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: qQOfficialEnqueueInput
+    },
+      options);
+    }
+  
+export const listQQOfficialTasks = (
+    params?: ListQQOfficialTasksParams,
+ options?: SecondParameter<typeof contractRequest<QQOfficialTaskPageSuccess>>,) => {
+      return contractRequest<QQOfficialTaskPageSuccess>(
+      {url: `/api/v1/system/qq-official/tasks`, method: 'GET',
+        params
+    },
+      options);
+    }
+  
+export const getQQOfficialTask = (
+    id: string,
+ options?: SecondParameter<typeof contractRequest<QQOfficialTaskResultResponse>>,) => {
+      return contractRequest<QQOfficialTaskResultResponse>(
+      {url: `/api/v1/system/qq-official/tasks/${id}`, method: 'GET'
+    },
+      options);
+    }
+  
+/**
+ * Cancel an eligible task in the local ledger without making an upstream request or enqueueing another task.
+ */
+export const cancelQQOfficialTask = (
+    id: string,
+ options?: SecondParameter<typeof contractRequest<QQOfficialTaskResultResponse>>,) => {
+      return contractRequest<QQOfficialTaskResultResponse>(
+      {url: `/api/v1/system/qq-official/tasks/${id}/cancel`, method: 'POST'
+    },
+      options);
+    }
+  
+/**
+ * Read the local join request ledger, without contacting QQ.
+ */
+export const listQQOfficialJoinRequests = (
+    id: string,
+    params?: ListQQOfficialJoinRequestsParams,
+ options?: SecondParameter<typeof contractRequest<QQOfficialJoinRequestPageSuccess>>,) => {
+      return contractRequest<QQOfficialJoinRequestPageSuccess>(
+      {url: `/api/v1/system/qq-official/groups/${id}/join-requests`, method: 'GET',
+        params
+    },
+      options);
+    }
+  
+/**
+ * Queue an explicit refresh of this group's join request ledger.
+ */
+export const refreshQQOfficialJoinRequests = (
+    id: string,
+    qQOfficialEnqueueInput: QQOfficialEnqueueInput,
+ options?: SecondParameter<typeof contractRequest<QQOfficialAcceptedResponse>>,) => {
+      return contractRequest<QQOfficialAcceptedResponse>(
+      {url: `/api/v1/system/qq-official/groups/${id}/join-requests/refresh`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: qQOfficialEnqueueInput
+    },
+      options);
+    }
+  
+/**
+ * Queue a decision for this pending local request. No operator-provided text is sent upstream.
+ */
+export const decideQQOfficialJoinRequest = (
+    id: string,
+    qQOfficialJoinDecisionInput: QQOfficialJoinDecisionInput,
+ options?: SecondParameter<typeof contractRequest<QQOfficialAcceptedResponse>>,) => {
+      return contractRequest<QQOfficialAcceptedResponse>(
+      {url: `/api/v1/system/qq-official/join-requests/${id}/decision`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: qQOfficialJoinDecisionInput
     },
       options);
     }
@@ -12301,6 +13009,8 @@ export type DeactivateInviteResult = NonNullable<Awaited<ReturnType<typeof deact
 export type JoinFleetResult = NonNullable<Awaited<ReturnType<typeof joinFleet>>>
 export type GetCharacterFleetInfoResult = NonNullable<Awaited<ReturnType<typeof getCharacterFleetInfo>>>
 export type PingFleetResult = NonNullable<Awaited<ReturnType<typeof pingFleet>>>
+export type SendFleetQQPingResult = NonNullable<Awaited<ReturnType<typeof sendFleetQQPing>>>
+export type ListFleetQQPingResultsResult = NonNullable<Awaited<ReturnType<typeof listFleetQQPingResults>>>
 export type GetHallResult = NonNullable<Awaited<ReturnType<typeof getHall>>>
 export type UpdateHallOwnCardResult = NonNullable<Awaited<ReturnType<typeof updateHallOwnCard>>>
 export type RefreshContributionsResult = NonNullable<Awaited<ReturnType<typeof refreshContributions>>>
@@ -12379,6 +13089,18 @@ export type GetCaptainRefundSettingsResult = NonNullable<Awaited<ReturnType<type
 export type UpdateCaptainRefundSettingsResult = NonNullable<Awaited<ReturnType<typeof updateCaptainRefundSettings>>>
 export type GetPapExchangeRatesResult = NonNullable<Awaited<ReturnType<typeof getPapExchangeRates>>>
 export type SetPapExchangeRatesResult = NonNullable<Awaited<ReturnType<typeof setPapExchangeRates>>>
+export type GetQQOfficialStatusResult = NonNullable<Awaited<ReturnType<typeof getQQOfficialStatus>>>
+export type UpdateQQOfficialSettingsResult = NonNullable<Awaited<ReturnType<typeof updateQQOfficialSettings>>>
+export type ListQQOfficialGroupsResult = NonNullable<Awaited<ReturnType<typeof listQQOfficialGroups>>>
+export type VerifyQQOfficialGroupResult = NonNullable<Awaited<ReturnType<typeof verifyQQOfficialGroup>>>
+export type UpdateQQOfficialGroupResult = NonNullable<Awaited<ReturnType<typeof updateQQOfficialGroup>>>
+export type TestQQOfficialGroupResult = NonNullable<Awaited<ReturnType<typeof testQQOfficialGroup>>>
+export type ListQQOfficialTasksResult = NonNullable<Awaited<ReturnType<typeof listQQOfficialTasks>>>
+export type GetQQOfficialTaskResult = NonNullable<Awaited<ReturnType<typeof getQQOfficialTask>>>
+export type CancelQQOfficialTaskResult = NonNullable<Awaited<ReturnType<typeof cancelQQOfficialTask>>>
+export type ListQQOfficialJoinRequestsResult = NonNullable<Awaited<ReturnType<typeof listQQOfficialJoinRequests>>>
+export type RefreshQQOfficialJoinRequestsResult = NonNullable<Awaited<ReturnType<typeof refreshQQOfficialJoinRequests>>>
+export type DecideQQOfficialJoinRequestResult = NonNullable<Awaited<ReturnType<typeof decideQQOfficialJoinRequest>>>
 export type ListShopProductsResult = NonNullable<Awaited<ReturnType<typeof listShopProducts>>>
 export type GetShopProductDetailResult = NonNullable<Awaited<ReturnType<typeof getShopProductDetail>>>
 export type BuyShopProductResult = NonNullable<Awaited<ReturnType<typeof buyShopProduct>>>

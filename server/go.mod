@@ -6,6 +6,7 @@ toolchain go1.26.11
 
 require (
 	github.com/alicebob/miniredis/v2 v2.37.0
+	github.com/coder/websocket v1.8.15
 	github.com/gin-gonic/gin v1.10.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/google/uuid v1.6.0

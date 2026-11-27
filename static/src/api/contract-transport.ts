@@ -5,6 +5,7 @@ type ContractHeaders = Parameters<typeof AxiosHeaders.concat>[number]
 type ContractRequest = Omit<AxiosRequestConfig, 'headers'> & { headers?: ContractHeaders }
 type ContractOptions = Pick<ContractRequest, 'timeout' | 'headers' | 'signal'> & {
   showErrorMessage?: boolean
+  sensitive?: boolean
 }
 
 export function contractRequest<T>(config: ContractRequest, options?: ContractOptions): Promise<T> {

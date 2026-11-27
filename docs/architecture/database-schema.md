@@ -336,6 +336,10 @@ ESI 头衔到系统职权的映射表。
 - 提醒计数和列表页都依赖它们来决定当前可见范围与徽章数量
 - 授权映射必须指向当前可管理军团中的有效 Director 人物
 
+## QQ 官方机器人
+
+`qq_official_installation` 保存当前 AppID、加密后的 AppSecret、审批写入开关和配置版本。`qq_official_app` 每个 App 一行，用于短事务执行门、授权代次、在途 HTTP 租约和 WebSocket 接收租约及状态。`qq_official_group` 按 App + 官方群标识唯一，拥有独立授权和业务代次。`qq_official_intent` 的 App + 稳定键摘要唯一，`qq_official_task` 每个意图目标一行；`qq_official_attempt` 记录受控准入及窗口，`qq_official_cooldown` 按 App + 范围持续生效。`qq_official_event` 与 `qq_official_join_request` 以最小化字段持久去重，`qq_official_structure_alert` 保存逐建筑风险状态和单调版本。敏感标识不会成为站内 URL 或用户联系数据；启动迁移补齐 QQ 官方模块的表和列。详见[调度架构](qq-official-dispatch.md)和[数据模型](../../server/internal/model/qq_official.go)。
+
 ## 当前未采用的 schema 设计
 
 以下都不是当前产品 schema 的有效方向：
@@ -366,7 +370,5 @@ ESI 头衔到系统职权的映射表。
 - 自动权限映射表
 
 应优先检查 `docs/architecture/auth-and-permissions.md` 与 `docs/features/current/administration.md` 是否也需要更新。
-
-QQ 调度、通知和群业务专属模型及启动迁移均已移除，历史数据不会由应用启动删除。共享 `user.qq`、其唯一索引及任务执行记录保留。显式清理的精确白名单见 [清理指南](../guides/qq-bot-retirement-cleanup.md)。
 
 人物游戏内通知（`eve_character_notification`）已整体下线，模型、ESI 刷新任务及 `/notification/*` 接口均已移除，历史表 `eve_character_notification` 已列入 `server/bootstrap/db.go` 的 `obsoleteTables()`，会在应用启动时自动删除以清理历史数据。

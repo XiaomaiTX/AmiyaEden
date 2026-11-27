@@ -119,9 +119,9 @@ Vue 的 admission context 后台刷新保留当前账号已经取得的结果，
 
 队长退税申请入口要求真实 `captain`，只读写本人申请；管理员审批入口仅 `admin` / `super_admin`，不向普通队长开放全量记录。独立 `/system/newbro-settings` 页面配置统一新人资格、税率与允许星系，不扩大基础配置页权限。导师入口资格使用同一新人服务。旧选队长与绑定页面、接口均已移除。
 
-双前端 `/system/qqbot`、QQ 群治理菜单及其按钮入口均已移除，无兼容路由。共享系统管理和用户 QQ 联系方式权限保持不变。
-
 工资管理在 Vue／React 的 `/system/salary`，仅 admin／super_admin 并沿用 `system.manage` 能力边界。军团申请 `AdmissionReview`／`/admissions/review` 接入 `admission_pending`，由既有父菜单汇总。详情和 `/admissions/applications/:id/edit` 使用独立路由，编辑入口限 owner 且未已邀请。
+QQ 官方机器人的管理页 `/system/qq-official` 在两端系统管理区，仅超管可见，站内写操作仍由生成路由和业务授权保护。参见[功能说明](../features/current/qq-official.md)。
+
 ## 军团公告入口
 
 Vue `Announcements` 与 React `/announcements` 在左侧栏的「首页」分区直达；Vue 其他布局仍保留原一级入口。使用 Login 成员门禁，管理按钮仅对 admin、super_admin、senior_fc 显示，后端对写接口独立校验角色。

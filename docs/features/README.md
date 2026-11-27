@@ -33,6 +33,7 @@ source_of_truth:
 - [npc-kills.md](current/npc-kills.md)
 - [operation.md](current/operation.md)
 - [pap-exchange.md](current/pap-exchange.md)
+- [QQ 官方机器人](current/qq-official.md)
 - [skill-planning.md](current/skill-planning.md)
 - [sde.md](current/sde.md)
 - [srp.md](current/srp.md)

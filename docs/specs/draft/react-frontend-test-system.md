@@ -72,7 +72,7 @@ source_of_truth:
 
 - `http-client.ts` 仅 2 个用例（Bearer 注入、401 事件）；204、非 JSON 响应、网络异常、`assertSuccess`（`src/api/response.ts` 的 `code !== 0/200` 分支）无直接覆盖。
 - 人物主号切换 `setPrimaryCharacter`（`dashboard-characters-page.tsx:273`）无测试——这是"身份切换"核心操作。
-- 约 25 个 API 模块仅 4 个有测试（`auth`、`qq-governance`、`skill-plan`、`tool-bookmark`）。
+- 约 25 个 API 模块中，仅 `auth`、`skill-plan` 和 `tool-bookmark` 有测试。
 - React Aria 复杂组件中仅 Select 有键盘测试；Dialog（focus trap/恢复）、Combobox、Menu、Tabs 均无。
 - 无未预期请求守卫（`dashboard-characters-page.test.tsx:112-177` 的 URL 分发式 Mock + 未匹配即 throw 是全仓唯一例外，未推广）。
 - 无 console error / React warning 检查；无测试数据工厂（大 JSON payload 在用例间复制粘贴）。

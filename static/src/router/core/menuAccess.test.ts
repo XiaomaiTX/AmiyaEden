@@ -186,17 +186,28 @@ test('applyMenuAccessFilter hides AutoRole from admins but keeps it for super ad
   )
 })
 
-test('system routes and menu omit the bot but keep webhook settings', () => {
+test('system menu includes webhook settings for super administrators', () => {
   const [systemMenu] = applyMenuAccessFilter([systemRoutes], ['super_admin'])
 
-  assert.equal(
-    systemRoutes.children?.some((route) => route.path === 'qqbot'),
-    false
-  )
   assert.equal(
     systemMenu.children?.some((route) => route.name === 'WebhookSettings'),
     true
   )
+})
+
+test('QQ Official console requires a logged-in super administrator', () => {
+  const route = systemRoutes.children?.find((child) => child.name === 'QQOfficialConsole')
+  assert.equal(route?.component, '/system/qq-official')
+  assert.equal(route?.meta.login, true)
+  assert.deepEqual(route?.meta.roles, ['super_admin'])
+  assert.deepEqual(route?.meta.corpCapabilitiesAny, ['system.manage'])
+
+  const visible = (roles: string[]) =>
+    applyMenuAccessFilter([systemRoutes], roles, ['system.manage'])[0]?.children?.some(
+      (child) => child.name === 'QQOfficialConsole'
+    ) ?? false
+  assert.equal(visible(['admin']), false)
+  assert.equal(visible(['super_admin']), true)
 })
 
 test('applyMenuAccessFilter enforces corp capability gates on SRP routes', () => {

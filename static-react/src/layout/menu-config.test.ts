@@ -98,6 +98,20 @@ describe('menu config', () => {
     expect(findGroup(entries, 'nav.group.territoryFacilities')?.badge).toBe(5)
   })
 
+  test('shows the QQ Official console only to super administrators', () => {
+    const session = {
+      isLoggedIn: true,
+      roles: ['admin'],
+      corpCapabilities: ['system.manage'],
+      isCurrentlyNewbro: false,
+      isMentorMenteeEligible: false,
+    }
+    expect(menuItems(buildMenuEntries(session)).some(({ to }) => to === '/system/qq-official')).toBe(false)
+    expect(buildMenuEntries({ ...session, roles: ['super_admin'] })).toContainEqual(
+      expect.objectContaining({ kind: 'link', to: '/system/qq-official', labelKey: 'nav.system.qqOfficial' })
+    )
+  })
+
   test('drops sections and groups with no visible pages', () => {
     const sections = buildShellMenuSections({
       isLoggedIn: true,

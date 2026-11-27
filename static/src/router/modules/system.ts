@@ -152,6 +152,17 @@ export const systemRoutes: AppRouteRecord = {
       }
     },
     {
+      path: 'qq-official',
+      name: 'QQOfficialConsole',
+      component: '/system/qq-official',
+      meta: {
+        title: 'menus.system.qqOfficial',
+        login: true,
+        roles: ['super_admin'],
+        corpCapabilitiesAny: ['system.manage']
+      }
+    },
+    {
       path: 'newbro-settings',
       name: 'NewbroSettings',
       component: '/system/newbro-settings',

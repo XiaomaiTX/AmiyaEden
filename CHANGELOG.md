@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- 新增 QQ 官方机器人接入：后端主动连接腾讯 WebSocket 网关接收群事件，无需配置公网 Webhook。支持受控群通知、授权后的人工入群审批及 Vue/React 运维。舰队提醒和建筑预警通过同一套持久调度、额度和风控执行。AppID、AppSecret 和人工审批写入在系统后台配置；投递与审批写入默认关闭。
+
 ## [2.1.1] - 2026-11-27
 
 ### Fixed

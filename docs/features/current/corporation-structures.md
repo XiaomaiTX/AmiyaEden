@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-09-04
+last_reviewed: 2026-11-26
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/corporation_structure.go
@@ -19,6 +19,8 @@ source_of_truth:
   - server/internal/service/badge.go
   - server/pkg/eve/esi/task_corporation_structures.go
   - server/jobs/structure_fuel_rate_sync.go
+  - server/jobs/qq_official_structure_scan.go
+  - server/internal/service/qq_official_structure_business.go
   - static/src/router/modules/dashboard.ts
   - static/src/api/generated/client.ts
   - static/src/views/dashboard/corporation-structures
@@ -52,6 +54,13 @@ source_of_truth:
 - 服务模块燃料率（每小时燃料块）由独立定时任务 `structure_fuel_rate_sync` 每 10 天从 ESI `/universe/types/{id}/` 的 dogma 属性 2109 同步到 `structure_service_fuel_rate` 表；ESI 拉取失败时沿用硬编码默认值，DB 记录覆盖默认表（DB 缺失的服务继续用默认值）
 - 折扣系数按建筑分组（`invTypes.groupID`）判定：堡垒（1657）市场/克隆 −25%、工业综合体（1404）制造/研究/发明 −25%、精炼厂（1406）再处理/反应 Athanor −20%/其余 −25%；分组缺失或未知时按无折扣计算
 - 燃料估算仅在建筑列表与燃料官列表加载；指派管理列表不做估算（不查询燃料率与 SDE 分组）
+
+## QQ 官方建筑提醒
+
+- 后台任务每小时扫描已配置 Director 授权、并有可用 QQ 通知群的军团。只读现有建筑快照，不回源 ESI；快照更新时间使用 Unix 秒，新鲜度上限为 24 小时。
+- 燃料和计时器分别沿用建筑设置的提醒阈值，`0` 天关闭对应通知。每个军团、建筑和提醒类型分别记录持续状态；恢复后再次触发，或活动计时器截止时间变化，才产生新版本。快照或字段缺失、过时不视为恢复。
+- 状态与任务同事务提交；队列暂满时保留当前版本，最多在三小时有效窗口内等待后续扫描，计时器提醒也不会晚于截止时间。应用或目标群通知的配置代次变化后，未入队的旧版本不会补发。
+- 发送前再次检查授权、快照、阈值和版本；已过期或结果未知的任务不会因仍处于提醒状态而重新入队。通知正文不包含建筑名称、建筑 ID 或军团信息，明细在建筑管理页面查看。
 
 ## 燃料消耗估算
 
@@ -132,5 +141,3 @@ source_of_truth:
 - React 已承接 `/dashboard/corporation-structures`，对应 API 和页面状态以 React 迁移基线为准。
 - React 列表表格支持与 Vue 对齐的服务端排序表头（星系、名称、类型、燃料剩余、每小时消耗、到月底需补充、增强小时、结束时间、更新时间）。
 - `fuel-officer-structures` 已由 Vue 与 React 双端承接；React 使用共享 `DataTable` 和同一 `my-assigned-list` 契约。
-
-建筑 QQ 预警与其专属巡查任务已下线；建筑业务、ESI 刷新、燃料管理与站内阈值角标继续保留。

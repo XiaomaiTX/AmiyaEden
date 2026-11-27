@@ -132,6 +132,12 @@
         </template>
       </ElDialog>
 
+      <FleetQQPingPanel
+        v-if="canManageFleet && fleet?.id === fleetId"
+        :key="fleetId"
+        :fleet-id="fleetId"
+      />
+
       <!-- 邀请链接 -->
       <ElCard class="mt-4" shadow="never">
         <template #header>
@@ -226,6 +232,7 @@
   } from '@/api/generated/client'
   import { unwrapContract } from '@/api/response'
   import { useNameResolver } from '@/hooks'
+  import FleetQQPingPanel from './FleetQQPingPanel.vue'
 
   defineOptions({ name: 'FleetDetail' })
 

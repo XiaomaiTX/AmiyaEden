@@ -32,6 +32,7 @@ func registerOpenAPIRoutes(r gin.IRouter, taskSvc *service.TaskService) {
 		*handler.FleetConfigHandler
 		*handler.PAPExchangeHandler
 		*handler.WebhookHandler
+		*handler.QQOfficialHandler
 		*handler.AuditEventHandler
 		*handler.UploadHandler
 		*handler.AdmissionHandler
@@ -76,6 +77,7 @@ func registerOpenAPIRoutes(r gin.IRouter, taskSvc *service.TaskService) {
 		FleetConfigHandler:          handler.NewFleetConfigHandler(),
 		PAPExchangeHandler:          handler.NewPAPExchangeHandler(),
 		WebhookHandler:              handler.NewWebhookHandler(),
+		QQOfficialHandler:           handler.NewQQOfficialHandler(),
 		AuditEventHandler:           handler.NewAuditEventHandler(),
 		UploadHandler:               handler.NewUploadHandler(),
 		AdmissionHandler:            handler.NewAdmissionHandler(),

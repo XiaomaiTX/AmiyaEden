@@ -18,6 +18,12 @@ func ZapRecovery() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
+				if isQQOfficialSettingsPath(c.Request.URL.Path) {
+					// The request URI and panic cause may contain rejected credentials.
+					global.Logger.Error("[Recovery] QQ official settings panic", zap.ByteString("stack", debug.Stack()))
+					c.AbortWithStatus(http.StatusInternalServerError)
+					return
+				}
 				// 判断是否是连接断开
 				var brokenPipe bool
 				if ne, ok := err.(*net.OpError); ok {

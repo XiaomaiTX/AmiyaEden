@@ -169,6 +169,9 @@ func autoMigrate(db *gorm.DB) {
 	); err != nil {
 		global.Logger.Fatal("数据库迁移失败", zap.Error(err))
 	}
+	if err := db.AutoMigrate(model.QQOfficialModels()...); err != nil {
+		global.Logger.Fatal("QQ 官方机器人数据库迁移失败", zap.Error(err))
+	}
 
 	// 清理旧列/旧表（GORM AutoMigrate 不会自动删除）
 	if err := migrateSalarySettings(db); err != nil {
