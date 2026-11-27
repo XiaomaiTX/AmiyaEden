@@ -70,7 +70,7 @@ source_of_truth:
 2. 实现生成的 Go strict 接口：handler 接收生成请求并返回生成响应，不重复注册路径、解析 HTTP 参数或维护 DTO；请求处理函数放在对应业务的 handler 文件，由生成路由直接调用，不再为此单设转发层；业务规则仍由 service 处理。这里的 strict 指生成接口的类型签名，不需要手写 `Strict…Handler` 包装原 handler。路由直接组装各业务 handler；必要的输入、响应转换留在所属业务文件，共用错误处理仍可共享。验证路由或读参行为的测试走生成入口，不另外维护一套旧入口。Vue、React 在页面或现有 composable、hook、store 中直接从各自的生成客户端导入操作和原始接口类型。不要另建文件只做类型转出或改名；手写类型用于表达实际的前端状态、表单或视图模型。普通 JSON 响应复用通用解包函数，不为逐接口改名、转发或解包另建 API 包装。只有共享流程或必要的视图适配才抽取；不在页面直接发 HTTP 请求。SSO 回调由浏览器导航，不用生成客户端替代。
 3. 提交 Go、Vue、React 生成物及相关测试；仅在业务入口或功能行为改变时同步相应文档。不手改生成文件。提交前运行 `pnpm -C contracts api:check`；CI 检查生成差异，并通过[启动路由测试](../../server/bootstrap/openapi_routes_test.go)对比 OpenAPI 与 Gin 启动注册后的整张 `/api/v1` method/path 表；两边各自缺失的项会分别报告。
 
-从仓库根目录运行 `node contracts/inventory.cjs` 可导出逐操作的 Go strict 实现和两端生成客户端引用清单（需已安装契约与 Vue 依赖）。清单将前端引用标为 `direct`、`workflow`、`browser-navigation`、`no-client-reference` 或待核对的 `review-adapter`。`workflow` 需要记录保留原因；`no-client-reference` 不表示接口可以删除。清单里的模块导入是排查线索，不等同于页面运行时调用。使用 `node contracts/inventory.cjs --check` 检查未记录的流程适配和手写 `/api/v1` URL。保留适配须在 [例外清单](../../contracts/inventory-exceptions.cjs) 里按 `operationId` 说明职责；若职责可以留在单一消费点，应移除包装而不是登记例外。
+从仓库根目录运行 `node contracts/inventory.cjs` 可导出逐操作的 Go strict 实现和两端生成客户端引用清单（需已安装契约与 Vue 依赖）。清单将前端引用标为 `direct`、`workflow`、`browser-navigation`、`no-client-reference` 或待核对的 `review-adapter`。`workflow` 需要记录保留原因；`no-client-reference` 不表示接口可以删除。清单里的模块导入是排查线索，不等同于页面运行时调用。Vue 部分使用项目已有的 SFC 编译器提取顶层 `<script>` 和 `<script setup>`；遇到无法解析的组件时报告文件并停止，不静默漏扫。安装 Vue 依赖后，从仓库根目录运行 `node --test contracts/inventory-vue.test.cjs` 验证脚本提取。使用 `node contracts/inventory.cjs --check` 检查未记录的流程适配和手写 `/api/v1` URL。保留适配须在 [例外清单](../../contracts/inventory-exceptions.cjs) 里按 `operationId` 说明职责；若职责可以留在单一消费点，应移除包装而不是登记例外。
 
 ### 路由与绑定
 
