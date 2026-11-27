@@ -122,6 +122,9 @@ jobs:
         working-directory: static
         run: pnpm test:unit
 
+      - name: Test Vue parsing for OpenAPI inventory
+        run: node --test contracts/inventory-vue.test.cjs
+
       - name: Build frontend
         working-directory: static
         run: pnpm build

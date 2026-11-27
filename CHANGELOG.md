@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-11-27
+
+### Fixed
+
+- Vue 与 React 的军团 NPC 击杀报表默认查询本月，重置筛选时恢复本月日期范围。
+- OpenAPI 引用清单改用 Vue SFC 编译器提取脚本，避免因结束标签含空白而漏报引用（CodeQL #82）。
+
 ## [2.1.0] - 2026-11-26
 
 ### Added
