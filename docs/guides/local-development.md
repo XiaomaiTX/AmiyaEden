@@ -2,7 +2,7 @@
 status: active
 doc_type: guide
 owner: engineering
-last_reviewed: 2026-11-26
+last_reviewed: 2026-11-27
 source_of_truth:
   - Makefile
   - .air.toml
@@ -43,7 +43,7 @@ make dev
 
 ## 依赖要求
 
-- Go `>= 1.24.5`
+- Go `>= 1.26.0`（与 CI 保持一致，以 `server/go.mod` 的 `go` 指令为准）
 - Node.js `24`（与 CI 保持一致，见根目录 `.nvmrc`）
 - pnpm `11.15.1`（与 CI 和前端 `packageManager` 保持一致）
 - Air（Go 热重载工具）
