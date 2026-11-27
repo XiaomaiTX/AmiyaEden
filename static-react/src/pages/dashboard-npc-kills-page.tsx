@@ -24,6 +24,15 @@ type DateRangeState = {
   endDate: string
 }
 
+function getCurrentMonthRange(): DateRangeState {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const prefix = `${year}-${String(month + 1).padStart(2, '0')}`
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  return { startDate: `${prefix}-01`, endDate: `${prefix}-${lastDay}` }
+}
+
 type FilterState = {
   refTypes: string[]
   solarSystemIds: string
@@ -75,14 +84,8 @@ export function DashboardNpcKillsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reportData, setReportData] = useState<NpcKillCorpResponse | null>(null)
-  const [draftDateRange, setDraftDateRange] = useState<DateRangeState>({
-    startDate: '',
-    endDate: '',
-  })
-  const [appliedDateRange, setAppliedDateRange] = useState<DateRangeState>({
-    startDate: '',
-    endDate: '',
-  })
+  const [draftDateRange, setDraftDateRange] = useState(getCurrentMonthRange)
+  const [appliedDateRange, setAppliedDateRange] = useState(draftDateRange)
   const [draftFilters, setDraftFilters] = useState<FilterState>({
     refTypes: [],
     solarSystemIds: '',
@@ -158,7 +161,7 @@ export function DashboardNpcKillsPage() {
   }
 
   const handleReset = () => {
-    const emptyRange = { startDate: '', endDate: '' }
+    const defaultRange = getCurrentMonthRange()
     const emptyFilters = {
       refTypes: [],
       solarSystemIds: '',
@@ -167,8 +170,8 @@ export function DashboardNpcKillsPage() {
       minAmount: '',
       maxAmount: '',
     }
-    setDraftDateRange(emptyRange)
-    setAppliedDateRange(emptyRange)
+    setDraftDateRange(defaultRange)
+    setAppliedDateRange(defaultRange)
     setDraftFilters(emptyFilters)
     setAppliedFilters(emptyFilters)
   }

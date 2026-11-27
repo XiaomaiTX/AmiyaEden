@@ -1,22 +1,17 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { RouterProvider, createMemoryRouter } from 'react-router-dom'
-import { appRoutes } from '@/app/router'
-import { useSessionStore } from '@/stores'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { I18nProvider } from '@/i18n'
+import { DashboardNpcKillsPage } from './dashboard-npc-kills-page'
 
 describe('dashboard npc kills page', () => {
-  beforeEach(() => {
-    useSessionStore.getState().setSessionSnapshot({
-      isLoggedIn: true,
-      accessToken: 'token-123',
-      characterId: 1001,
-      characterName: 'Amiya',
-      roles: ['admin'],
-      corpCapabilities: ['menu.dashboard', 'dashboard.npc_kills.corp', 'info.npc_kills.corp'],
-    })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
-  test('loads corporation npc kill report', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+  test('loads the current month by default and restores it on reset', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2028, 1, 1))
+    const makeResponse = () =>
       new Response(
         JSON.stringify({
           code: 200,
@@ -55,7 +50,7 @@ describe('dashboard npc kills page', () => {
             ],
             trend: [
               {
-                date: '2026-05-01',
+                date: '2028-02-01',
                 amount: 1000,
                 count: 2,
               },
@@ -64,12 +59,13 @@ describe('dashboard npc kills page', () => {
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       )
-    )
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => makeResponse())
 
-    const router = createMemoryRouter(appRoutes, {
-      initialEntries: ['/dashboard/npc-kills'],
-    })
-    render(<RouterProvider router={router} />)
+    render(
+      <I18nProvider>
+        <DashboardNpcKillsPage />
+      </I18nProvider>
+    )
 
     await waitFor(() => {
       expect(screen.getByText('1,234,567.89')).toBeInTheDocument()
@@ -77,5 +73,34 @@ describe('dashboard npc kills page', () => {
 
     expect(screen.getByText('Amiya Commander')).toBeInTheDocument()
     expect(screen.getByText('Jita')).toBeInTheDocument()
+
+    const startDate = screen.getByLabelText('开始日期')
+    const endDate = screen.getByLabelText('结束日期')
+    const monthPayload = { start_date: '2028-02-01', end_date: '2028-02-29' }
+    const reportBodies = () =>
+      fetchSpy.mock.calls
+        .filter(([url]) => url === '/api/v1/system/npc-kills')
+        .map(([, init]) => JSON.parse(String(init?.body)))
+
+    expect(startDate).toHaveValue(monthPayload.start_date)
+    expect(endDate).toHaveValue(monthPayload.end_date)
+    expect(reportBodies()).toEqual([monthPayload])
+
+    fireEvent.change(startDate, { target: { value: '2028-01-01' } })
+    fireEvent.click(screen.getByRole('button', { name: '搜索' }))
+    await waitFor(() => {
+      expect(reportBodies()).toEqual([monthPayload, { ...monthPayload, start_date: '2028-01-01' }])
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '重置' }))
+    await waitFor(() => {
+      expect(reportBodies()).toEqual([
+        monthPayload,
+        { ...monthPayload, start_date: '2028-01-01' },
+        monthPayload,
+      ])
+    })
+    expect(startDate).toHaveValue(monthPayload.start_date)
+    expect(endDate).toHaveValue(monthPayload.end_date)
   })
 })

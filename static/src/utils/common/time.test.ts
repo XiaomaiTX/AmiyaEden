@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { formatTime, fuelExpiryMonthOffset, toLocalOffsetISO } from './time'
+import { formatTime, fuelExpiryMonthOffset, getCurrentMonthRange, toLocalOffsetISO } from './time'
+
+test('getCurrentMonthRange returns the first and last local dates of the month', () => {
+  assert.deepEqual(getCurrentMonthRange(new Date(2028, 1, 1)), ['2028-02-01', '2028-02-29'])
+  assert.deepEqual(getCurrentMonthRange(new Date(2026, 11, 31)), ['2026-12-01', '2026-12-31'])
+})
 
 test('formatTime returns a localized string for valid timestamps', () => {
   const originalToLocaleString = Date.prototype.toLocaleString

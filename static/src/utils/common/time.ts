@@ -1,6 +1,14 @@
 export const formatTime = (v: string | null | undefined) =>
   v ? new Date(v).toLocaleString('en-GB', { hour12: false }) : '-'
 
+export const getCurrentMonthRange = (now: Date = new Date()): [string, string] => {
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const prefix = `${year}-${String(month + 1).padStart(2, '0')}`
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  return [`${prefix}-01`, `${prefix}-${lastDay}`]
+}
+
 /**
  * 整月差（UTC 口径）：fuel_expires 所在月距当前月还有几个月。
  * 与后端 EstimateFuelToMonthEnd 的「耗尽所在自然月（EVE UTC）月底」保持同一时区基准，
